@@ -6,14 +6,6 @@ import { handleGetTeamInvitesApi } from '../Services/teamService';
 import { useTranslator } from '../context/TranslatorContext';
 import './NavBar.css';
 
-const GAMES_MENU = {
-  label: 'Games',
-  children: [
-    { label: 'Challenges', path: '/Challenges' },
-    { label: 'Teams', path: '/TeamLobby' },
-  ],
-};
-
 const GAMES_RELATED_PATHS = new Set([
   '/GameSelection',
   '/Challenges',
@@ -46,7 +38,6 @@ function Navbar({ id }) {
   const location = useLocation();
   const { toggleTranslator } = useTranslator();
 
-  const [gamesOpen, setGamesOpen] = useState(false);
   const [pendingChallenges, setPendingChallenges] = useState(0);
   const [yourTurnChallenges, setYourTurnChallenges] = useState(0);
   const [pendingTeamInvites, setPendingTeamInvites] = useState(0);
@@ -61,7 +52,6 @@ function Navbar({ id }) {
   }, [id]);
 
   const goTo = (pathname) => {
-    setGamesOpen(false);
     navigate({ pathname, search: createSearchParams({ id }).toString() });
   };
 
@@ -77,10 +67,6 @@ function Navbar({ id }) {
   };
 
   const gamesBtnClass = isGamesPathActive() ? 'top-nav-btn top-nav-btn--active' : 'top-nav-btn';
-
-  useEffect(() => {
-    setGamesOpen(false);
-  }, [location.pathname]);
 
   useEffect(() => {
     if (!id) return;
@@ -128,33 +114,13 @@ function Navbar({ id }) {
     return () => clearInterval(interval);
   }, [id]);
 
-  useEffect(() => {
-    if (!gamesOpen) return;
-
-    let onDocMouseDown;
-    const rafId = requestAnimationFrame(() => {
-      onDocMouseDown = (e) => {
-        if (!e.target.closest('.nav-games-wrap')) {
-          setGamesOpen(false);
-        }
-      };
-      document.addEventListener('mousedown', onDocMouseDown);
-    });
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      if (onDocMouseDown) document.removeEventListener('mousedown', onDocMouseDown);
-    };
-  }, [gamesOpen]);
-
   const challengeAttention = pendingChallenges + yourTurnChallenges;
 
-  const renderChallengeBadge = (dropdownVariant) => {
+  const renderChallengeBadge = () => {
     if (challengeAttention <= 0) return null;
-    const cls = dropdownVariant ? 'nav-badge nav-badge-dropdown' : 'nav-badge';
     return (
       <span
-        className={cls}
+        className="nav-badge"
         aria-label={`${challengeAttention} challenge${challengeAttention !== 1 ? 's' : ''} need attention`}
       >
         {challengeAttention}
@@ -162,14 +128,11 @@ function Navbar({ id }) {
     );
   };
 
-  const renderTeamBadge = (dropdownVariant) => {
+  const renderTeamBadge = () => {
     if (pendingTeamInvites <= 0) return null;
-    const cls = dropdownVariant
-      ? 'nav-badge nav-badge-dropdown nav-badge-team'
-      : 'nav-badge nav-badge-team';
     return (
       <span
-        className={cls}
+        className="nav-badge nav-badge-team"
         aria-label={`${pendingTeamInvites} team invite${pendingTeamInvites !== 1 ? 's' : ''}`}
       >
         {pendingTeamInvites}
@@ -195,52 +158,15 @@ function Navbar({ id }) {
           }
 
           return (
-            <div key="nav-games-slot" className="nav-games-wrap">
-              <div className="nav-games-split">
-                {/* Real <a href> avoids Bootstrap/React click quirks and works if JS is flaky */}
-                <a
-                  href={hrefFor('/GameSelection')}
-                  className={gamesBtnClass}
-                >
-                  {GAMES_MENU.label}
-                  {challengeAttention > 0 && renderChallengeBadge(false)}
-                  {pendingTeamInvites > 0 && renderTeamBadge(false)}
-                </a>
-                <button
-                  type="button"
-                  className={`${gamesBtnClass} nav-games-caret-btn`}
-                  aria-expanded={gamesOpen}
-                  aria-haspopup="true"
-                  aria-label="Open challenges and teams menu"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    setGamesOpen((o) => !o);
-                  }}
-                >
-                  <span className="nav-games-chevron-only" aria-hidden>
-                    ▾
-                  </span>
-                </button>
-              </div>
-              {gamesOpen && (
-                <div className="nav-games-dropdown" role="menu">
-                  {GAMES_MENU.children.map((ch) => (
-                    <a
-                      key={ch.path}
-                      role="menuitem"
-                      href={hrefFor(ch.path)}
-                      className={`nav-games-dropdown-link${location.pathname === ch.path ? ' nav-games-dropdown-link-active' : ''}`}
-                      onClick={() => setGamesOpen(false)}
-                    >
-                      {ch.label}
-                      {ch.path === '/Challenges' && renderChallengeBadge(true)}
-                      {ch.path === '/TeamLobby' && renderTeamBadge(true)}
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
+            <a
+              key="nav-games"
+              href={hrefFor('/GameSelection')}
+              className={gamesBtnClass}
+            >
+              Games
+              {renderChallengeBadge()}
+              {renderTeamBadge()}
+            </a>
           );
         })}
       </div>

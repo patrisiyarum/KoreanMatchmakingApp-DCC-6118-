@@ -89,9 +89,9 @@ function TeamLobby() {
     navigate({ pathname: '/TeamCreate', search: createSearchParams({ id }).toString() });
   };
 
-  const goToDashboard = () => {
+  const goToGames = () => {
     navigate({
-      pathname: '/Dashboard',
+      pathname: '/GameSelection',
       search: createSearchParams({ id }).toString(),
     });
   };
@@ -258,7 +258,7 @@ function TeamLobby() {
           )}
 
           <div className="team-btn-row" style={{ marginTop: 14 }}>
-            <button className="back-to-dashboard" onClick={goToDashboard}>Dashboard</button>
+            <button type="button" className="back-to-dashboard" onClick={goToGames}>Games</button>
           </div>
         </div>
       </div>

@@ -53,9 +53,9 @@ function ChallengeHub() {
     }
   };
 
-  const handleBackToDashboard = () => {
+  const handleBackToGames = () => {
     navigate({
-      pathname: '/Dashboard',
+      pathname: '/GameSelection',
       search: createSearchParams({ id }).toString(),
     });
   };
@@ -289,7 +289,7 @@ function ChallengeHub() {
         </div>
 
         <div className="ch-back-wrap">
-          <button className="back-to-dashboard" onClick={handleBackToDashboard}>Dashboard</button>
+          <button type="button" className="back-to-dashboard" onClick={handleBackToGames}>Games</button>
         </div>
       </div>
       </div>

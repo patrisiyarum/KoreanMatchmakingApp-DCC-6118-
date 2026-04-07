@@ -163,9 +163,9 @@ function TeamPage() {
     }
   };
 
-  const handleBackToDashboard = () => {
+  const handleBackToGames = () => {
     navigate({
-      pathname: '/Dashboard',
+      pathname: '/GameSelection',
       search: createSearchParams({ id }).toString(),
     });
   };
@@ -329,7 +329,7 @@ function TeamPage() {
               {errMsg     && <p className="team-error">{errMsg}</p>}
  
               <div className="team-btn-row">
-                <button className="back-to-dashboard" onClick={handleBackToDashboard}>Dashboard</button>
+                <button type="button" className="back-to-dashboard" onClick={handleBackToGames}>Games</button>
                 {myRole === 'owner' && (
                   <>
                     <button className="team-btn-secondary" onClick={() => setEditing(true)}>

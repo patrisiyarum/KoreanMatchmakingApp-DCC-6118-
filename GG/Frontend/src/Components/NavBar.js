@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, createSearchParams, useLocation } from 'react-router-dom';
 import { getUserChallenges } from '../Services/challengeService';
 import { handleGetTeamInvitesApi } from '../Services/teamService';
@@ -51,6 +51,15 @@ function Navbar({ id }) {
   const [yourTurnChallenges, setYourTurnChallenges] = useState(0);
   const [pendingTeamInvites, setPendingTeamInvites] = useState(0);
 
+  const hrefFor = useMemo(() => {
+    const base = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+    return (pathname) => {
+      const path = `${base}${pathname}`;
+      if (id == null || id === '') return path;
+      return `${path}?${createSearchParams({ id: String(id) }).toString()}`;
+    };
+  }, [id]);
+
   const goTo = (pathname) => {
     setGamesOpen(false);
     navigate({ pathname, search: createSearchParams({ id }).toString() });
@@ -58,12 +67,16 @@ function Navbar({ id }) {
 
   const isGamesPathActive = () => GAMES_RELATED_PATHS.has(location.pathname);
 
-  const isSimpleActive = (path) => {
-    if (location.pathname === path) return 'nav-link active';
-    const children = PARENT_ROUTES[path] || [];
-    if (children.includes(location.pathname)) return 'nav-link active';
-    return 'nav-link';
+  const simpleBtnClass = (path) => {
+    let active = location.pathname === path;
+    if (!active) {
+      const children = PARENT_ROUTES[path] || [];
+      active = children.includes(location.pathname);
+    }
+    return active ? 'top-nav-btn top-nav-btn--active' : 'top-nav-btn';
   };
+
+  const gamesBtnClass = isGamesPathActive() ? 'top-nav-btn top-nav-btn--active' : 'top-nav-btn';
 
   useEffect(() => {
     setGamesOpen(false);
@@ -165,15 +178,15 @@ function Navbar({ id }) {
   };
 
   return (
-    <nav className="navbar">
-      <div className="navbar-links" role="navigation" aria-label="Main">
+    <nav className="app-top-nav">
+      <div className="app-top-nav-links" role="navigation" aria-label="Main">
         {NAV_SLOTS.map((slot) => {
           if (slot.type === 'simple') {
             return (
               <button
                 key={slot.path}
                 type="button"
-                className={isSimpleActive(slot.path)}
+                className={simpleBtnClass(slot.path)}
                 onClick={() => goTo(slot.path)}
               >
                 {slot.label}
@@ -181,15 +194,18 @@ function Navbar({ id }) {
             );
           }
 
-          const gamesBtnClass = isGamesPathActive() ? 'nav-link active' : 'nav-link';
           return (
             <div key="nav-games-slot" className="nav-games-wrap">
               <div className="nav-games-split">
-                <button type="button" className={gamesBtnClass} onClick={() => goTo('/GameSelection')}>
+                {/* Real <a href> avoids Bootstrap/React click quirks and works if JS is flaky */}
+                <a
+                  href={hrefFor('/GameSelection')}
+                  className={gamesBtnClass}
+                >
                   {GAMES_MENU.label}
                   {challengeAttention > 0 && renderChallengeBadge(false)}
                   {pendingTeamInvites > 0 && renderTeamBadge(false)}
-                </button>
+                </a>
                 <button
                   type="button"
                   className={`${gamesBtnClass} nav-games-caret-btn`}
@@ -198,6 +214,7 @@ function Navbar({ id }) {
                   aria-label="Open challenges and teams menu"
                   onClick={(e) => {
                     e.stopPropagation();
+                    e.preventDefault();
                     setGamesOpen((o) => !o);
                   }}
                 >
@@ -209,17 +226,17 @@ function Navbar({ id }) {
               {gamesOpen && (
                 <div className="nav-games-dropdown" role="menu">
                   {GAMES_MENU.children.map((ch) => (
-                    <button
+                    <a
                       key={ch.path}
-                      type="button"
                       role="menuitem"
+                      href={hrefFor(ch.path)}
                       className={`nav-games-dropdown-link${location.pathname === ch.path ? ' nav-games-dropdown-link-active' : ''}`}
-                      onClick={() => goTo(ch.path)}
+                      onClick={() => setGamesOpen(false)}
                     >
                       {ch.label}
                       {ch.path === '/Challenges' && renderChallengeBadge(true)}
                       {ch.path === '/TeamLobby' && renderTeamBadge(true)}
-                    </button>
+                    </a>
                   ))}
                 </div>
               )}
@@ -228,7 +245,7 @@ function Navbar({ id }) {
         })}
       </div>
 
-      <div className="navbar-right">
+      <div className="app-top-nav-right">
         <button type="button" className="nav-translator-btn" onClick={toggleTranslator}>
           Translator
         </button>

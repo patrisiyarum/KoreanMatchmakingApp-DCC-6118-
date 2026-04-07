@@ -1,12 +1,15 @@
-.navbar,
-.navbar *,
-.navbar .nav-link,
-.navbar .dropdown-link,
-.navbar .nav-translator-btn {
+/* Class names are prefixed (app-top-nav, top-nav-btn) so Bootstrap’s .navbar / .nav-link
+   never override or break this bar — those Bootstrap classes were likely blocking Games clicks. */
+
+.app-top-nav,
+.app-top-nav *,
+.app-top-nav .top-nav-btn,
+.app-top-nav .dropdown-link,
+.app-top-nav .nav-translator-btn {
   font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
-.navbar {
+.app-top-nav {
   width: 100%;
   background: var(--dl-white);
   display: flex;
@@ -16,15 +19,17 @@
   box-sizing: border-box;
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 10050;
   box-shadow: 0 2px 0 0 var(--dl-gray-light);
   gap: 8px;
   flex-wrap: nowrap;
   flex-shrink: 0;
   overflow: visible;
+  pointer-events: auto;
+  isolation: isolate;
 }
 
-.navbar-links {
+.app-top-nav-links {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -39,16 +44,19 @@
   scrollbar-width: thin;
 }
 
-.navbar-links::-webkit-scrollbar {
+.app-top-nav-links::-webkit-scrollbar {
   height: 6px;
 }
 
-.navbar-links::-webkit-scrollbar-thumb {
+.app-top-nav-links::-webkit-scrollbar-thumb {
   background: rgba(99, 68, 166, 0.35);
   border-radius: 3px;
 }
 
-.navbar .nav-link {
+/* Buttons and plain links share one look (avoid global `button` / Bootstrap `.nav-link` conflicts) */
+.app-top-nav .top-nav-btn {
+  appearance: none;
+  -webkit-appearance: none;
   background: none;
   border: none;
   color: var(--dl-dark);
@@ -61,22 +69,35 @@
   flex-shrink: 0;
   box-shadow: none;
   transition: background 0.2s, color 0.2s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  line-height: 1.2;
+  margin: 0;
+  width: auto;
 }
 
-.nav-link:hover {
+.app-top-nav a.top-nav-btn {
+  color: var(--dl-dark);
+}
+
+.app-top-nav .top-nav-btn:hover {
   background: var(--dl-gray-bg);
   color: var(--dl-primary);
   box-shadow: none;
+  transform: none;
 }
 
-.nav-link.active {
+.app-top-nav .top-nav-btn.top-nav-btn--active {
   background: var(--dl-primary);
   color: var(--dl-white);
   font-weight: 800;
 }
 
-.nav-link {
-  position: relative;
+.app-top-nav .top-nav-btn.top-nav-btn--active:hover {
+  color: var(--dl-white);
+  background: var(--dl-primary-dark);
 }
 
 .nav-games-wrap {
@@ -84,7 +105,7 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  z-index: 10050;
+  z-index: 10060;
 }
 
 .nav-games-split {
@@ -94,15 +115,18 @@
   overflow: visible;
 }
 
-.nav-games-split .nav-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+.nav-games-split .top-nav-btn {
   border-radius: 0;
+  gap: 4px;
 }
 
-.nav-games-split > .nav-link:first-child {
+.nav-games-split > .top-nav-btn:first-child {
   padding-right: 10px;
+  border-radius: var(--dl-radius-sm) 0 0 var(--dl-radius-sm);
+}
+
+.nav-games-split > .nav-games-caret-btn {
+  border-radius: 0 var(--dl-radius-sm) var(--dl-radius-sm) 0;
 }
 
 .nav-games-caret-btn {
@@ -128,7 +152,7 @@
   border-radius: var(--dl-radius);
   border: 3px solid var(--dl-gray-light);
   padding: 6px 0;
-  z-index: 10060;
+  z-index: 10070;
   display: flex;
   flex-direction: column;
 }
@@ -149,6 +173,9 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
+  text-decoration: none;
+  box-sizing: border-box;
+  margin: 0;
 }
 
 .nav-games-dropdown-link:hover {
@@ -161,7 +188,6 @@
   background: rgba(99, 68, 166, 0.08);
 }
 
-/* Challenge notification banners */
 .nav-challenge-notification {
   display: flex;
   align-items: center;
@@ -222,7 +248,7 @@
   background: var(--dl-primary);
 }
 
-.navbar-right {
+.app-top-nav-right {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -231,7 +257,7 @@
   padding-right: 8px;
 }
 
-.navbar .nav-translator-btn {
+.app-top-nav .nav-translator-btn {
   background: var(--dl-blue);
   color: var(--dl-white);
   border: none;
@@ -244,14 +270,15 @@
   transition: transform 0.15s, box-shadow 0.15s;
   white-space: nowrap;
   flex-shrink: 0;
+  width: auto;
 }
 
-.navbar .nav-translator-btn:hover {
+.app-top-nav .nav-translator-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 0 0 var(--dl-blue-dark);
 }
 
-.navbar .nav-translator-btn:active {
+.app-top-nav .nav-translator-btn:active {
   transform: translateY(2px);
   box-shadow: 0 2px 0 0 var(--dl-blue-dark);
 }

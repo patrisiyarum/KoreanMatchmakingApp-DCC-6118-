@@ -13,9 +13,11 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+// Prefer src/public first (Plesk document root is often GG/Backend/src/public).
+// Backend/public is a legacy fallback so uploads to src/public are not shadowed.
 const indexCandidates = [
-    path.join(__dirname, "../../public/index.html"),
     path.join(__dirname, "../public/index.html"),
+    path.join(__dirname, "../../public/index.html"),
 ];
 
 // import db from '../models/index';

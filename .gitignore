@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+GG/node_modules/
+GG/Backend/node_modules/
+GG/Frontend/node_modules/
+GG/socket/node_modules/
+GG/JIC-3200-LinguaLink/node_modules/
+
+# Environment and secrets (do not commit)
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+
+# Build output
+GG/Frontend/build/
+dist/
+*.log
+npm-debug.log*
+
+# Uploads and local data
+GG/Backend/src/uploads/
+
+# OS and IDE
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# deploy/

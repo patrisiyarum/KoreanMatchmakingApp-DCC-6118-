@@ -1,0 +1,226 @@
+.fl-page {
+  min-height: 100vh;
+  background: var(--dl-page-bg);
+  display: flex;
+  flex-direction: column;
+  font-family: var(--dl-font);
+}
+
+.fl-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px 60px;
+}
+
+.fl-card {
+  width: 100%;
+  max-width: 560px;
+  background: var(--dl-white);
+  border-radius: var(--dl-radius-lg);
+  padding: 28px;
+  border: 3px solid var(--dl-gray-light);
+  box-shadow: 0 4px 0 0 var(--dl-gray-light);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.fl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 12px 0;
+  border-bottom: 1px solid #f0edf8;
+}
+
+.fl-title {
+  font-family: var(--dl-font);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--dl-dark);
+  margin: 0;
+}
+
+.fl-find-btn {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--dl-primary);
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: var(--dl-radius-sm);
+  font-family: var(--dl-font);
+  transition: color 0.2s, background 0.2s;
+}
+
+.fl-find-btn:hover {
+  color: var(--dl-primary-dark);
+  background: rgba(99, 68, 166, 0.1);
+}
+
+.fl-find-btn:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.fl-section {
+  padding: 0;
+}
+
+.fl-section-title {
+  margin: 10px 0 8px 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: #364659;
+  text-transform: uppercase;
+}
+
+.fl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.fl-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--dl-gray-bg);
+  border: 3px solid var(--dl-gray-light);
+  border-radius: var(--dl-radius);
+  min-height: 64px;
+}
+
+.fl-row:hover {
+  border-color: var(--dl-primary);
+}
+
+.fl-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--dl-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--dl-font);
+  font-size: 20px;
+  font-weight: 800;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.fl-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fl-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.fl-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #364659;
+}
+
+/* Following button */
+.fl-btn-following {
+  background: var(--dl-white);
+  color: var(--dl-dark);
+  border: 3px solid var(--dl-gray);
+  font-size: 15px;
+  font-weight: 800;
+  padding: 8px 20px;
+  border-radius: var(--dl-radius);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.fl-btn-following:hover {
+  border-color: var(--dl-primary);
+  color: var(--dl-primary-dark);
+}
+
+.fl-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.fl-btn-accept {
+  background: var(--dl-green);
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 8px 18px;
+  border-radius: var(--dl-radius);
+  cursor: pointer;
+  box-shadow: 0 4px 0 0 var(--dl-green-dark);
+}
+
+.fl-btn-accept:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 0 var(--dl-green-dark);
+}
+
+.fl-btn-decline {
+  background: var(--dl-white);
+  color: var(--dl-dark);
+  border: 3px solid var(--dl-gray);
+  font-size: 14px;
+  font-weight: 800;
+  padding: 8px 18px;
+  border-radius: var(--dl-radius);
+  cursor: pointer;
+}
+
+.fl-btn-decline:hover {
+  border-color: var(--dl-red);
+  color: var(--dl-red);
+}
+
+.fl-pending {
+  font-size: 13px;
+  color: #888;
+  font-weight: 500;
+}
+
+.fl-empty {
+  text-align: center;
+  color: rgba(54, 70, 89, 0.6);
+  font-size: 13px;
+  padding: 24px 0;
+  margin: 0;
+}
+
+.fl-back-btn {
+  background: var(--dl-white);
+  color: var(--dl-dark);
+  border: 3px solid var(--dl-gray);
+  border-radius: var(--dl-radius);
+  padding: 12px 28px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: var(--dl-font);
+  align-self: center;
+  transition: all 0.15s;
+}
+
+.fl-back-btn:hover {
+  border-color: var(--dl-primary);
+  color: var(--dl-primary-dark);
+}

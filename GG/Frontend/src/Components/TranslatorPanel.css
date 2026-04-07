@@ -1,0 +1,221 @@
+.translator-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 9998;
+  animation: translator-fade-in 0.2s ease;
+}
+
+.translator-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100%;
+  max-width: 380px;
+  height: 100vh;
+  background: #fff;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.12);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  animation: translator-slide-in 0.25s ease;
+  font-family: var(--dl-font);
+}
+
+@keyframes translator-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0.9;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes translator-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.translator-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #ede9fe;
+  flex-shrink: 0;
+}
+
+.translator-panel-title {
+  font-family: var(--dl-font);
+  font-size: 18px;
+  color: #364659;
+  margin: 0;
+}
+
+.translator-panel-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--dl-primary);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.translator-panel-close:hover {
+  background: rgba(99, 68, 166, 0.12);
+}
+
+.translator-panel-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.translator-panel-direction {
+  display: flex;
+  gap: 8px;
+}
+
+.translator-panel-dir-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid var(--dl-gray-light);
+  background: #fff;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--dl-gray-dark);
+  cursor: pointer;
+  font-family: var(--dl-font);
+  transition: all 0.2s;
+}
+
+.translator-panel-dir-btn:hover {
+  border-color: var(--dl-primary);
+  color: var(--dl-primary);
+}
+
+.translator-panel-dir-btn.active {
+  background: var(--dl-primary);
+  border-color: var(--dl-primary);
+  color: #fff;
+}
+
+.translator-panel-swap {
+  align-self: center;
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--dl-gray-light);
+  background: #fff;
+  border-radius: 50%;
+  font-size: 18px;
+  color: var(--dl-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: -4px 0;
+  transition: all 0.2s;
+}
+
+.translator-panel-swap:hover {
+  background: rgba(99, 68, 166, 0.1);
+  border-color: var(--dl-primary);
+}
+
+.translator-panel-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.translator-panel-label {
+  font-size: 12px;
+  font-weight: bold;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.translator-panel-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #d4d4d8;
+  background: #faf8ff;
+  color: #364659;
+  resize: none;
+  font-size: 14px;
+  font-family: var(--dl-font);
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+.translator-panel-input:focus {
+  outline: none;
+  border-color: var(--dl-primary);
+  box-shadow: 0 0 0 4px rgba(99, 68, 166, 0.2);
+}
+
+.translator-panel-input::placeholder {
+  color: #aaa;
+}
+
+.translator-panel-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.translator-panel-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: var(--dl-font);
+  transition: box-shadow 0.2s, background 0.2s;
+}
+
+.translator-panel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.translator-panel-btn-primary {
+  background: var(--dl-primary);
+  color: #fff;
+  border: none;
+}
+
+.translator-panel-btn-primary:hover:not(:disabled) {
+  box-shadow: 0 4px 0 0 var(--dl-primary-dark);
+}
+
+.translator-panel-btn-secondary {
+  background: var(--dl-white);
+  color: var(--dl-dark);
+  border: 3px solid var(--dl-gray);
+}
+
+.translator-panel-btn-secondary:hover {
+  border-color: var(--dl-primary);
+  color: var(--dl-primary-dark);
+}

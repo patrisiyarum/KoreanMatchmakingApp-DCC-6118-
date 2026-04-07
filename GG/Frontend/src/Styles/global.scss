@@ -1,0 +1,158 @@
+// Import Google Fonts - Duolingo-style: Nunito (friendly, rounded)
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=DM+Serif+Display&family=HK+Sentiments&display=swap');
+
+// Design tokens (purple primary - original app color)
+:root {
+  --dl-primary: #6344A6;
+  --dl-primary-dark: #5236a0;
+  --dl-primary-light: #7c5cbf;
+  --dl-green: #58CC02;
+  --dl-green-dark: #46A302;
+  --dl-blue: #1CB0F6;
+  --dl-blue-dark: #1899D6;
+  --dl-orange: #FF9600;
+  --dl-red: #FF4B4B;
+  --dl-red-dark: #E63939;
+  --dl-white: #FFFFFF;
+  --dl-gray-bg: #F7F7F7;
+  --dl-gray-light: #E5E5E5;
+  --dl-gray: #AAAAAA;
+  --dl-gray-dark: #777777;
+  --dl-dark: #3C3C3C;
+  --dl-radius: 16px;
+  --dl-radius-sm: 12px;
+  --dl-radius-lg: 24px;
+  --dl-radius-xl: 28px;
+  --dl-shadow: 0 4px 0 0 rgba(0,0,0,0.1);
+  --dl-shadow-hover: 0 6px 0 0 rgba(0,0,0,0.12);
+  --dl-font: 'Nunito', 'HK Sentiments', -apple-system, sans-serif;
+  --dl-page-bg: linear-gradient(135deg, rgba(34, 193, 195, 1) 0%, rgba(253, 187, 45, 1) 100%);
+}
+
+// Reset and Base Styles
+$dark-color: #3C3C3C;
+
+body {
+  margin: 0;
+  font-family: var(--dl-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: $dark-color;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--dl-font);
+  margin: 0;
+  font-weight: 800;
+  color: $dark-color;
+}
+
+p, span, form, label, input, button {
+  font-family: var(--dl-font);
+}
+
+button {
+  background-color: var(--dl-primary);
+  width: auto;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 800;
+  border-radius: var(--dl-radius);
+  border: none;
+  color: white;
+  cursor: pointer;
+  box-shadow: var(--dl-shadow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    background-color: var(--dl-primary-dark);
+    box-shadow: var(--dl-shadow-hover);
+    transform: translateY(-2px);
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(99, 68, 166, 0.35);
+  }
+
+  &:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 0 rgba(0,0,0,0.15);
+  }
+}
+
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  padding: 14px 18px;
+  font-size: 16px;
+  border: 3px solid var(--dl-gray-light);
+  border-radius: var(--dl-radius-sm);
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:focus {
+    border-color: var(--dl-primary);
+    box-shadow: 0 0 0 4px rgba(99, 68, 166, 0.2);
+    outline: none;
+  }
+
+  &::placeholder {
+    color: var(--dl-gray);
+  }
+}
+
+/* Shared page background - use on main page wrappers for consistency */
+.dl-page {
+  min-height: 100vh;
+  background: var(--dl-page-bg);
+  font-family: var(--dl-font);
+}
+
+/* Shared card style - white cards on gradient pages */
+.dl-card {
+  background: var(--dl-white);
+  border-radius: var(--dl-radius-lg);
+  border: 3px solid var(--dl-gray-light);
+  box-shadow: 0 4px 0 0 var(--dl-gray-light);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+/* Simple back-to-dashboard link - small, subtle */
+.back-to-dashboard {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dl-gray-dark);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--dl-font);
+  text-decoration: none;
+  transition: color 0.2s, background 0.2s;
+  box-shadow: none;
+}
+
+.back-to-dashboard:hover {
+  color: var(--dl-primary);
+  background: rgba(99, 68, 166, 0.08);
+  transform: none;
+  box-shadow: none;
+}
+
+.back-to-dashboard::before {
+  content: '←';
+  font-size: 16px;
+}
+
+
+

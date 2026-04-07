@@ -1,0 +1,95 @@
+/* ensure no global green background leaks in */
+.App { background-color: #ffffff !important; }
+
+.post-videocall-wrapper {
+  min-height: 100vh;
+  background: #ffffff;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 48px;
+  padding-bottom: 40px;
+}
+
+.post-card {
+  width: 100%;
+  max-width: 700px;
+  background: #5b3caf;
+  color: #fff;
+  border-radius: 18px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  padding: 28px 28px 22px;
+}
+
+.post-card h2 {
+  text-align: center;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+
+.post-card label,
+.post-card p {
+  text-align: center;
+}
+
+.post-card input[type="text"],
+.post-card textarea,
+.post-card select {
+  width: 100%;
+  background: #fff;
+  color: #111;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.stars {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.rating-label {
+  text-align: center;
+  color: #f3efff;
+  margin-top: 12px;
+}
+
+/* centered, tight, equal buttons */
+.buttons-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.buttons-container .btn {
+  width: 140px;
+  height: 40px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 15px;
+  border: none;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+.btn-back { background: #6c757d; color: #fff; }
+.btn-submit { background: #0d6efd; color: #fff; }
+.btn-add-friend { background: #0d6efd; color: #fff; }
+
+.btn-back:hover { background: #5f6b73; }
+.btn-submit:hover,
+.btn-add-friend:hover { background: #0b5ed7; }
+
+@media (max-width: 600px) {
+  .buttons-container { flex-direction: column; gap: 10px; }
+  .buttons-container .btn { width: 100%; }
+}

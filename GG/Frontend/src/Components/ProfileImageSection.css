@@ -1,0 +1,13 @@
+.profile-image-section {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.profile-image-section .image-upload-wrapper {
+  align-items: center;
+}
+
+.profile-image-section .image-upload-preview-row {
+  justify-content: center;
+}

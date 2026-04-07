@@ -137,8 +137,11 @@ export async function partnerMatching(args) {
       }
       const uc = user.commitment_level;
       const mc = match.commitment_level;
-      if (uc != null && mc != null) {
-        score += Math.max(0, 6 - Math.abs(Number(uc) - Number(mc)));
+      if (uc != null && uc !== '' && mc != null && mc !== '') {
+        const u = Number(uc);
+        const m = Number(mc);
+        if (u === m) score += 45;
+        else score += Math.max(0, 12 - Math.abs(u - m) * 2);
       }
 
       matchesWithScores.push({
@@ -176,6 +179,9 @@ export async function partnerMatching(args) {
         name: `${userAccount.firstName} ${userAccount.lastName}`,
         nativeLanguage: user.native_language,
         targetLanguage: user.target_language,
+        commitmentLevel: user.commitment_level,
+        learningGoal: user.learning_goal,
+        communicationStyle: user.communication_style,
       },
       matches: topMatches,
       totalMatches: matchesWithScores.length,

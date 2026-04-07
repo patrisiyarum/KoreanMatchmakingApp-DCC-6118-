@@ -12,8 +12,23 @@ const handleRegisterApi= (firstName, lastName, Email, userPassword) => {
     return axios.post('/Register', {firstName: firstName, lastName: lastName, email: Email, password: userPassword}) ;
 }
 
-const handleProfileCreationAPI = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility) => {
-    return axios.post('/CreateProfile', {id: id, native_language: native_language, target_language: target_language, target_language_proficiency: target_language_proficiency, age: age, gender: gender, profession: profession, mbti: mbti, zodiac: zodiac, default_time_zone: default_time_zone, visibility: visibility}) ;
+const handleProfileCreationAPI = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, learning_goal, communication_style, commitment_level) => {
+    return axios.post('/CreateProfile', {
+        id,
+        native_language,
+        target_language,
+        target_language_proficiency,
+        age,
+        gender,
+        profession,
+        mbti,
+        zodiac,
+        default_time_zone,
+        visibility,
+        learning_goal,
+        communication_style,
+        commitment_level,
+    });
 }
 
 const handleProfileUpdateAPI = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, learning_goal, communication_style, commitment_level) => {

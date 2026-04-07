@@ -27,6 +27,9 @@ function CreateProfile() {
   const [zodiac, setZodiac] = useState('');
   const [defaultTimeZone, setDefaultTimeZone] = useState('');
   const [visibility, setVisibility] = useState('');
+  const [learningGoal, setLearningGoal] = useState('');
+  const [communicationStyle, setCommunicationStyle] = useState('');
+  const [commitmentLevel, setCommitmentLevel] = useState(3);
 
   // Interests
   const [allInterests, setAllInterests] = useState([]);
@@ -132,6 +135,23 @@ function CreateProfile() {
     { value: "Hide", label: "Hide" },
   ];
 
+  const LearningGoalOptions = [
+    { value: "Conversational fluency", label: "Conversational fluency" },
+    { value: "Business/Professional", label: "Business/Professional" },
+    { value: "Travel preparation", label: "Travel preparation" },
+    { value: "Academic study", label: "Academic study" },
+    { value: "Cultural appreciation", label: "Cultural appreciation" },
+    { value: "K-pop/K-drama fan", label: "K-pop/K-drama fan" },
+  ];
+
+  const CommunicationStyleOptions = [
+    { value: "Text-heavy", label: "Text-heavy" },
+    { value: "Voice/Video preferred", label: "Voice/Video preferred" },
+    { value: "Mixed", label: "Mixed" },
+    { value: "Casual/Fun", label: "Casual/Fun" },
+    { value: "Structured/Formal", label: "Structured/Formal" },
+  ];
+
   // Availability options builder
   const generateHourlySlots = (day) => {
     const slots = [];
@@ -202,7 +222,7 @@ function CreateProfile() {
     { title: 'Basics', subtitle: 'Languages + your current level' },
     { title: 'About you', subtitle: 'A couple quick details' },
     { title: 'Schedule', subtitle: 'Timezone + availability' },
-    { title: 'Optional', subtitle: 'Extras that help matching' },
+    { title: 'Learning style', subtitle: 'Goals, communication, and commitment' },
   ];
 
   const stepRequiredFields = {
@@ -255,7 +275,10 @@ function CreateProfile() {
         mbti,
         zodiac,
         defaultTimeZone,
-        visibility
+        visibility,
+        learningGoal || undefined,
+        communicationStyle || undefined,
+        commitmentLevel
       );
 
       const interestIds = selectedInterests.map(i => i.value);
@@ -403,11 +426,43 @@ function CreateProfile() {
             {step === 3 && (
               <div className="up-step">
                 <div className="up-step-grid">
+                  <div className="up-group">
+                    <label className="up-label">Learning goal</label>
+                    <Select
+                      styles={selectStyles}
+                      options={LearningGoalOptions}
+                      onChange={(s) => setLearningGoal(s?.value ?? '')}
+                      value={pickSingle(LearningGoalOptions, learningGoal)}
+                      placeholder="Optional — helps find aligned partners"
+                    />
+                  </div>
+                  <div className="up-group">
+                    <label className="up-label">Communication style</label>
+                    <Select
+                      styles={selectStyles}
+                      options={CommunicationStyleOptions}
+                      onChange={(s) => setCommunicationStyle(s?.value ?? '')}
+                      value={pickSingle(CommunicationStyleOptions, communicationStyle)}
+                      placeholder="Optional"
+                    />
+                  </div>
                   <div className="up-group" style={{ gridColumn: '1 / -1' }}>
-                    <label className="up-label">You’re all set</label>
-                    <div className="up-hint">
-                      You can always edit your profile later. Ready to start matching and playing games?
+                    <label className="up-label">Commitment level *</label>
+                    <div className="up-stars">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <span
+                          key={n}
+                          role="button"
+                          tabIndex={0}
+                          className={n <= commitmentLevel ? 'up-star up-star-active' : 'up-star up-star-inactive'}
+                          onClick={() => setCommitmentLevel(n)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCommitmentLevel(n); } }}
+                        >
+                          &#9733;
+                        </span>
+                      ))}
                     </div>
+                    <div className="up-hint">1 = very casual, 5 = very committed. Partners with the same level rank higher for you.</div>
                   </div>
                 </div>
               </div>

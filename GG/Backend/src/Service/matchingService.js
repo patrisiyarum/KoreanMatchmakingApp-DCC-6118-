@@ -39,8 +39,11 @@ let checkFriends = (user_native, user_target, user_id) => {
                 }
                 const uc = user.commitment_level;
                 const pc = profile.commitment_level;
-                if (uc != null && pc != null) {
-                    score += Math.max(0, 5 - Math.abs(Number(uc) - Number(pc)));
+                if (uc != null && uc !== '' && pc != null && pc !== '') {
+                    const u = Number(uc);
+                    const p = Number(pc);
+                    if (u === p) score += 35;
+                    else score += Math.max(0, 10 - Math.abs(u - p) * 2);
                 }
                 scores.push(score);
                 /* console.log("Name: ", account.firstName, " ", account.lastName)

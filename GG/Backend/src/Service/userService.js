@@ -1,5 +1,6 @@
 import db, { sequelize } from '../models/index.js';
 import bcrypt from 'bcryptjs';
+import { normalizeCommitmentLevel } from './profileValidation.js';
 
 let user_id = null
 const errorMessage = "Invalid username or password!";
@@ -126,11 +127,10 @@ let handleProfileCreation = (id, native_language, target_language, target_langua
             console.log("id passed to user service is: ", id)
             const lg = learning_goal != null && String(learning_goal).trim() !== '' ? String(learning_goal).trim() : null;
             const cs = communication_style != null && String(communication_style).trim() !== '' ? String(communication_style).trim() : null;
-            let cl = null;
-            if (commitment_level !== undefined && commitment_level !== null && commitment_level !== '') {
-                const n = parseInt(String(commitment_level), 10);
-                if (!Number.isNaN(n)) cl = n;
-            }
+            const clRaw =
+                commitment_level !== undefined && commitment_level !== null && commitment_level !== ''
+                    ? commitment_level
+                    : null;
             const profileFields = {
                 id: id,
                 native_language: native_language,
@@ -143,10 +143,10 @@ let handleProfileCreation = (id, native_language, target_language, target_langua
                 zodiac: zodiac,
                 default_time_zone: default_time_zone,
                 visibility: visibility,
+                commitment_level: normalizeCommitmentLevel(clRaw, 3),
             };
             if (lg != null) profileFields.learning_goal = lg;
             if (cs != null) profileFields.communication_style = cs;
-            if (cl != null) profileFields.commitment_level = cl;
             let userProfile = await db.UserProfile.build(profileFields);
             if(save) {
                 await userProfile.save()
@@ -186,6 +186,11 @@ let handleProfileUpdate = (id, native_language, target_language, target_language
                 return incoming;
             };
 
+            const nextCommitment =
+                commitment_level === undefined || commitment_level === null || commitment_level === ''
+                    ? keepIfEmptyNumber(commitment_level, existing?.commitment_level)
+                    : normalizeCommitmentLevel(commitment_level, existing?.commitment_level ?? 3);
+
             await db.UserProfile.upsert({
                 id: id,
                 native_language: keepIfEmpty(native_language, existing?.native_language),
@@ -200,7 +205,9 @@ let handleProfileUpdate = (id, native_language, target_language, target_language
                 visibility: keepIfEmpty(visibility, existing?.visibility),
                 learning_goal: trimOrKeep(learning_goal, existing?.learning_goal),
                 communication_style: trimOrKeep(communication_style, existing?.communication_style),
-                commitment_level: keepIfEmptyNumber(commitment_level, existing?.commitment_level),
+                commitment_level:
+                    nextCommitment ??
+                    normalizeCommitmentLevel(null, 3),
             });
  
             userData.errCode = 0;

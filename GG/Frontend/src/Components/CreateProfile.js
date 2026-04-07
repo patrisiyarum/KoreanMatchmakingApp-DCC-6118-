@@ -260,8 +260,23 @@ function CreateProfile() {
       return;
     }
 
+    if (!learningGoal || !communicationStyle) {
+      setError(true);
+      setErrMsg('Please choose a learning goal and a communication style.');
+      setStep(3);
+      return;
+    }
+
+    if (commitmentLevel == null || commitmentLevel < 1 || commitmentLevel > 5) {
+      setError(true);
+      setErrMsg('Please set your commitment level (1–5).');
+      setStep(3);
+      return;
+    }
+
     setSubmitted(true);
     setError(false);
+    setErrMsg('');
 
     try {
       await handleProfileCreationAPI(
@@ -276,8 +291,8 @@ function CreateProfile() {
         zodiac,
         defaultTimeZone,
         visibility,
-        learningGoal || undefined,
-        communicationStyle || undefined,
+        learningGoal,
+        communicationStyle,
         commitmentLevel
       );
 
@@ -427,23 +442,23 @@ function CreateProfile() {
               <div className="up-step">
                 <div className="up-step-grid">
                   <div className="up-group">
-                    <label className="up-label">Learning goal</label>
+                    <label className="up-label">Learning goal *</label>
                     <Select
                       styles={selectStyles}
                       options={LearningGoalOptions}
                       onChange={(s) => setLearningGoal(s?.value ?? '')}
                       value={pickSingle(LearningGoalOptions, learningGoal)}
-                      placeholder="Optional — helps find aligned partners"
+                      placeholder="Choose one"
                     />
                   </div>
                   <div className="up-group">
-                    <label className="up-label">Communication style</label>
+                    <label className="up-label">Communication style *</label>
                     <Select
                       styles={selectStyles}
                       options={CommunicationStyleOptions}
                       onChange={(s) => setCommunicationStyle(s?.value ?? '')}
                       value={pickSingle(CommunicationStyleOptions, communicationStyle)}
-                      placeholder="Optional"
+                      placeholder="Choose one"
                     />
                   </div>
                   <div className="up-group" style={{ gridColumn: '1 / -1' }}>

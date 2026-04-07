@@ -19,33 +19,55 @@ export function getProfileCustomizationOptions() {
 }
 
 /**
- * Validates learning goal, communication style, and commitment level when provided.
- * Empty strings are treated as "omit" (caller should convert to undefined before upsert).
+ * Validates learning goal, communication style, and commitment level.
+ * @param {object} options - If options.requireAll is true (profile create), all three fields are required.
+ *   Otherwise empty strings mean "omit" on update.
  */
-export function validateProfileCustomizationFields({ learning_goal, communication_style, commitment_level }) {
+export function validateProfileCustomizationFields(
+  { learning_goal, communication_style, commitment_level },
+  options = {}
+) {
   const cfg = loadConfig();
   const errors = [];
+  const requireAll = options.requireAll === true;
 
-  if (learning_goal !== undefined && learning_goal !== null && String(learning_goal).trim() !== '') {
-    const v = String(learning_goal).trim();
-    if (!cfg.learningGoals.includes(v)) {
-      errors.push(`learning_goal must be one of the allowed values`);
+  const lgTrim =
+    learning_goal !== undefined && learning_goal !== null ? String(learning_goal).trim() : '';
+  const csTrim =
+    communication_style !== undefined && communication_style !== null
+      ? String(communication_style).trim()
+      : '';
+
+  if (requireAll) {
+    if (!lgTrim) errors.push('learning_goal is required');
+    if (!csTrim) errors.push('communication_style is required');
+    if (commitment_level === undefined || commitment_level === null || commitment_level === '') {
+      errors.push('commitment_level is required');
     }
   }
 
-  if (communication_style !== undefined && communication_style !== null && String(communication_style).trim() !== '') {
-    const v = String(communication_style).trim();
-    if (!cfg.communicationStyles.includes(v)) {
-      errors.push(`communication_style must be one of the allowed values`);
+  if (lgTrim) {
+    if (!cfg.learningGoals.includes(lgTrim)) {
+      errors.push('learning_goal must be one of the allowed values');
+    }
+  }
+
+  if (csTrim) {
+    if (!cfg.communicationStyles.includes(csTrim)) {
+      errors.push('communication_style must be one of the allowed values');
     }
   }
 
   if (commitment_level !== undefined && commitment_level !== null && commitment_level !== '') {
     const n = typeof commitment_level === 'number' ? commitment_level : parseInt(String(commitment_level), 10);
     if (!Number.isFinite(n) || !Number.isInteger(n)) {
-      errors.push(`commitment_level must be an integer between ${cfg.commitmentLevel.min} and ${cfg.commitmentLevel.max}`);
+      errors.push(
+        `commitment_level must be an integer between ${cfg.commitmentLevel.min} and ${cfg.commitmentLevel.max}`
+      );
     } else if (n < cfg.commitmentLevel.min || n > cfg.commitmentLevel.max) {
-      errors.push(`commitment_level must be between ${cfg.commitmentLevel.min} and ${cfg.commitmentLevel.max}`);
+      errors.push(
+        `commitment_level must be between ${cfg.commitmentLevel.min} and ${cfg.commitmentLevel.max}`
+      );
     }
   }
 

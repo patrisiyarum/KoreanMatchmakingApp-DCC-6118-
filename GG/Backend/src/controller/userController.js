@@ -85,7 +85,10 @@ let handleProfileCreation = async (req, res) => {
         let communication_style = req.body.communication_style;
         let commitment_level = req.body.commitment_level;
         let id = req.body.id;
-        const pv = validateProfileCustomizationFields({ learning_goal, communication_style, commitment_level });
+        const pv = validateProfileCustomizationFields(
+            { learning_goal, communication_style, commitment_level },
+            { requireAll: true }
+        );
         if (!pv.ok) {
             return res.status(400).json({
                 errorCode: 2,

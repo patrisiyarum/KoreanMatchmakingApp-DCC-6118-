@@ -36,6 +36,17 @@ const getProfileByUserId = async (userId) => {
   return rows[0] || null;
 };
 
+/** MySQL / Postgres “column missing” — e.g. migration 15 not applied on server */
+const isMissingColumnDbError = (error) => {
+  if (!error) return false;
+  if (error.code === 'ER_BAD_FIELD_ERROR' || error.errno === 1054) return true;
+  if (error.code === '42703') return true;
+  const msg = String(error.message || '');
+  if (/Unknown column/i.test(msg)) return true;
+  if (/does not exist/i.test(msg) && /column/i.test(msg)) return true;
+  return false;
+};
+
 const getProfileCustomizationOptions = (req, res) => {
   try {
     return res.status(200).json({ message: 'ok', data: loadProfileCustomizationConfig() });
@@ -243,11 +254,47 @@ const getDiscoverUsers = async (req, res) => {
       ${orderClause}
     `;
 
-    const [rows] = await pool.execute(sql, execParams);
-    return res.status(200).json({
-      message: 'ok',
-      data: rows,
-    });
+    try {
+      const [rows] = await pool.execute(sql, execParams);
+      return res.status(200).json({
+        message: 'ok',
+        data: rows,
+      });
+    } catch (execErr) {
+      if (!isMissingColumnDbError(execErr)) throw execErr;
+
+      console.warn(
+        'getDiscoverUsers: using legacy query (profile match columns may be missing). Run migration 15add-profile-customization-fields.',
+        execErr.message
+      );
+
+      const legacyOrder =
+        sort === 'name'
+          ? 'ORDER BY ua.firstName ASC, ua.lastName ASC'
+          : 'ORDER BY ua.firstName ASC, ua.lastName ASC';
+
+      const legacySql = `
+        SELECT
+          ua.id, ua.email, ua.firstName, ua.lastName, ua.createdAt, ua.updatedAt, ua.loggedIn, ua.gameStats, ua.xp, ua.level, ua.profileImage,
+          up.native_language, up.target_language, up.target_language_proficiency, up.age, up.gender, up.profession, up.mbti, up.zodiac, up.visibility,
+          up.default_time_zone, up.rating,
+          NULL AS learning_goal, NULL AS communication_style, NULL AS commitment_level,
+          0 AS matchScore
+        FROM useraccount ua
+        INNER JOIN UserProfile up ON up.id = ua.id
+        INNER JOIN UserProfile rp ON rp.id = ?
+        WHERE ua.id <> ?
+        AND (up.visibility IS NULL OR up.visibility = '' OR up.visibility = 'Show')
+        ${legacyOrder}
+      `;
+      const legacyParams = [requesterId, requesterId];
+      const [legacyRows] = await pool.execute(legacySql, legacyParams);
+      return res.status(200).json({
+        message: 'ok',
+        data: legacyRows,
+        discoverFallback: true,
+      });
+    }
   } catch (error) {
     console.error('Error in getDiscoverUsers:', error);
     return res.status(500).json({

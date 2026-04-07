@@ -437,10 +437,17 @@ const FriendSearch = ({ embedded = false }) => {
     );
   }
   if (error) {
+    const detail =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message ||
+      '';
     return (
       <div className={`fs-page${embedded ? ' fs-page-embedded' : ''}`}>
         {!embedded && <Navbar id={id} />}
-        <p style={{ textAlign: 'center', marginTop: embedded ? 24 : 60, color: '#dc2626' }}>Error loading users.</p>
+        <p style={{ textAlign: 'center', marginTop: embedded ? 24 : 60, color: '#dc2626' }}>
+          Error loading users.{detail ? ` ${detail}` : ''}
+        </p>
       </div>
     );
   }

@@ -8,8 +8,8 @@ import './NavBar.css';
 
 const GAMES_MENU = {
   label: 'Games',
+  /** Shown in the caret dropdown (main “Games” click goes straight to Browse games). */
   children: [
-    { label: 'Browse games', path: '/GameSelection' },
     { label: 'Challenges', path: '/Challenges' },
     { label: 'Teams', path: '/TeamLobby' },
   ],
@@ -47,7 +47,10 @@ const PARENT_ROUTES = {
 function slotToMenuEntries(slot) {
   if (slot.type === 'simple') return [{ kind: 'link', ...slot }];
   if (slot.type === 'games') {
-    return GAMES_MENU.children.map((ch) => ({ kind: 'link', ...ch, fromGamesMenu: true }));
+    return [
+      { kind: 'link', label: 'Browse games', path: '/GameSelection', fromGamesMenu: true },
+      ...GAMES_MENU.children.map((ch) => ({ kind: 'link', ...ch, fromGamesMenu: true })),
+    ];
   }
   return [];
 }
@@ -192,12 +195,24 @@ function Navbar({ id }) {
 
   useEffect(() => {
     if (!menuOpen && !gamesOpen) return;
-    const handleClick = (e) => {
-      if (!e.target.closest('.hamburger-wrapper')) setMenuOpen(false);
-      if (!e.target.closest('.nav-games-wrap')) setGamesOpen(false);
+
+    let onDocMouseDown;
+    const rafId = requestAnimationFrame(() => {
+      onDocMouseDown = (e) => {
+        if (menuOpen && !e.target.closest('.hamburger-wrapper')) {
+          setMenuOpen(false);
+        }
+        if (gamesOpen && !e.target.closest('.nav-games-wrap')) {
+          setGamesOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', onDocMouseDown);
+    });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      if (onDocMouseDown) document.removeEventListener('mousedown', onDocMouseDown);
     };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
   }, [menuOpen, gamesOpen]);
 
   const hiddenSlots = NAV_SLOTS.slice(visibleCount);
@@ -273,23 +288,32 @@ function Navbar({ id }) {
                 className="nav-games-wrap"
                 style={hideStyle}
               >
-                <button
-                  type="button"
-                  className={gamesBtnClass}
-                  aria-expanded={gamesOpen}
-                  aria-haspopup="true"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setGamesOpen((o) => !o);
-                  }}
-                >
-                  {GAMES_MENU.label}
-                  {challengeAttention > 0 && renderChallengeBadge(false)}
-                  {pendingTeamInvites > 0 && renderTeamBadge(false)}
-                  <span className="nav-games-chevron" aria-hidden>
-                    ▾
-                  </span>
-                </button>
+                <div className="nav-games-split">
+                  <button
+                    type="button"
+                    className={gamesBtnClass}
+                    onClick={() => goTo('/GameSelection')}
+                  >
+                    {GAMES_MENU.label}
+                    {challengeAttention > 0 && renderChallengeBadge(false)}
+                    {pendingTeamInvites > 0 && renderTeamBadge(false)}
+                  </button>
+                  <button
+                    type="button"
+                    className={`${gamesBtnClass} nav-games-caret-btn`}
+                    aria-expanded={gamesOpen}
+                    aria-haspopup="true"
+                    aria-label="Open challenges and teams menu"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setGamesOpen((o) => !o);
+                    }}
+                  >
+                    <span className="nav-games-chevron-only" aria-hidden>
+                      ▾
+                    </span>
+                  </button>
+                </div>
                 {gamesOpen && (
                   <div className="nav-games-dropdown" role="menu">
                     {GAMES_MENU.children.map((ch) => (

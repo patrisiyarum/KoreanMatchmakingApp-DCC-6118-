@@ -37,6 +37,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:zip": "npm run build && rm -f build.zip && (cd build && zip -r ../build.zip .)",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

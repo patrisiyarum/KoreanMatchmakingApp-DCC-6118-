@@ -6,75 +6,106 @@ import { handleGetTeamInvitesApi } from '../Services/teamService';
 import { useTranslator } from '../context/TranslatorContext';
 import './NavBar.css';
 
-const NAV_LINKS = [
-  { label: 'Home', path: '/Dashboard' },
-  { label: 'Games', path: '/GameSelection' },
-  { label: 'Friends', path: '/FriendsList' },
-  { label: 'Find Friends', path: '/FriendSearch' },
-  { label: 'Calls', path: '/Videocall' },
-  { label: 'Translator', path: '/Translator' },
-  { label: 'User Report', path: '/UserReport' },
-  { label: 'Challenges', path: '/Challenges' },
-  { label: 'Teams', path: '/TeamLobby' },
-  { label: 'Scheduler', path: '/Scheduler' },
-  { label: 'AI Chat', path: '/Assistant' },
-  { label: 'Transcripts', path: '/TranscriptView' },
-  { label: 'Profile', path: '/UpdateProfile' },
+const GAMES_MENU = {
+  label: 'Games',
+  children: [
+    { label: 'Browse games', path: '/GameSelection' },
+    { label: 'Challenges', path: '/Challenges' },
+    { label: 'Teams', path: '/TeamLobby' },
+  ],
+};
+
+const GAMES_RELATED_PATHS = new Set([
+  '/GameSelection',
+  '/Challenges',
+  '/TeamLobby',
+  '/TeamCreate',
+  '/TeamPage',
+  '/TermMatching',
+  '/GrammarQuiz',
+  '/PronunciationDrill',
+]);
+
+const NAV_SLOTS = [
+  { type: 'simple', label: 'Home', path: '/Dashboard' },
+  { type: 'games' },
+  { type: 'simple', label: 'Friends', path: '/Friends' },
+  { type: 'simple', label: 'Calls', path: '/Videocall' },
+  { type: 'simple', label: 'Translator', path: '/Translator' },
+  { type: 'simple', label: 'Scheduler', path: '/Scheduler' },
+  { type: 'simple', label: 'AI Chat', path: '/Assistant' },
+  { type: 'simple', label: 'Transcripts', path: '/TranscriptView' },
+  { type: 'simple', label: 'Profile', path: '/UpdateProfile' },
 ];
- 
-// Width reserved for hamburger button when it appears
+
 const HAMBURGER_WIDTH = 48;
- 
+
+const PARENT_ROUTES = {
+  '/TeamLobby': ['/TeamPage', '/TeamCreate'],
+};
+
+function slotToMenuEntries(slot) {
+  if (slot.type === 'simple') return [{ kind: 'link', ...slot }];
+  if (slot.type === 'games') {
+    return GAMES_MENU.children.map((ch) => ({ kind: 'link', ...ch, fromGamesMenu: true }));
+  }
+  return [];
+}
+
 function Navbar({ id }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { toggleTranslator } = useTranslator();
- 
-  const [menuOpen, setMenuOpen]         = useState(false);
-  const [visibleCount, setVisibleCount] = useState(NAV_LINKS.length);
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [gamesOpen, setGamesOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(NAV_SLOTS.length);
   const [pendingChallenges, setPendingChallenges] = useState(0);
   const [yourTurnChallenges, setYourTurnChallenges] = useState(0);
   const [pendingTeamInvites, setPendingTeamInvites] = useState(0);
 
-  const navbarRef  = useRef(null);
-  const rightRef   = useRef(null);
+  const navbarRef = useRef(null);
+  const rightRef = useRef(null);
   const buttonRefs = useRef([]);
- 
+
   const goTo = (pathname) => {
     setMenuOpen(false);
+    setGamesOpen(false);
     navigate({ pathname, search: createSearchParams({ id }).toString() });
   };
 
-    const PARENT_ROUTES = {
-    '/TeamLobby': ['/TeamPage', '/TeamCreate'],
+  const isGamesPathActive = () => {
+    if (GAMES_RELATED_PATHS.has(location.pathname)) return true;
+    return false;
   };
- 
-  const isActive = (path) => {
+
+  const isSimpleActive = (path) => {
     if (location.pathname === path) return 'nav-link active';
     const children = PARENT_ROUTES[path] || [];
     if (children.includes(location.pathname)) return 'nav-link active';
     return 'nav-link';
   };
- 
+
+  useEffect(() => {
+    setGamesOpen(false);
+  }, [location.pathname]);
+
   const calculate = useCallback(() => {
     const navbar = navbarRef.current;
-    const right  = rightRef.current;
+    const right = rightRef.current;
     if (!navbar || !right) return;
- 
-    // Measure actual space the links container has available
-    // by using the navbar's inner width minus the right panel's full width
-    const navbarInner = navbar.getBoundingClientRect().width; 
-    const rightWidth  = right.getBoundingClientRect().width;  
- 
+
+    const navbarInner = navbar.getBoundingClientRect().width;
+    const rightWidth = right.getBoundingClientRect().width;
+
     let available = navbarInner - rightWidth;
- 
-    // First pass: do all buttons fit without a hamburger?
+
     let total = 0;
     let count = 0;
     for (let i = 0; i < buttonRefs.current.length; i++) {
       const btn = buttonRefs.current[i];
       if (!btn) continue;
-      const w = btn.getBoundingClientRect().width + 2; // +2 for gap between buttons
+      const w = btn.getBoundingClientRect().width + 2;
       if (total + w <= available) {
         total += w;
         count++;
@@ -82,9 +113,8 @@ function Navbar({ id }) {
         break;
       }
     }
- 
-    // Second pass: if not all fit, reserve hamburger space and recalculate
-    if (count < NAV_LINKS.length) {
+
+    if (count < NAV_SLOTS.length) {
       available -= HAMBURGER_WIDTH + 8;
       total = 0;
       count = 0;
@@ -100,19 +130,20 @@ function Navbar({ id }) {
         }
       }
     }
- 
+
     setVisibleCount(count);
   }, []);
- 
+
   useEffect(() => {
-    // Wait a frame so buttons are rendered and have widths
     const frame = requestAnimationFrame(calculate);
     const ro = new ResizeObserver(calculate);
     if (navbarRef.current) ro.observe(navbarRef.current);
-    return () => { cancelAnimationFrame(frame); ro.disconnect(); };
+    return () => {
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+    };
   }, [calculate]);
 
-  // Fetch pending + your-turn challenges for notification badges
   useEffect(() => {
     if (!id) return;
     const fetchChallenges = async () => {
@@ -143,7 +174,6 @@ function Navbar({ id }) {
     return () => clearInterval(interval);
   }, [id]);
 
-  // Fetch pending team invites (only when user is not in a team - we show badge anyway)
   useEffect(() => {
     if (!id) return;
     const fetchTeamInvites = async () => {
@@ -159,96 +189,169 @@ function Navbar({ id }) {
     const interval = setInterval(fetchTeamInvites, 15000);
     return () => clearInterval(interval);
   }, [id]);
- 
-  // Close dropdown on outside click
+
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!menuOpen && !gamesOpen) return;
     const handleClick = (e) => {
       if (!e.target.closest('.hamburger-wrapper')) setMenuOpen(false);
+      if (!e.target.closest('.nav-games-wrap')) setGamesOpen(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [menuOpen]);
- 
-  const hiddenLinks = NAV_LINKS.slice(visibleCount);
- 
+  }, [menuOpen, gamesOpen]);
+
+  const hiddenSlots = NAV_SLOTS.slice(visibleCount);
+  const hiddenEntries = hiddenSlots.flatMap(slotToMenuEntries);
+
+  const challengeAttention = pendingChallenges + yourTurnChallenges;
+
+  const renderChallengeBadge = (dropdownVariant) => {
+    if (challengeAttention <= 0) return null;
+    const cls = dropdownVariant ? 'nav-badge nav-badge-dropdown' : 'nav-badge';
+    return (
+      <span
+        className={cls}
+        aria-label={`${challengeAttention} challenge${challengeAttention !== 1 ? 's' : ''} need attention`}
+      >
+        {challengeAttention}
+      </span>
+    );
+  };
+
+  const renderTeamBadge = (dropdownVariant) => {
+    if (pendingTeamInvites <= 0) return null;
+    const cls = dropdownVariant
+      ? 'nav-badge nav-badge-dropdown nav-badge-team'
+      : 'nav-badge nav-badge-team';
+    return (
+      <span
+        className={cls}
+        aria-label={`${pendingTeamInvites} team invite${pendingTeamInvites !== 1 ? 's' : ''}`}
+      >
+        {pendingTeamInvites}
+      </span>
+    );
+  };
+
   return (
     <>
-    <nav className="navbar" ref={navbarRef}>
-      <div className="navbar-links">
-        {NAV_LINKS.map((link, i) => (
-          <button
-            key={link.path}
-            ref={(el) => (buttonRefs.current[i] = el)}
-            className={isActive(link.path)}
-            onClick={() => goTo(link.path)}
-            style={{
-              visibility: i < visibleCount ? 'visible' : 'hidden',
-              pointerEvents: i < visibleCount ? 'auto' : 'none',
-              // Keep hidden buttons in DOM so we can measure their widths
-              position: i < visibleCount ? 'relative' : 'absolute',
-              opacity: i < visibleCount ? 1 : 0,
-            }}
-          >
-            {link.label}
-            {link.path === '/Challenges' && (pendingChallenges > 0 || yourTurnChallenges > 0) && (
-              <span className="nav-badge" aria-label={`${pendingChallenges + yourTurnChallenges} challenge${pendingChallenges + yourTurnChallenges !== 1 ? 's' : ''} need attention`}>
-                {pendingChallenges + yourTurnChallenges}
-              </span>
-            )}
-            {link.path === '/TeamLobby' && pendingTeamInvites > 0 && (
-              <span className="nav-badge nav-badge-team" aria-label={`${pendingTeamInvites} team invite${pendingTeamInvites !== 1 ? 's' : ''}`}>
-                {pendingTeamInvites}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      <nav className="navbar" ref={navbarRef}>
+        <div className="navbar-links">
+          {NAV_SLOTS.map((slot, i) => {
+            const visible = i < visibleCount;
+            const hideStyle = {
+              visibility: visible ? 'visible' : 'hidden',
+              pointerEvents: visible ? 'auto' : 'none',
+              position: visible ? 'relative' : 'absolute',
+              opacity: visible ? 1 : 0,
+            };
 
-      <div className="navbar-right" ref={rightRef}>
-        {hiddenLinks.length > 0 && (
-          <div className="hamburger-wrapper">
-            <button
-              className={`navbar-hamburger ${menuOpen ? 'hamburger-open' : ''}`}
-              onClick={() => setMenuOpen((o) => !o)}
-              aria-label="Toggle menu"
-            >
-              <span className="hamburger-bar" />
-              <span className="hamburger-bar" />
-              <span className="hamburger-bar" />
-            </button>
+            if (slot.type === 'simple') {
+              return (
+                <button
+                  key={slot.path}
+                  ref={(el) => {
+                    buttonRefs.current[i] = el;
+                  }}
+                  type="button"
+                  className={isSimpleActive(slot.path)}
+                  onClick={() => goTo(slot.path)}
+                  style={hideStyle}
+                >
+                  {slot.label}
+                </button>
+              );
+            }
 
-            {menuOpen && (
-              <div className="navbar-dropdown">
-                {hiddenLinks.map((link) => (
-                  <button
-                    key={link.path}
-                    className={`dropdown-link ${location.pathname === link.path ? 'dropdown-link-active' : ''}`}
-                    onClick={() => goTo(link.path)}
-                  >
-                    {link.label}
-                    {link.path === '/Challenges' && (pendingChallenges > 0 || yourTurnChallenges > 0) && (
-                      <span className="nav-badge nav-badge-dropdown">{pendingChallenges + yourTurnChallenges}</span>
-                    )}
-                    {link.path === '/TeamLobby' && pendingTeamInvites > 0 && (
-                      <span className="nav-badge nav-badge-dropdown">{pendingTeamInvites}</span>
-                    )}
-                  </button>
-                ))}
+            const gamesBtnClass = isGamesPathActive() ? 'nav-link active' : 'nav-link';
+            return (
+              <div
+                key="nav-games-slot"
+                ref={(el) => {
+                  buttonRefs.current[i] = el;
+                }}
+                className="nav-games-wrap"
+                style={hideStyle}
+              >
+                <button
+                  type="button"
+                  className={gamesBtnClass}
+                  aria-expanded={gamesOpen}
+                  aria-haspopup="true"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setGamesOpen((o) => !o);
+                  }}
+                >
+                  {GAMES_MENU.label}
+                  {challengeAttention > 0 && renderChallengeBadge(false)}
+                  {pendingTeamInvites > 0 && renderTeamBadge(false)}
+                  <span className="nav-games-chevron" aria-hidden>
+                    ▾
+                  </span>
+                </button>
+                {gamesOpen && (
+                  <div className="nav-games-dropdown" role="menu">
+                    {GAMES_MENU.children.map((ch) => (
+                      <button
+                        key={ch.path}
+                        type="button"
+                        role="menuitem"
+                        className={`nav-games-dropdown-link${location.pathname === ch.path ? ' nav-games-dropdown-link-active' : ''}`}
+                        onClick={() => goTo(ch.path)}
+                      >
+                        {ch.label}
+                        {ch.path === '/Challenges' && renderChallengeBadge(true)}
+                        {ch.path === '/TeamLobby' && renderTeamBadge(true)}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        )}
- 
-        <button className="nav-translator-btn" onClick={toggleTranslator}>
-          Translator
-        </button>
-        
-      </div>
-    </nav>
+            );
+          })}
+        </div>
 
+        <div className="navbar-right" ref={rightRef}>
+          {hiddenEntries.length > 0 && (
+            <div className="hamburger-wrapper">
+              <button
+                type="button"
+                className={`navbar-hamburger ${menuOpen ? 'hamburger-open' : ''}`}
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-label="Toggle menu"
+              >
+                <span className="hamburger-bar" />
+                <span className="hamburger-bar" />
+                <span className="hamburger-bar" />
+              </button>
+
+              {menuOpen && (
+                <div className="navbar-dropdown">
+                  {hiddenEntries.map((entry) => (
+                    <button
+                      key={`${entry.path}-${entry.fromGamesMenu ? 'g' : 'n'}`}
+                      type="button"
+                      className={`dropdown-link ${location.pathname === entry.path ? 'dropdown-link-active' : ''}`}
+                      onClick={() => goTo(entry.path)}
+                    >
+                      {entry.fromGamesMenu ? `${GAMES_MENU.label}: ${entry.label}` : entry.label}
+                      {entry.path === '/Challenges' && renderChallengeBadge(true)}
+                      {entry.path === '/TeamLobby' && renderTeamBadge(true)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <button type="button" className="nav-translator-btn" onClick={toggleTranslator}>
+            Translator
+          </button>
+        </div>
+      </nav>
     </>
   );
 }
- 
+
 export default Navbar;

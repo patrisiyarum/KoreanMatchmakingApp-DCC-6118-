@@ -24,7 +24,7 @@ function Avatar({ src, name, size = 44 }) {
   );
 }
 
-const FriendsList = () => {
+const FriendsList = ({ embedded = false }) => {
   const [friends, setFriends] = useState([]);
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [outgoingRequests, setOutgoingRequests] = useState([]);
@@ -89,8 +89,8 @@ const FriendsList = () => {
   };
 
   return (
-    <div className="fl-page">
-      <Navbar id={id} />
+    <div className={`fl-page${embedded ? ' fl-page-embedded' : ''}`}>
+      {!embedded && <Navbar id={id} />}
       <div className="fl-center">
         <div className="fl-card">
           <div className="fl-header">

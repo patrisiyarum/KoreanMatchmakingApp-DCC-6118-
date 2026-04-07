@@ -79,6 +79,7 @@ const initAPIRoute = (app) => {
     router.put('/update-user', APIController.updateUser);
     router.delete('/delete-user/:id', APIController.deleteUser);
     router.get('/user-names', APIController.getUserNames);
+    router.get('/discover-users', APIController.getDiscoverUsers);
     router.get('/user-preferences', APIController.getUserPreferences);
     router.post('/addFriend', APIController.addFriend);
     router.get('/getUserProfile/:userId', APIController.getUserProfile);

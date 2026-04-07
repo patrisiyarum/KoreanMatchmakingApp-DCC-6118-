@@ -9,7 +9,7 @@ const AvailabilityPicker = () => {
   const [search] = useSearchParams();
   const id = search.get('id');
   const navigate = useNavigate();
-  const returnTo = search.get('returnTo') || 'FriendSearch';
+  const returnTo = search.get('returnTo') || 'Friends';
   
   const [selectedSlots, setSelectedSlots] = useState(new Set());
   
@@ -67,22 +67,35 @@ const AvailabilityPicker = () => {
     });
     console.log("Submitting availability for userId:", id, availabilityData);
     await axios.post(`/api/v1/users/${id}/availability`, { slots: backendPayload });
-    // Navigate back to FriendSearch with selected availability
+    // Navigate back to Friends (Discover) with selected availability
     //In the event that the user selects a meeting time in the AI chat, they return to the chat not Friend Search
     const returnTo = search.get("returnTo");
     if (returnTo === "Assistant") {
       const slotDescriptions = availabilityData.map(slot => `${slot.day} ${slot.time}`).join(", ");
       navigate(`/Assistant?id=${id}&slotsAdded=${encodeURIComponent(slotDescriptions)}`);
     } else {
+      const friendsSub = search.get('friendsSub') || 'discover';
       navigate({
-        pathname: '/FriendSearch',
-        search: `id=${id}&availability=${encodeURIComponent(JSON.stringify(availabilityData))}`
+        pathname: '/Friends',
+        search: createSearchParams({
+          id,
+          friendsSub,
+          availability: JSON.stringify(availabilityData),
+        }).toString(),
       });
     }
   };
 
   // Handle back button (contextual)
   const handleBack = () => {
+    if (returnTo === 'Friends') {
+      const friendsSub = search.get('friendsSub') || 'discover';
+      navigate({
+        pathname: '/Friends',
+        search: createSearchParams({ id, friendsSub }).toString(),
+      });
+      return;
+    }
     navigate({
       pathname: `/${returnTo}`,
       search: createSearchParams({ id }).toString(),

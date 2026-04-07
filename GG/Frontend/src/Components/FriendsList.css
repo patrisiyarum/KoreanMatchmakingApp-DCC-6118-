@@ -6,6 +6,11 @@
   font-family: var(--dl-font);
 }
 
+.fl-page-embedded {
+  min-height: 0;
+  background: transparent;
+}
+
 .fl-center {
   display: flex;
   flex-direction: column;

@@ -1,7 +1,7 @@
 import logo from './logo.svg';
 //import React from "react";
 import './App.scss';
-import {BrowserRouter as Router, Route, Routes} from "react-router-dom";
+import {BrowserRouter as Router, Route, Routes, Navigate, useSearchParams} from "react-router-dom";
 import Home from "../Components/Home";
 import Registration from "../Components/Registration";
 import Login from '../Components/Login';
@@ -20,9 +20,7 @@ import TranslatorPanel from "../Components/TranslatorPanel";
 import { TranslatorProvider } from "../context/TranslatorContext";
 import Videocall from "../Components/Videocall";
 import PostVideocall from '../Components/PostVideocall';
-import FriendSearch from '../Components/FriendSearch';
-import FriendsList from '../Components/FriendsList';
-import UserReport from '../Components/UserReport';
+import FriendsPage from '../Components/FriendsPage';
 import AvailabilityPicker from '../Components/AvailabilityPicker';
 import Assistant from "../Components/Assistant";
 import Scheduler from "../Components/Scheduler";
@@ -35,6 +33,14 @@ import ChallengeHub from '../Components/ChallengeHub';
 import TeamLobby  from '../Components/TeamLobby';
 import TeamCreate from '../Components/TeamCreate';
 import TeamPage   from '../Components/TeamPage';
+
+function RedirectToFriends({ discover }) {
+  const [sp] = useSearchParams();
+  const p = new URLSearchParams(sp);
+  if (discover) p.set('friendsSub', 'discover');
+  else p.delete('friendsSub');
+  return <Navigate to={{ pathname: '/Friends', search: p.toString() }} replace />;
+}
 
 const App = () => {
 
@@ -50,15 +56,15 @@ const App = () => {
           <Route path ="/CreateProfile" element ={<CreateProfile />}/>
           <Route path ="/UpdateProfile" element ={<UpdateProfile />}/>
           <Route path ="/Dashboard" element ={<Dashboard />}/>
-          <Route path ="/FriendSearch" element ={<FriendSearch />}/>
+          <Route path="/Friends" element={<FriendsPage />} />
+          <Route path="/FriendSearch" element={<RedirectToFriends discover />} />
+          <Route path="/FriendsList" element={<RedirectToFriends discover={false} />} />
           <Route path ="/Translator" element = {<Translator />}/>
-          <Route path="/UserReport" element={<UserReport />} />
           <Route path ="/Videocall" element = {<Videocall />}/>
           <Route path ="/PostVideocall" element = {<PostVideocall />}/>
           <Route path ="/LogoutConfirmation" element ={<LogoutConfirmationPage />}/>
           <Route path ="/Chat" element ={<Chat/>}/>
           <Route path ="/HelpPage" element ={<HelpPage/>}/>
-          <Route path="/FriendsList" element={<FriendsList/>}/>
           <Route path="/AvailabilityPicker" element={<AvailabilityPicker/>}/>
           <Route path="/Assistant" element={<Assistant />} />
           <Route path="/Scheduler" element={<Scheduler />} />

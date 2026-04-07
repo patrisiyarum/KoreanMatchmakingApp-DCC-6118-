@@ -22,9 +22,28 @@ const handleGetUserPreferencesApi = () => {
     return axios.get('/api/v1/user-preferences');
 };
 
+const handleGetProfileCustomizationOptionsApi = () => axios.get('/api/v1/profile-customization-options');
+
 const handleGetUserNamesApi = (requesterId) => {
     const q = requesterId ? `?requesterId=${requesterId}` : '';
     return axios.get(`/api/v1/user-names${q}`); // Fetch all user names
+};
+
+/** Backend-sorted/filtered list for Find Friends (learning goal, communication style, commitment). */
+const handleDiscoverUsersApi = (requesterId, opts = {}) => {
+    if (!requesterId) return Promise.reject(new Error('requesterId required'));
+    const p = new URLSearchParams();
+    p.set('requesterId', String(requesterId));
+    p.set('sort', opts.sort === 'name' ? 'name' : 'best_match');
+    if (opts.learningGoal) p.set('learningGoal', String(opts.learningGoal));
+    if (opts.communicationStyle) p.set('communicationStyle', String(opts.communicationStyle));
+    if (opts.commitmentLevel !== undefined && opts.commitmentLevel !== null && opts.commitmentLevel !== '') {
+        p.set('commitmentLevel', String(opts.commitmentLevel));
+    }
+    if (opts.commitmentFlex !== undefined && opts.commitmentFlex !== null) {
+        p.set('commitmentFlex', String(opts.commitmentFlex));
+    }
+    return axios.get(`/api/v1/discover-users?${p.toString()}`);
 };
 
 const handleAddFriendApi = (userId1, userId2, userInfo) => {
@@ -45,6 +64,8 @@ export {
     handleAddFriendApi,
     handleCreateFriendsApi,
     handleGetUserNamesApi,
+    handleDiscoverUsersApi,
+    handleGetProfileCustomizationOptionsApi,
     handleGetUserPreferencesApi,
     handleGetUserProfileApi // Export the new function
 };

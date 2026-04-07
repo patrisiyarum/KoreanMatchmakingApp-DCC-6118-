@@ -188,11 +188,11 @@ function Dashboard() {
           <section className="dashboard-card friends-card">
             <div className="panel-header">
               <h3>Friends</h3>
-              <button className="small-btn" onClick={() => goTo('/FriendsList')}>View All</button>
+              <button className="small-btn" onClick={() => goTo('/Friends')}>View All</button>
             </div>
             <ul className="friends-list">
               {friendsList.slice(0, 5).map((friend) => (
-                <li key={friend.id} className="friend-item" onClick={() => goTo('/FriendsList')}>
+                <li key={friend.id} className="friend-item" onClick={() => goTo('/Friends')}>
                   <span className="friend-name">{friend.firstName} {friend.lastName}</span>
                   <span className="friend-status">{friend.online ? 'Online' : 'Offline'}</span>
                 </li>

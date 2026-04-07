@@ -177,6 +177,23 @@ function GameSelect() {
           <span className="xp-text">{xp}/{xpToNext}XP</span>
         </div>
       </div>
+
+      <div className="gs-hub-row">
+        <button
+          type="button"
+          className="gs-hub-btn"
+          onClick={() => navigate({ pathname: '/Challenges', search: createSearchParams({ id }).toString() })}
+        >
+          1v1 Challenges
+        </button>
+        <button
+          type="button"
+          className="gs-hub-btn gs-hub-btn-secondary"
+          onClick={() => navigate({ pathname: '/TeamLobby', search: createSearchParams({ id }).toString() })}
+        >
+          Teams
+        </button>
+      </div>
  
       {/* ── Active Challenges ── */}
       {activeChallenges.length > 0 && (

@@ -1,6 +1,9 @@
 import dotenv from 'dotenv';
 dotenv.config();
-import { getProfileCustomizationOptions as loadProfileCustomizationConfig } from '../Service/profileValidation.js';
+import {
+  getProfileCustomizationOptions as loadProfileCustomizationConfig,
+  validateProfileCustomizationFields,
+} from '../Service/profileValidation.js';
 import { pool } from '../config/connectDB.js'; //TOWNSHEND: this was formally connected to sequelize...
 //but the methods were using .execute method, so I changed the import to the pool object
 import db from '../models/index.js';
@@ -145,6 +148,115 @@ const getUserNames = async (req, res) => {
       });
     }
 };
+
+/**
+ * Discover users for Find Friends: join account + profile, optional filters on learning goal,
+ * communication style, commitment; sort by affinity to requester or by name.
+ */
+const getDiscoverUsers = async (req, res) => {
+  try {
+    const requesterId = Number(req.query.requesterId || 0);
+    if (!requesterId) {
+      return res.status(400).json({ message: 'requesterId is required' });
+    }
+
+    const requesterProfile = await getProfileByUserId(requesterId);
+    if (!isProfileComplete(requesterProfile)) {
+      return res.status(403).json({
+        message: 'Complete your profile before searching for friends.',
+        code: 'PROFILE_INCOMPLETE',
+      });
+    }
+
+    const sort = String(req.query.sort || 'best_match') === 'name' ? 'name' : 'best_match';
+    const flg = req.query.learningGoal ? String(req.query.learningGoal).trim() : '';
+    const fcs = req.query.communicationStyle ? String(req.query.communicationStyle).trim() : '';
+    const fclRaw = req.query.commitmentLevel;
+    const fcl =
+      fclRaw !== undefined && fclRaw !== null && fclRaw !== ''
+        ? parseInt(String(fclRaw), 10)
+        : null;
+    const commitmentFlex = Math.min(
+      2,
+      Math.max(0, parseInt(String(req.query.commitmentFlex ?? '0'), 10) || 0)
+    );
+
+    if (flg || fcs || (fcl !== null && !Number.isNaN(fcl))) {
+      const pv = validateProfileCustomizationFields({
+        learning_goal: flg || undefined,
+        communication_style: fcs || undefined,
+        commitment_level:
+          fcl !== null && !Number.isNaN(fcl) ? fcl : undefined,
+      });
+      if (!pv.ok) {
+        return res.status(400).json({
+          message: pv.errors.join(' '),
+          validationErrors: pv.errors,
+        });
+      }
+    }
+
+    let whereExtra = '';
+    const execParams = [requesterId, requesterId];
+
+    if (flg) {
+      whereExtra += ' AND up.learning_goal = ? ';
+      execParams.push(flg);
+    }
+    if (fcs) {
+      whereExtra += ' AND up.communication_style = ? ';
+      execParams.push(fcs);
+    }
+    if (fcl !== null && !Number.isNaN(fcl)) {
+      if (commitmentFlex === 0) {
+        whereExtra += ' AND up.commitment_level = ? ';
+        execParams.push(fcl);
+      } else {
+        whereExtra += ' AND up.commitment_level IS NOT NULL AND ABS(up.commitment_level - ?) <= ? ';
+        execParams.push(fcl, commitmentFlex);
+      }
+    }
+
+    const matchExpr = `(
+      (CASE WHEN up.learning_goal <=> rp.learning_goal AND rp.learning_goal IS NOT NULL AND TRIM(rp.learning_goal) <> '' THEN 40 ELSE 0 END) +
+      (CASE WHEN up.communication_style <=> rp.communication_style AND rp.communication_style IS NOT NULL AND TRIM(rp.communication_style) <> '' THEN 40 ELSE 0 END) +
+      (CASE WHEN up.commitment_level IS NOT NULL AND rp.commitment_level IS NOT NULL THEN GREATEST(0, 25 - 5 * ABS(up.commitment_level - rp.commitment_level)) ELSE 0 END)
+    )`;
+
+    const orderClause =
+      sort === 'name'
+        ? 'ORDER BY ua.firstName ASC, ua.lastName ASC'
+        : `ORDER BY ${matchExpr} DESC, ua.firstName ASC, ua.lastName ASC`;
+
+    const sql = `
+      SELECT
+        ua.id, ua.email, ua.firstName, ua.lastName, ua.createdAt, ua.updatedAt, ua.loggedIn, ua.gameStats, ua.xp, ua.level, ua.profileImage,
+        up.native_language, up.target_language, up.target_language_proficiency, up.age, up.gender, up.profession, up.mbti, up.zodiac, up.visibility,
+        up.default_time_zone, up.rating, up.learning_goal, up.communication_style, up.commitment_level,
+        ${matchExpr} AS matchScore
+      FROM useraccount ua
+      INNER JOIN UserProfile up ON up.id = ua.id
+      INNER JOIN UserProfile rp ON rp.id = ?
+      WHERE ua.id <> ?
+      AND (up.visibility IS NULL OR up.visibility = '' OR up.visibility = 'Show')
+      ${whereExtra}
+      ${orderClause}
+    `;
+
+    const [rows] = await pool.execute(sql, execParams);
+    return res.status(200).json({
+      message: 'ok',
+      data: rows,
+    });
+  } catch (error) {
+    console.error('Error in getDiscoverUsers:', error);
+    return res.status(500).json({
+      message: 'Error discovering users',
+      error: error.message,
+    });
+  }
+};
+
 let addFriend = async (req, res) => {
   const { user_id_2, user_2_first_name, user_2_last_name } = req.body;
 
@@ -826,7 +938,7 @@ let deleteMeeting = async (req, res) => {
   }
 };
 const APIController = {
-    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, getProfileCustomizationOptions, updateRating,
+    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getDiscoverUsers, getUserPreferences, getUserProfile, getProfileCustomizationOptions, updateRating,
     addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList, removeFriend, addTrueFriend, removeTrueFriend,
     getTrueFriendsList, getUserAvailability, createMeeting, deleteMeeting,
     getFriendRequests, acceptFriendRequest, rejectFriendRequest

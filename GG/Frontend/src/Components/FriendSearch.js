@@ -3,8 +3,8 @@ import { DateTime } from "luxon";
 import Select from "react-select";
 
 import {
-  handleGetUserNamesApi,
-  handleGetUserPreferencesApi,
+  handleDiscoverUsersApi,
+  handleGetProfileCustomizationOptionsApi,
 } from '../Services/findFriendsService';
 import './FriendSearch.css';
 import {
@@ -50,7 +50,13 @@ const ZODIAC_OPTIONS = [
   'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'
 ].map(v => ({ value: v, label: v }));
 
-const FILTER_TABS = ['Name', 'MBTI / Zodiac', 'Interests', 'Availability'];
+const FILTER_TABS = ['Name', 'MBTI / Zodiac', 'Interests', 'Availability', 'Match profile'];
+
+const COMMITMENT_FLEX_OPTIONS = [
+  { value: 0, label: 'Exact level' },
+  { value: 1, label: '±1 level' },
+  { value: 2, label: '±2 levels' },
+];
 
 const selectStyles = {
   container: (base) => ({ ...base, width: '100%' }),
@@ -66,7 +72,7 @@ const selectStyles = {
   menu: (base) => ({ ...base, zIndex: 5 })
 };
 
-const FriendSearch = () => {
+const FriendSearch = ({ embedded = false }) => {
   const [search] = useSearchParams();
   const id = search.get('id');
   const navigate = useNavigate();
@@ -87,38 +93,58 @@ const FriendSearch = () => {
   const [selectedZodiac, setSelectedZodiac] = useState([]);
   const [activeFilter, setActiveFilter] = useState(0);
   const [friendRequests, setFriendRequests] = useState({ incoming: [], outgoing: [] });
+  const [sortDiscover, setSortDiscover] = useState('best_match');
+  const [filterMatchLearningGoal, setFilterMatchLearningGoal] = useState('');
+  const [filterMatchCommunicationStyle, setFilterMatchCommunicationStyle] = useState('');
+  const [filterMatchCommitment, setFilterMatchCommitment] = useState('');
+  const [filterCommitmentFlex, setFilterCommitmentFlex] = useState(0);
+  const [matchFieldOptions, setMatchFieldOptions] = useState({ learningGoals: [], communicationStyles: [] });
+
+  const fetchDiscoverAndEnrich = async (opts) => {
+    const discoverRes = await handleDiscoverUsersApi(id, opts);
+    const usersArr = discoverRes?.data ?? [];
+    const mergedUsers = await Promise.all(
+      (usersArr || []).map(async (user) => {
+        let userInterests = [];
+        try {
+          const r = await handleGetUserInterests(user.id);
+          userInterests = r || [];
+        } catch { /* ignore */ }
+        let userAvailability = [];
+        try {
+          const r = await handleGetUserAvailability(user.id);
+          userAvailability = r || [];
+        } catch { /* ignore */ }
+        return {
+          ...user,
+          Interests: userInterests,
+          Availability: userAvailability,
+          score: user.matchScore != null ? Number(user.matchScore) : null,
+        };
+      })
+    );
+    const visibleUsers = mergedUsers.filter((u) => {
+      const isSelfById = id && String(u.id) === String(id);
+      const isSelfByEmail = currentUserEmail && u.email === currentUserEmail;
+      const isSelf = Boolean(isSelfById || isSelfByEmail);
+      return (u.visibility ? u.visibility === 'Show' : true) && !isSelf;
+    });
+    return visibleUsers;
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
+      if (!id) {
+        setLoading(false);
+        return;
+      }
       try {
-        const userResponse = await handleGetUserNamesApi(id);
-        const profilesResponse = await handleGetUserPreferencesApi();
-
-        // Our axios instance interceptor returns response.data directly,
-        // so `handleGetUserNamesApi()` and `handleGetUserPreferencesApi()`
-        // may be arrays already (not `{ data: ... }` objects).
-        const usersArr = userResponse?.data ?? userResponse;
-        const profilesArr = profilesResponse?.data ?? profilesResponse;
-
-        const mergedUsers = await Promise.all(
-          (usersArr || []).map(async (user) => {
-            const userProfile = (profilesArr || []).find((p) => p.id === user.id);
-            let userInterests = [];
-            try { const r = await handleGetUserInterests(user.id); userInterests = r || []; } catch {}
-            let userAvailability = [];
-            try { const r = await handleGetUserAvailability(user.id); userAvailability = r || []; } catch {}
-            return { ...user, ...userProfile, Interests: userInterests, Availability: userAvailability, score: null };
-          })
-        );
-
-        // If a user's preferences row is missing, `visibility` can be undefined.
-        // In that case, don't hide them from search entirely.
-        const visibleUsers = mergedUsers.filter((u) => {
-          const isSelfById = id && String(u.id) === String(id);
-          const isSelfByEmail = currentUserEmail && u.email === currentUserEmail;
-          const isSelf = Boolean(isSelfById || isSelfByEmail);
-          return (u.visibility ? u.visibility === 'Show' : true) && !isSelf;
-        });
+        setFilterMatchLearningGoal('');
+        setFilterMatchCommunicationStyle('');
+        setFilterMatchCommitment('');
+        setFilterCommitmentFlex(0);
+        setSortDiscover('best_match');
+        const visibleUsers = await fetchDiscoverAndEnrich({ sort: 'best_match' });
         setUserNames(visibleUsers);
         setAllUserNames(visibleUsers);
         setCurrentUser(getUserData());
@@ -161,7 +187,25 @@ const FriendSearch = () => {
       } catch { }
     };
     fetchRequests();
+  // Intentionally [id] only: initial discover + interests load; fetchDiscoverAndEnrich closes over id.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(() => {
+    const loadMatchOptions = async () => {
+      try {
+        const raw = await handleGetProfileCustomizationOptionsApi();
+        const cfg = raw?.data ?? raw;
+        setMatchFieldOptions({
+          learningGoals: Array.isArray(cfg?.learningGoals) ? cfg.learningGoals : [],
+          communicationStyles: Array.isArray(cfg?.communicationStyles) ? cfg.communicationStyles : [],
+        });
+      } catch {
+        setMatchFieldOptions({ learningGoals: [], communicationStyles: [] });
+      }
+    };
+    loadMatchOptions();
+  }, []);
 
   useEffect(() => {
     const availabilityParam = search.get('availability');
@@ -229,20 +273,48 @@ const FriendSearch = () => {
     }
   };
 
-  const calculateCompatibilityScore = (profile) => {
-    if (!currentUser || !profile) return 0;
-    const g = 6 * (profile.gender === currentUser.gender ? 1 : 0);
-    const p = 5 * (profile.profession === currentUser.profession ? 1 : 0);
-    const iA = (profile.Interests || []).map(i => i.interest_name || i);
-    const iB = (currentUser.Interests || []).map(i => i.interest_name || i);
-    const shared = iA.filter(n => iB.includes(n));
-    const ageDiff = -0.3 * Math.abs((profile.age || 0) - (currentUser.age || 0));
-    return parseFloat((g + p + 2 * shared.length + ageDiff).toFixed(2));
+  const applyMatchFilters = async () => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const visibleUsers = await fetchDiscoverAndEnrich({
+        sort: sortDiscover,
+        learningGoal: filterMatchLearningGoal || undefined,
+        communicationStyle: filterMatchCommunicationStyle || undefined,
+        commitmentLevel: filterMatchCommitment === '' ? undefined : Number(filterMatchCommitment),
+        commitmentFlex: filterCommitmentFlex,
+      });
+      setAllUserNames(visibleUsers);
+      setUserNames(visibleUsers);
+      setActiveFilter(-1);
+    } catch (e) {
+      setError(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const sortByCompatibility = () => {
-    const scored = userNames.map((u) => ({ ...u, score: calculateCompatibilityScore(u) }));
-    setUserNames(scored.sort((a, b) => b.score - a.score));
+  const applySortDiscover = async (nextSort) => {
+    if (!id) return;
+    setSortDiscover(nextSort);
+    setLoading(true);
+    setError(null);
+    try {
+      const visibleUsers = await fetchDiscoverAndEnrich({
+        sort: nextSort,
+        learningGoal: filterMatchLearningGoal || undefined,
+        communicationStyle: filterMatchCommunicationStyle || undefined,
+        commitmentLevel: filterMatchCommitment === '' ? undefined : Number(filterMatchCommitment),
+        commitmentFlex: filterCommitmentFlex,
+      });
+      setAllUserNames(visibleUsers);
+      setUserNames(visibleUsers);
+    } catch (e) {
+      setError(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const applyFilters = () => {
@@ -282,13 +354,32 @@ const FriendSearch = () => {
     setUserNames(base);
   };
 
-  const clearAll = () => {
+  const clearAll = async () => {
     setFilterInput('');
     setSelectedMbti([]);
     setSelectedZodiac([]);
     setSelectedInterests([]);
     setSelectedAvailability(null);
-    setUserNames(allUserNames);
+    setFilterMatchLearningGoal('');
+    setFilterMatchCommunicationStyle('');
+    setFilterMatchCommitment('');
+    setFilterCommitmentFlex(0);
+    setSortDiscover('best_match');
+    if (!id) {
+      setUserNames(allUserNames);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const visibleUsers = await fetchDiscoverAndEnrich({ sort: 'best_match' });
+      setAllUserNames(visibleUsers);
+      setUserNames(visibleUsers);
+    } catch {
+      setUserNames(allUserNames);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAvailabilityFilter = () => {
@@ -329,25 +420,41 @@ const FriendSearch = () => {
     return null;
   };
 
-  if (loading) return <div className="fs-page"><Navbar id={id} /><p style={{ textAlign: 'center', marginTop: 60 }}>Loading...</p></div>;
-  if (profileBlockedMessage) {
+  if (loading) {
     return (
-      <div className="fs-page">
-        <Navbar id={id} />
-        <p style={{ textAlign: 'center', marginTop: 60, color: '#b45309' }}>{profileBlockedMessage}</p>
+      <div className={`fs-page${embedded ? ' fs-page-embedded' : ''}`}>
+        {!embedded && <Navbar id={id} />}
+        <p style={{ textAlign: 'center', marginTop: embedded ? 24 : 60 }}>Loading...</p>
       </div>
     );
   }
-  if (error) return <div className="fs-page"><Navbar id={id} /><p style={{ textAlign: 'center', marginTop: 60, color: '#dc2626' }}>Error loading users.</p></div>;
+  if (profileBlockedMessage) {
+    return (
+      <div className={`fs-page${embedded ? ' fs-page-embedded' : ''}`}>
+        {!embedded && <Navbar id={id} />}
+        <p style={{ textAlign: 'center', marginTop: embedded ? 24 : 60, color: '#b45309' }}>{profileBlockedMessage}</p>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={`fs-page${embedded ? ' fs-page-embedded' : ''}`}>
+        {!embedded && <Navbar id={id} />}
+        <p style={{ textAlign: 'center', marginTop: embedded ? 24 : 60, color: '#dc2626' }}>Error loading users.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="fs-page">
-      <Navbar id={id} />
+    <div className={`fs-page${embedded ? ' fs-page-embedded' : ''}`}>
+      {!embedded && <Navbar id={id} />}
 
       <div className="fs-center">
         <div className="fs-card">
-          <button className="back-to-dashboard" onClick={() => navigate({ pathname: '/Dashboard', search: createSearchParams({ id }).toString() })}>Dashboard</button>
-          <h1 className="fs-card-title">Find Friends</h1>
+          {!embedded && (
+            <button className="back-to-dashboard" onClick={() => navigate({ pathname: '/Dashboard', search: createSearchParams({ id }).toString() })}>Dashboard</button>
+          )}
+          <h1 className="fs-card-title">{embedded ? 'Discover' : 'Find Friends'}</h1>
           <p className="fs-card-subtitle">Search and filter to find your perfect language partner</p>
 
           {/* Search bar — Instagram-style */}
@@ -422,7 +529,10 @@ const FriendSearch = () => {
           {activeFilter === 3 && (
             <div className="fs-filter-panel">
               <button className="fs-btn-primary" style={{ width: '100%' }}
-                onClick={() => navigate({ pathname: '/AvailabilityPicker', search: createSearchParams({ id }).toString() })}>
+                onClick={() => navigate({
+                  pathname: '/AvailabilityPicker',
+                  search: createSearchParams({ id, returnTo: 'Friends', friendsSub: 'discover' }).toString(),
+                })}>
                 Pick Availability Times
               </button>
               {selectedAvailability && selectedAvailability.length > 0 && (
@@ -438,6 +548,50 @@ const FriendSearch = () => {
                   </button>
                 </>
               )}
+            </div>
+          )}
+
+          {/* Match profile — server-side filter + sort */}
+          {activeFilter === 4 && (
+            <div className="fs-filter-panel">
+              <div className="fs-filter-label">Learning objective</div>
+              <Select
+                styles={selectStyles}
+                isClearable
+                placeholder="Any goal"
+                options={matchFieldOptions.learningGoals.map((g) => ({ value: g, label: g }))}
+                value={filterMatchLearningGoal ? { value: filterMatchLearningGoal, label: filterMatchLearningGoal } : null}
+                onChange={(o) => setFilterMatchLearningGoal(o?.value ?? '')}
+              />
+              <div className="fs-filter-label" style={{ marginTop: 10 }}>Communication style</div>
+              <Select
+                styles={selectStyles}
+                isClearable
+                placeholder="Any style"
+                options={matchFieldOptions.communicationStyles.map((g) => ({ value: g, label: g }))}
+                value={filterMatchCommunicationStyle ? { value: filterMatchCommunicationStyle, label: filterMatchCommunicationStyle } : null}
+                onChange={(o) => setFilterMatchCommunicationStyle(o?.value ?? '')}
+              />
+              <div className="fs-filter-label" style={{ marginTop: 10 }}>Commitment level</div>
+              <Select
+                styles={selectStyles}
+                isClearable
+                placeholder="Any level"
+                options={[1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n} star${n > 1 ? 's' : ''}` }))}
+                value={filterMatchCommitment === '' ? null : { value: Number(filterMatchCommitment), label: String(filterMatchCommitment) }}
+                onChange={(o) => setFilterMatchCommitment(o == null ? '' : String(o.value))}
+              />
+              <div className="fs-filter-label" style={{ marginTop: 10 }}>Commitment match</div>
+              <Select
+                styles={selectStyles}
+                options={COMMITMENT_FLEX_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                value={COMMITMENT_FLEX_OPTIONS.map((o) => ({ value: o.value, label: o.label })).find((o) => o.value === filterCommitmentFlex)}
+                onChange={(o) => setFilterCommitmentFlex(o?.value ?? 0)}
+              />
+              <div className="fs-filter-actions">
+                <button type="button" className="fs-btn-secondary" onClick={clearAll}>Clear all</button>
+                <button type="button" className="fs-btn-primary" onClick={() => applyMatchFilters()}>Apply</button>
+              </div>
             </div>
           )}
         </div>
@@ -478,7 +632,22 @@ const FriendSearch = () => {
         <div className="fs-card">
           <div className="fs-results-header">
             <span className="fs-results-count">{userNames.length} suggested</span>
-            <button className="fs-btn-sort" onClick={sortByCompatibility}>Sort by match</button>
+            <div className="fs-sort-group">
+              <button
+                type="button"
+                className={`fs-btn-sort${sortDiscover === 'best_match' ? ' fs-btn-sort-active' : ''}`}
+                onClick={() => applySortDiscover('best_match')}
+              >
+                Best profile match
+              </button>
+              <button
+                type="button"
+                className={`fs-btn-sort${sortDiscover === 'name' ? ' fs-btn-sort-active' : ''}`}
+                onClick={() => applySortDiscover('name')}
+              >
+                Name A–Z
+              </button>
+            </div>
           </div>
 
           {userNames.length === 0 ? (
@@ -498,6 +667,15 @@ const FriendSearch = () => {
                         <span> · {getField(user, ["nativeLanguage", "native_language"])} → {getField(user, ["targetLanguage", "target_language"])}</span>
                       )}
                     </div>
+                    {(user.learning_goal || user.communication_style || user.commitment_level != null) && (
+                      <div className="fs-user-match-tags">
+                        {user.learning_goal && <span className="fs-tag">{user.learning_goal}</span>}
+                        {user.communication_style && <span className="fs-tag">{user.communication_style}</span>}
+                        {user.commitment_level != null && user.commitment_level !== '' && (
+                          <span className="fs-tag">Commitment {user.commitment_level}/5</span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {(() => {

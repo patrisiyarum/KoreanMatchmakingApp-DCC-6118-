@@ -23,6 +23,47 @@
   margin-bottom: 8px;
 }
 
+.gs-hub-row {
+  width: 100%;
+  max-width: 760px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+}
+
+.gs-hub-btn {
+  flex: 1;
+  min-width: 140px;
+  font-family: var(--dl-font);
+  font-size: 15px;
+  font-weight: 800;
+  padding: 14px 20px;
+  border-radius: var(--dl-radius);
+  border: 3px solid var(--dl-gray-light);
+  background: var(--dl-primary);
+  color: var(--dl-white);
+  cursor: pointer;
+  box-shadow: 0 4px 0 0 var(--dl-gray-light);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.gs-hub-btn:hover {
+  transform: translateY(-1px);
+}
+
+.gs-hub-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 0 var(--dl-gray-light);
+}
+
+.gs-hub-btn-secondary {
+  background: var(--dl-white);
+  color: var(--dl-primary);
+  border-color: var(--dl-primary);
+}
+
 .profile-banner {
   width: 100%;
   max-width: 760px;

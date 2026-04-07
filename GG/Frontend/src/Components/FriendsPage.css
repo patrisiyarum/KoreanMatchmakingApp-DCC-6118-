@@ -1,0 +1,55 @@
+.friends-page {
+  min-height: 100vh;
+  background: var(--dl-page-bg, #f5f3ff);
+  display: flex;
+  flex-direction: column;
+}
+
+.friends-page-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 16px 48px;
+  box-sizing: border-box;
+}
+
+.friends-page-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px 0 16px;
+  width: 100%;
+  max-width: 560px;
+  box-sizing: border-box;
+}
+
+.friends-page-tab {
+  flex: 1;
+  font-family: var(--dl-font, 'Nunito', sans-serif);
+  font-size: 15px;
+  font-weight: 800;
+  padding: 12px 16px;
+  border: 3px solid var(--dl-gray-light, #e5e5e5);
+  border-radius: var(--dl-radius-sm, 8px);
+  background: var(--dl-white, #fff);
+  color: var(--dl-dark, #364659);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.friends-page-tab:hover {
+  border-color: #c4b5fd;
+  color: var(--dl-primary, #6344a6);
+}
+
+.friends-page-tab-active {
+  background: var(--dl-primary, #6344a6);
+  color: var(--dl-white, #fff);
+  border-color: var(--dl-primary, #6344a6);
+}
+
+.friends-page-panel {
+  width: 100%;
+  max-width: 600px;
+  flex: 1;
+}

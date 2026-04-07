@@ -1,4 +1,5 @@
 import userService from '../Service/userService.js';
+import { validateProfileCustomizationFields } from '../Service/profileValidation.js';
 
 let currUser = null
 
@@ -80,7 +81,18 @@ let handleProfileCreation = async (req, res) => {
         let zodiac = req.body.zodiac;
         let default_time_zone = req.body.default_time_zone;
         let visibility = req.body.visibility;
+        let learning_goal = req.body.learning_goal;
+        let communication_style = req.body.communication_style;
+        let commitment_level = req.body.commitment_level;
         let id = req.body.id;
+        const pv = validateProfileCustomizationFields({ learning_goal, communication_style, commitment_level });
+        if (!pv.ok) {
+            return res.status(400).json({
+                errorCode: 2,
+                message: pv.errors.join(' '),
+                validationErrors: pv.errors,
+            });
+        }
         let save = true;
         let userData = await userService.handleProfileCreation(
             id,
@@ -94,6 +106,9 @@ let handleProfileCreation = async (req, res) => {
             zodiac,
             default_time_zone,
             visibility,
+            learning_goal,
+            communication_style,
+            commitment_level,
             save
         );
         return res.status(200).json({
@@ -126,6 +141,14 @@ let handleProfileUpdate = async (req, res) => {
         let communication_style = req.body.communication_style;
         let commitment_level = req.body.commitment_level;
         let id = req.body.id;
+        const pv = validateProfileCustomizationFields({ learning_goal, communication_style, commitment_level });
+        if (!pv.ok) {
+            return res.status(400).json({
+                errorCode: 2,
+                message: pv.errors.join(' '),
+                validationErrors: pv.errors,
+            });
+        }
         let userData = await userService.handleProfileUpdate(
             id,
             native_language,

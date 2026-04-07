@@ -1,0 +1,22 @@
+{
+  "learningGoals": [
+    "Conversational fluency",
+    "Business/Professional",
+    "Travel preparation",
+    "Academic study",
+    "Cultural appreciation",
+    "K-pop/K-drama fan"
+  ],
+  "communicationStyles": [
+    "Text-heavy",
+    "Voice/Video preferred",
+    "Mixed",
+    "Casual/Fun",
+    "Structured/Formal"
+  ],
+  "commitmentLevel": {
+    "min": 1,
+    "max": 5,
+    "default": 3
+  }
+}

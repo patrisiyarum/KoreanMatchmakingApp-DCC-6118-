@@ -82,6 +82,7 @@ const initAPIRoute = (app) => {
     router.get('/user-preferences', APIController.getUserPreferences);
     router.post('/addFriend', APIController.addFriend);
     router.get('/getUserProfile/:userId', APIController.getUserProfile);
+    router.get('/profile-customization-options', APIController.getProfileCustomizationOptions);
     router.post('/update-rating', APIController.updateRating);
     //router.post('/update-proficiency', APIController.updateProficiency);
     router.post('/add-comment', APIController.addComment);

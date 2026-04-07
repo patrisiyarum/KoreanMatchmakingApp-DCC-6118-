@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
+import { getProfileCustomizationOptions as loadProfileCustomizationConfig } from '../Service/profileValidation.js';
 import { pool } from '../config/connectDB.js'; //TOWNSHEND: this was formally connected to sequelize...
 //but the methods were using .execute method, so I changed the import to the pool object
 import db from '../models/index.js';
@@ -30,6 +31,14 @@ const isProfileComplete = (profile) => {
 const getProfileByUserId = async (userId) => {
   const [rows] = await pool.execute('SELECT * FROM UserProfile WHERE id = ?', [userId]);
   return rows[0] || null;
+};
+
+const getProfileCustomizationOptions = (req, res) => {
+  try {
+    return res.status(200).json({ message: 'ok', data: loadProfileCustomizationConfig() });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
 };
 
 const sortedPair = (userId1, userId2) => {
@@ -817,7 +826,7 @@ let deleteMeeting = async (req, res) => {
   }
 };
 const APIController = {
-    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, updateRating,
+    addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getUserPreferences, getUserProfile, getProfileCustomizationOptions, updateRating,
     addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList, removeFriend, addTrueFriend, removeTrueFriend,
     getTrueFriendsList, getUserAvailability, createMeeting, deleteMeeting,
     getFriendRequests, acceptFriendRequest, rejectFriendRequest

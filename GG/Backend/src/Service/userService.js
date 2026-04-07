@@ -119,12 +119,19 @@ let checkUserEmail = (userEmail) => {
     })
 }
 
-let handleProfileCreation = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, save) => {
+let handleProfileCreation = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, learning_goal, communication_style, commitment_level, save) => {
     return new Promise(async (resolve, reject) => {
         try{
             let userData = {};
             console.log("id passed to user service is: ", id)
-            let userProfile = await db.UserProfile.build({
+            const lg = learning_goal != null && String(learning_goal).trim() !== '' ? String(learning_goal).trim() : null;
+            const cs = communication_style != null && String(communication_style).trim() !== '' ? String(communication_style).trim() : null;
+            let cl = null;
+            if (commitment_level !== undefined && commitment_level !== null && commitment_level !== '') {
+                const n = parseInt(String(commitment_level), 10);
+                if (!Number.isNaN(n)) cl = n;
+            }
+            const profileFields = {
                 id: id,
                 native_language: native_language,
                 target_language: target_language,
@@ -135,8 +142,12 @@ let handleProfileCreation = (id, native_language, target_language, target_langua
                 mbti: mbti,
                 zodiac: zodiac,
                 default_time_zone: default_time_zone,
-                visibility: visibility
-            });
+                visibility: visibility,
+            };
+            if (lg != null) profileFields.learning_goal = lg;
+            if (cs != null) profileFields.communication_style = cs;
+            if (cl != null) profileFields.commitment_level = cl;
+            let userProfile = await db.UserProfile.build(profileFields);
             if(save) {
                 await userProfile.save()
             } 
@@ -162,6 +173,18 @@ let handleProfileUpdate = (id, native_language, target_language, target_language
                 if (typeof incoming === 'string' && incoming.trim() === '') return current ?? null;
                 return incoming;
             };
+            const keepIfEmptyNumber = (incoming, current) => {
+                if (incoming === undefined || incoming === null || incoming === '') return current ?? null;
+                const n = typeof incoming === 'number' ? incoming : parseInt(String(incoming), 10);
+                if (Number.isNaN(n)) return current ?? null;
+                return n;
+            };
+            const trimOrKeep = (incoming, current) => {
+                if (incoming === undefined || incoming === null) return current ?? null;
+                if (typeof incoming === 'string' && incoming.trim() === '') return current ?? null;
+                if (typeof incoming === 'string') return incoming.trim();
+                return incoming;
+            };
 
             await db.UserProfile.upsert({
                 id: id,
@@ -175,9 +198,9 @@ let handleProfileUpdate = (id, native_language, target_language, target_language
                 zodiac: keepIfEmpty(zodiac, existing?.zodiac),
                 default_time_zone: keepIfEmpty(default_time_zone, existing?.default_time_zone || 'UTC'),
                 visibility: keepIfEmpty(visibility, existing?.visibility),
-                learning_goal: keepIfEmpty(learning_goal, existing?.learning_goal),
-                communication_style: keepIfEmpty(communication_style, existing?.communication_style),
-                commitment_level: keepIfEmpty(commitment_level, existing?.commitment_level),
+                learning_goal: trimOrKeep(learning_goal, existing?.learning_goal),
+                communication_style: trimOrKeep(communication_style, existing?.communication_style),
+                commitment_level: keepIfEmptyNumber(commitment_level, existing?.commitment_level),
             });
  
             userData.errCode = 0;
@@ -199,7 +222,7 @@ let handleDataPopulation = (fName, lName, email, pass, native, target, age, gend
             let account = await handleUserRegister(fName, lName, email, pass, true)
             let id = account.id
             console.log("id from account is: ", id)
-            let profile = await handleProfileCreation(id, native, target, proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, true)
+            let profile = await handleProfileCreation(id, native, target, proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, undefined, undefined, undefined, true)
             console.log("hi");
             userData.errCode = 0;
             userData.errMessage = 'Data Successfully Populated!';

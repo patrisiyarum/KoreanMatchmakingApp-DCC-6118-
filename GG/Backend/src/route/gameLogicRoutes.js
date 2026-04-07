@@ -7,11 +7,10 @@ import {
   gradeGrammarQuiz,
   getPronunciationDrillRound,
 } from '../Service/gameContentService.js';
+import { XP_PER_LEVEL, CHALLENGE_ACTIVE_STATUSES } from '../Service/gameConfig.js';
 import { incrementGameStat, checkAndAwardBadges } from '../Service/milestoneService.js';
 
 const router = express.Router();
-const XP_PER_LEVEL = 500;
-const CHALLENGE_ACTIVE_STATUSES = ['accepted', 'in_progress'];
 
 const activeSessions = new Map();
 

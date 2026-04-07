@@ -157,7 +157,9 @@ function UpdateProfile() {
             if (profile.visibility)                   setVisibility(profile.visibility);
             if (profile.learning_goal)                setLearningGoal(profile.learning_goal);
             if (profile.communication_style)          setCommunicationStyle(profile.communication_style);
-            if (profile.commitment_level)             setCommitmentLevel(profile.commitment_level);
+            if (profile.commitment_level != null && profile.commitment_level !== '') {
+              setCommitmentLevel(Number(profile.commitment_level));
+            }
           }
         }
 
@@ -221,7 +223,11 @@ function UpdateProfile() {
       await handleReplaceUserAvailability(id, availability.map(a => a.value));
       navigate({ pathname: "/Dashboard", search: createSearchParams({ id }).toString() });
     } catch (err) {
-      setErrMsg(err?.response?.data?.message || "Failed to update profile.");
+      const data = err?.response?.data;
+      const msg = data?.message
+        || (Array.isArray(data?.validationErrors) ? data.validationErrors.join(' ') : null)
+        || 'Failed to update profile.';
+      setErrMsg(msg);
       console.error(err);
     }
   };

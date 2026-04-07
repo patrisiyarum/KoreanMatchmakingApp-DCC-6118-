@@ -31,6 +31,17 @@ let checkFriends = (user_native, user_target, user_id) => {
                 const profileInterestNames = (profile.Interests || []).map(i => i.interest_name)
                 const shared = profileInterestNames.filter(n => userInterestNames.includes(n))
                 let score = 6*(+ (profile.gender == user.gender)) + 5*(+ (profile.profession == user.profession)) + 2*shared.length - 0.3*(Math.abs(user.age-profile.age));
+                if (user.learning_goal && profile.learning_goal && user.learning_goal === profile.learning_goal) {
+                    score += 4;
+                }
+                if (user.communication_style && profile.communication_style && user.communication_style === profile.communication_style) {
+                    score += 4;
+                }
+                const uc = user.commitment_level;
+                const pc = profile.commitment_level;
+                if (uc != null && pc != null) {
+                    score += Math.max(0, 5 - Math.abs(Number(uc) - Number(pc)));
+                }
                 scores.push(score);
                 /* console.log("Name: ", account.firstName, " ", account.lastName)
                 console.log("Age: ", profiles[i].age)

@@ -129,6 +129,18 @@ export async function partnerMatching(args) {
         score += 5;
       }
 
+      if (user.learning_goal && match.learning_goal && user.learning_goal === match.learning_goal) {
+        score += 8;
+      }
+      if (user.communication_style && match.communication_style && user.communication_style === match.communication_style) {
+        score += 8;
+      }
+      const uc = user.commitment_level;
+      const mc = match.commitment_level;
+      if (uc != null && mc != null) {
+        score += Math.max(0, 6 - Math.abs(Number(uc) - Number(mc)));
+      }
+
       matchesWithScores.push({
         userId: match.id,
         firstName: matchAccount.firstName,
@@ -141,6 +153,9 @@ export async function partnerMatching(args) {
         targetLanguageProficiency: match.target_language_proficiency,
         mbti: match.mbti,
         zodiac: match.zodiac,
+        learningGoal: match.learning_goal,
+        communicationStyle: match.communication_style,
+        commitmentLevel: match.commitment_level,
         sharedInterests: sharedInterests,
         compatibilityScore: parseFloat(score.toFixed(2)),
       });

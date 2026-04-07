@@ -254,12 +254,25 @@ function Navbar({ id }) {
         <div className="navbar-links">
           {NAV_SLOTS.map((slot, i) => {
             const visible = i < visibleCount;
-            const hideStyle = {
-              visibility: visible ? 'visible' : 'hidden',
-              pointerEvents: visible ? 'auto' : 'none',
-              position: visible ? 'relative' : 'absolute',
-              opacity: visible ? 1 : 0,
-            };
+            // Hidden slots must sit off-screen. With position:absolute and no inset, browsers
+            // keep the flex “static position” — later hidden items stack on top of visible links
+            // and can steal clicks (especially next to Home).
+            const hideStyle = visible
+              ? {
+                  position: 'relative',
+                  visibility: 'visible',
+                  pointerEvents: 'auto',
+                  opacity: 1,
+                }
+              : {
+                  position: 'absolute',
+                  left: '-10000px',
+                  top: 0,
+                  visibility: 'hidden',
+                  pointerEvents: 'none',
+                  opacity: 0,
+                  whiteSpace: 'nowrap',
+                };
 
             if (slot.type === 'simple') {
               return (

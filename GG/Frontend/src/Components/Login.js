@@ -38,10 +38,11 @@ function Login() {
       if (data && data.errorCode != 0) {
         setErrMsg(data.message || "Login failed.");
       } else if (data && data.errorCode == 0) {
-                navigate({
-                    pathname: "/Dashboard",
-                    search: createSearchParams({ id: data.id }).toString()
-                });
+                // Full page load so the browser fetches the latest index.html + JS (avoids stale
+                // bundle after login while an old main.*.js was still in memory).
+                const base = process.env.PUBLIC_URL || '';
+                const qs = createSearchParams({ id: data.id }).toString();
+                window.location.assign(`${base}/Dashboard?${qs}`);
             }
         } catch (error) {
             const msg =

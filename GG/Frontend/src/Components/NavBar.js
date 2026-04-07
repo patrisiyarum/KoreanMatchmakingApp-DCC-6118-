@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, createSearchParams, useLocation } from 'react-router-dom';
 import { getUserChallenges } from '../Services/challengeService';
 import { handleGetTeamInvitesApi } from '../Services/teamService';
@@ -8,7 +8,6 @@ import './NavBar.css';
 
 const GAMES_MENU = {
   label: 'Games',
-  /** Shown in the caret dropdown (main “Games” click goes straight to Browse games). */
   children: [
     { label: 'Challenges', path: '/Challenges' },
     { label: 'Teams', path: '/TeamLobby' },
@@ -38,49 +37,26 @@ const NAV_SLOTS = [
   { type: 'simple', label: 'Profile', path: '/UpdateProfile' },
 ];
 
-const HAMBURGER_WIDTH = 48;
-
 const PARENT_ROUTES = {
   '/TeamLobby': ['/TeamPage', '/TeamCreate'],
 };
-
-function slotToMenuEntries(slot) {
-  if (slot.type === 'simple') return [{ kind: 'link', ...slot }];
-  if (slot.type === 'games') {
-    return [
-      { kind: 'link', label: 'Browse games', path: '/GameSelection', fromGamesMenu: true },
-      ...GAMES_MENU.children.map((ch) => ({ kind: 'link', ...ch, fromGamesMenu: true })),
-    ];
-  }
-  return [];
-}
 
 function Navbar({ id }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { toggleTranslator } = useTranslator();
 
-  const [menuOpen, setMenuOpen] = useState(false);
   const [gamesOpen, setGamesOpen] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(NAV_SLOTS.length);
   const [pendingChallenges, setPendingChallenges] = useState(0);
   const [yourTurnChallenges, setYourTurnChallenges] = useState(0);
   const [pendingTeamInvites, setPendingTeamInvites] = useState(0);
 
-  const navbarRef = useRef(null);
-  const rightRef = useRef(null);
-  const buttonRefs = useRef([]);
-
   const goTo = (pathname) => {
-    setMenuOpen(false);
     setGamesOpen(false);
     navigate({ pathname, search: createSearchParams({ id }).toString() });
   };
 
-  const isGamesPathActive = () => {
-    if (GAMES_RELATED_PATHS.has(location.pathname)) return true;
-    return false;
-  };
+  const isGamesPathActive = () => GAMES_RELATED_PATHS.has(location.pathname);
 
   const isSimpleActive = (path) => {
     if (location.pathname === path) return 'nav-link active';
@@ -92,60 +68,6 @@ function Navbar({ id }) {
   useEffect(() => {
     setGamesOpen(false);
   }, [location.pathname]);
-
-  const calculate = useCallback(() => {
-    const navbar = navbarRef.current;
-    const right = rightRef.current;
-    if (!navbar || !right) return;
-
-    const navbarInner = navbar.getBoundingClientRect().width;
-    const rightWidth = right.getBoundingClientRect().width;
-
-    let available = navbarInner - rightWidth;
-
-    let total = 0;
-    let count = 0;
-    for (let i = 0; i < buttonRefs.current.length; i++) {
-      const btn = buttonRefs.current[i];
-      if (!btn) continue;
-      const w = btn.getBoundingClientRect().width + 2;
-      if (total + w <= available) {
-        total += w;
-        count++;
-      } else {
-        break;
-      }
-    }
-
-    if (count < NAV_SLOTS.length) {
-      available -= HAMBURGER_WIDTH + 8;
-      total = 0;
-      count = 0;
-      for (let i = 0; i < buttonRefs.current.length; i++) {
-        const btn = buttonRefs.current[i];
-        if (!btn) continue;
-        const w = btn.getBoundingClientRect().width + 2;
-        if (total + w <= available) {
-          total += w;
-          count++;
-        } else {
-          break;
-        }
-      }
-    }
-
-    setVisibleCount(count);
-  }, []);
-
-  useEffect(() => {
-    const frame = requestAnimationFrame(calculate);
-    const ro = new ResizeObserver(calculate);
-    if (navbarRef.current) ro.observe(navbarRef.current);
-    return () => {
-      cancelAnimationFrame(frame);
-      ro.disconnect();
-    };
-  }, [calculate]);
 
   useEffect(() => {
     if (!id) return;
@@ -194,15 +116,12 @@ function Navbar({ id }) {
   }, [id]);
 
   useEffect(() => {
-    if (!menuOpen && !gamesOpen) return;
+    if (!gamesOpen) return;
 
     let onDocMouseDown;
     const rafId = requestAnimationFrame(() => {
       onDocMouseDown = (e) => {
-        if (menuOpen && !e.target.closest('.hamburger-wrapper')) {
-          setMenuOpen(false);
-        }
-        if (gamesOpen && !e.target.closest('.nav-games-wrap')) {
+        if (!e.target.closest('.nav-games-wrap')) {
           setGamesOpen(false);
         }
       };
@@ -213,10 +132,7 @@ function Navbar({ id }) {
       cancelAnimationFrame(rafId);
       if (onDocMouseDown) document.removeEventListener('mousedown', onDocMouseDown);
     };
-  }, [menuOpen, gamesOpen]);
-
-  const hiddenSlots = NAV_SLOTS.slice(visibleCount);
-  const hiddenEntries = hiddenSlots.flatMap(slotToMenuEntries);
+  }, [gamesOpen]);
 
   const challengeAttention = pendingChallenges + yourTurnChallenges;
 
@@ -249,145 +165,75 @@ function Navbar({ id }) {
   };
 
   return (
-    <>
-      <nav className="navbar" ref={navbarRef}>
-        <div className="navbar-links">
-          {NAV_SLOTS.map((slot, i) => {
-            const visible = i < visibleCount;
-            // Hidden slots must sit off-screen. With position:absolute and no inset, browsers
-            // keep the flex “static position” — later hidden items stack on top of visible links
-            // and can steal clicks (especially next to Home).
-            const hideStyle = visible
-              ? {
-                  position: 'relative',
-                  visibility: 'visible',
-                  pointerEvents: 'auto',
-                  opacity: 1,
-                }
-              : {
-                  position: 'absolute',
-                  left: '-10000px',
-                  top: 0,
-                  visibility: 'hidden',
-                  pointerEvents: 'none',
-                  opacity: 0,
-                  whiteSpace: 'nowrap',
-                };
-
-            if (slot.type === 'simple') {
-              return (
-                <button
-                  key={slot.path}
-                  ref={(el) => {
-                    buttonRefs.current[i] = el;
-                  }}
-                  type="button"
-                  className={isSimpleActive(slot.path)}
-                  onClick={() => goTo(slot.path)}
-                  style={hideStyle}
-                >
-                  {slot.label}
-                </button>
-              );
-            }
-
-            const gamesBtnClass = isGamesPathActive() ? 'nav-link active' : 'nav-link';
+    <nav className="navbar">
+      <div className="navbar-links" role="navigation" aria-label="Main">
+        {NAV_SLOTS.map((slot) => {
+          if (slot.type === 'simple') {
             return (
-              <div
-                key="nav-games-slot"
-                ref={(el) => {
-                  buttonRefs.current[i] = el;
-                }}
-                className="nav-games-wrap"
-                style={hideStyle}
-              >
-                <div className="nav-games-split">
-                  <button
-                    type="button"
-                    className={gamesBtnClass}
-                    onClick={() => goTo('/GameSelection')}
-                  >
-                    {GAMES_MENU.label}
-                    {challengeAttention > 0 && renderChallengeBadge(false)}
-                    {pendingTeamInvites > 0 && renderTeamBadge(false)}
-                  </button>
-                  <button
-                    type="button"
-                    className={`${gamesBtnClass} nav-games-caret-btn`}
-                    aria-expanded={gamesOpen}
-                    aria-haspopup="true"
-                    aria-label="Open challenges and teams menu"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setGamesOpen((o) => !o);
-                    }}
-                  >
-                    <span className="nav-games-chevron-only" aria-hidden>
-                      ▾
-                    </span>
-                  </button>
-                </div>
-                {gamesOpen && (
-                  <div className="nav-games-dropdown" role="menu">
-                    {GAMES_MENU.children.map((ch) => (
-                      <button
-                        key={ch.path}
-                        type="button"
-                        role="menuitem"
-                        className={`nav-games-dropdown-link${location.pathname === ch.path ? ' nav-games-dropdown-link-active' : ''}`}
-                        onClick={() => goTo(ch.path)}
-                      >
-                        {ch.label}
-                        {ch.path === '/Challenges' && renderChallengeBadge(true)}
-                        {ch.path === '/TeamLobby' && renderTeamBadge(true)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="navbar-right" ref={rightRef}>
-          {hiddenEntries.length > 0 && (
-            <div className="hamburger-wrapper">
               <button
+                key={slot.path}
                 type="button"
-                className={`navbar-hamburger ${menuOpen ? 'hamburger-open' : ''}`}
-                onClick={() => setMenuOpen((o) => !o)}
-                aria-label="Toggle menu"
+                className={isSimpleActive(slot.path)}
+                onClick={() => goTo(slot.path)}
               >
-                <span className="hamburger-bar" />
-                <span className="hamburger-bar" />
-                <span className="hamburger-bar" />
+                {slot.label}
               </button>
+            );
+          }
 
-              {menuOpen && (
-                <div className="navbar-dropdown">
-                  {hiddenEntries.map((entry) => (
+          const gamesBtnClass = isGamesPathActive() ? 'nav-link active' : 'nav-link';
+          return (
+            <div key="nav-games-slot" className="nav-games-wrap">
+              <div className="nav-games-split">
+                <button type="button" className={gamesBtnClass} onClick={() => goTo('/GameSelection')}>
+                  {GAMES_MENU.label}
+                  {challengeAttention > 0 && renderChallengeBadge(false)}
+                  {pendingTeamInvites > 0 && renderTeamBadge(false)}
+                </button>
+                <button
+                  type="button"
+                  className={`${gamesBtnClass} nav-games-caret-btn`}
+                  aria-expanded={gamesOpen}
+                  aria-haspopup="true"
+                  aria-label="Open challenges and teams menu"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setGamesOpen((o) => !o);
+                  }}
+                >
+                  <span className="nav-games-chevron-only" aria-hidden>
+                    ▾
+                  </span>
+                </button>
+              </div>
+              {gamesOpen && (
+                <div className="nav-games-dropdown" role="menu">
+                  {GAMES_MENU.children.map((ch) => (
                     <button
-                      key={`${entry.path}-${entry.fromGamesMenu ? 'g' : 'n'}`}
+                      key={ch.path}
                       type="button"
-                      className={`dropdown-link ${location.pathname === entry.path ? 'dropdown-link-active' : ''}`}
-                      onClick={() => goTo(entry.path)}
+                      role="menuitem"
+                      className={`nav-games-dropdown-link${location.pathname === ch.path ? ' nav-games-dropdown-link-active' : ''}`}
+                      onClick={() => goTo(ch.path)}
                     >
-                      {entry.fromGamesMenu ? `${GAMES_MENU.label}: ${entry.label}` : entry.label}
-                      {entry.path === '/Challenges' && renderChallengeBadge(true)}
-                      {entry.path === '/TeamLobby' && renderTeamBadge(true)}
+                      {ch.label}
+                      {ch.path === '/Challenges' && renderChallengeBadge(true)}
+                      {ch.path === '/TeamLobby' && renderTeamBadge(true)}
                     </button>
                   ))}
                 </div>
               )}
             </div>
-          )}
+          );
+        })}
+      </div>
 
-          <button type="button" className="nav-translator-btn" onClick={toggleTranslator}>
-            Translator
-          </button>
-        </div>
-      </nav>
-    </>
+      <div className="navbar-right">
+        <button type="button" className="nav-translator-btn" onClick={toggleTranslator}>
+          Translator
+        </button>
+      </div>
+    </nav>
   );
 }
 

@@ -46,17 +46,13 @@ function Registration() {
 
       // Auto-login after successful registration.
       const loginResp = await handleLoginApi(email, password);
+      const base = process.env.PUBLIC_URL || '';
       if (loginResp && loginResp.errorCode === 0) {
-        navigate({
-          // Go directly to initial profile creation using the logged-in user's id.
-          pathname: "/CreateProfile",
-          search: createSearchParams({ id: loginResp.id }).toString(),
-        });
+        const qs = createSearchParams({ id: loginResp.id }).toString();
+        window.location.assign(`${base}/CreateProfile?${qs}`);
       } else {
-        navigate({
-          pathname: "/CreateProfile",
-          search: createSearchParams({ id: registerResp.id }).toString(),
-        });
+        const qs = createSearchParams({ id: registerResp.id }).toString();
+        window.location.assign(`${base}/CreateProfile?${qs}`);
       }
     } catch (error) {
       console.error("Register/login error:", error);

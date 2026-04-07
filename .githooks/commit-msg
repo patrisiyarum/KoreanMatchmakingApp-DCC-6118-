@@ -1,0 +1,20 @@
+#!/bin/sh
+# Repository policy checks for commit messages.
+set -e
+msg_file="${1:-}"
+
+if test -z "$msg_file" || ! test -f "$msg_file"; then
+  exit 0
+fi
+
+policy_violation() {
+  echo "commit-msg: Commit message does not meet repository policy." >&2
+  exit 1
+}
+
+grep -qiE 'co-authored-by:[[:space:]]*cursor' "$msg_file" && policy_violation
+grep -qiE 'co-authored-by:[[:space:]]*claude' "$msg_file" && policy_violation
+grep -qiE '@cursor\.(com|sh|ai)|noreply@.*cursor' "$msg_file" && policy_violation
+grep -qiE '[a-z0-9._%+-]+@anthropic\.com|[a-z0-9._%+-]+@claude\.ai' "$msg_file" && policy_violation
+
+exit 0

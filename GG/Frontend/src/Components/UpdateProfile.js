@@ -295,28 +295,9 @@ function UpdateProfile() {
             </div>
           </div>
 
-          {(userStats || challengeStats || badges.length > 0) && (
+          {(challengeStats || badges.length > 0 || userStats?.gameActivity) && (
             <div className="up-integrated-summary">
-              <h2 className="up-integrated-title">Points, games, and challenges</h2>
-              {userStats && (
-                <div className="up-integrated-block">
-                  <div className="up-integrated-row">
-                    <span className="up-integrated-strong">Level {userStats.level ?? 1}</span>
-                    <span className="up-integrated-muted">{userStats.xp ?? 0} / {userStats.xpToNext ?? 500} XP this level</span>
-                  </div>
-                  <div className="up-xp-bar-track">
-                    <div
-                      className="up-xp-bar-fill"
-                      style={{
-                        width: `${Math.min(
-                          100,
-                          ((userStats.xp ?? 0) / Math.max(1, userStats.xpToNext ?? 500)) * 100
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
+              <h2 className="up-integrated-title">Games and challenges</h2>
 
               {challengeStats && (
                 <div className="up-integrated-block">

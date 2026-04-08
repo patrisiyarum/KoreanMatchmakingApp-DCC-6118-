@@ -1,5 +1,5 @@
-
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useLayoutEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, createSearchParams, useLocation } from 'react-router-dom';
 import { getUserChallenges } from '../Services/challengeService';
 import { handleGetTeamInvitesApi } from '../Services/teamService';
@@ -44,7 +44,17 @@ function Navbar({ id }) {
   const location = useLocation();
   const { toggleTranslator } = useTranslator();
   const [aiMenuOpen, setAiMenuOpen] = useState(false);
+  const [aiMenuPos, setAiMenuPos] = useState({ top: 0, left: 0 });
   const aiNavWrapRef = useRef(null);
+  const aiButtonRef = useRef(null);
+  const aiDropdownRef = useRef(null);
+
+  const updateAiMenuPosition = useCallback(() => {
+    const el = aiButtonRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setAiMenuPos({ top: r.bottom + 8, left: r.left });
+  }, []);
 
   const [pendingChallenges, setPendingChallenges] = useState(0);
   const [yourTurnChallenges, setYourTurnChallenges] = useState(0);
@@ -67,16 +77,29 @@ function Navbar({ id }) {
 
   const isAiSectionActive = () => AI_SECTION_PATHS.has(location.pathname);
 
+  useLayoutEffect(() => {
+    if (!aiMenuOpen) return;
+    updateAiMenuPosition();
+  }, [aiMenuOpen, updateAiMenuPosition]);
+
   useEffect(() => {
     if (!aiMenuOpen) return;
     const onDocMouseDown = (e) => {
-      if (aiNavWrapRef.current && !aiNavWrapRef.current.contains(e.target)) {
-        setAiMenuOpen(false);
-      }
+      const t = e.target;
+      if (aiNavWrapRef.current?.contains(t)) return;
+      if (aiDropdownRef.current?.contains(t)) return;
+      setAiMenuOpen(false);
     };
+    const onReposition = () => updateAiMenuPosition();
     document.addEventListener('mousedown', onDocMouseDown);
-    return () => document.removeEventListener('mousedown', onDocMouseDown);
-  }, [aiMenuOpen]);
+    window.addEventListener('scroll', onReposition, true);
+    window.addEventListener('resize', onReposition);
+    return () => {
+      document.removeEventListener('mousedown', onDocMouseDown);
+      window.removeEventListener('scroll', onReposition, true);
+      window.removeEventListener('resize', onReposition);
+    };
+  }, [aiMenuOpen, updateAiMenuPosition]);
 
   const simpleBtnClass = (path) => {
     let active = location.pathname === path;
@@ -182,6 +205,7 @@ function Navbar({ id }) {
             return (
               <div key="nav-ai" className="nav-ai-wrap" ref={aiNavWrapRef}>
                 <button
+                  ref={aiButtonRef}
                   type="button"
                   className={isAiSectionActive() ? 'top-nav-btn top-nav-btn--active' : 'top-nav-btn'}
                   aria-expanded={aiMenuOpen}
@@ -194,24 +218,32 @@ function Navbar({ id }) {
                     ▾
                   </span>
                 </button>
-                {aiMenuOpen ? (
-                  <div className="navbar-dropdown nav-ai-dropdown" role="menu">
-                    {AI_NAV_LINKS.map((item) => (
-                      <button
-                        key={item.path}
-                        type="button"
-                        role="menuitem"
-                        className={`dropdown-link${location.pathname === item.path ? ' dropdown-link-active' : ''}`}
-                        onClick={() => {
-                          setAiMenuOpen(false);
-                          goTo(item.path);
-                        }}
+                {aiMenuOpen
+                  ? createPortal(
+                      <div
+                        ref={aiDropdownRef}
+                        className="navbar-dropdown nav-ai-dropdown nav-ai-dropdown-portal"
+                        style={{ top: aiMenuPos.top, left: aiMenuPos.left }}
+                        role="menu"
                       >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
+                        {AI_NAV_LINKS.map((item) => (
+                          <button
+                            key={item.path}
+                            type="button"
+                            role="menuitem"
+                            className={`dropdown-link${location.pathname === item.path ? ' dropdown-link-active' : ''}`}
+                            onClick={() => {
+                              setAiMenuOpen(false);
+                              goTo(item.path);
+                            }}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>,
+                      document.body
+                    )
+                  : null}
               </div>
             );
           }

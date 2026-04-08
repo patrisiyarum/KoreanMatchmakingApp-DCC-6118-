@@ -295,3 +295,10 @@
   top: calc(100% + 8px);
   min-width: 200px;
 }
+
+/* Portaled menu: escapes .app-top-nav-links overflow clipping (overflow-x: auto forces vertical clip). */
+.nav-ai-dropdown-portal {
+  position: fixed !important;
+  z-index: 10060;
+  margin: 0;
+}

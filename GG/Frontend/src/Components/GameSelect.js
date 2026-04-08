@@ -10,9 +10,7 @@ import { handleGetMyTeamApi } from '../Services/teamService';
 import { handleGetAllBadgesWithProgressApi } from '../Services/badgeService';
 import { getUserChallenges } from '../Services/challengeService';
 import { getImageUrl } from '../Services/uploadImageService';
-
-const XP_PER_LEVEL = 500; // Must match the value in gameRoutes.js
-
+import { XP_PER_LEVEL } from '../config/gameRuntime.js';
 
 function GameSelect() {
   const [search] = useSearchParams();

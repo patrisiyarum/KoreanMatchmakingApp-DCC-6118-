@@ -10,6 +10,7 @@ import { handleGetUserStatsApi } from '../Services/gameSelectionService';
 import { handleGetUserBadgesApi } from '../Services/badgeService';
 import { setUserData } from '../Utils/userData';
 import { getImageUrl } from '../Services/uploadImageService';
+import { XP_PER_LEVEL } from '../config/gameRuntime.js';
 import Navbar from './NavBar';
 
 
@@ -73,7 +74,7 @@ function Dashboard() {
         if (statsRes.status === 'fulfilled' && statsRes.value) {
           setUserStats(statsRes.value);
         } else {
-          setUserStats({ level: 1, xp: 0, xpToNext: 500, gameActivity: null });
+          setUserStats({ level: 1, xp: 0, xpToNext: XP_PER_LEVEL, gameActivity: null });
         }
         if (chRes.status === 'fulfilled' && chRes.value) {
           setChallengeStats(chRes.value);
@@ -196,7 +197,7 @@ function Dashboard() {
               <div className="up-integrated-row">
                 <span className="up-integrated-strong">Level {userStats.level ?? 1}</span>
                 <span className="up-integrated-muted">
-                  {userStats.xp ?? 0} / {userStats.xpToNext ?? 500} XP this level
+                  {userStats.xp ?? 0} / {userStats.xpToNext ?? XP_PER_LEVEL} XP this level
                 </span>
               </div>
               <div className="up-xp-bar-track">
@@ -205,7 +206,7 @@ function Dashboard() {
                   style={{
                     width: `${Math.min(
                       100,
-                      ((userStats.xp ?? 0) / Math.max(1, userStats.xpToNext ?? 500)) * 100
+                      ((userStats.xp ?? 0) / Math.max(1, userStats.xpToNext ?? XP_PER_LEVEL)) * 100
                     )}%`,
                   }}
                 />

@@ -1,7 +1,7 @@
 import messageService from '../Service/messageService.js';
 import { assertParticipant, assertAIAllowed } from '../Service/privacyService.js';
 
-// POST /api/assistant/parse/:chatId  { userId }
+// POST /api/v1/assistant/parse/:chatId or /api/v1/ai-assistant/parse/:chatId  { userId }
 export async function parseConversation(req, res) {
   try {
     const chatId = Number(req.params.chatId);

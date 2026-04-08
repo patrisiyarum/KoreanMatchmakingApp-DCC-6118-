@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, createSearchParams, useLocation } from 'react-router-dom';
 import { getUserChallenges } from '../Services/challengeService';
 import { handleGetTeamInvitesApi } from '../Services/teamService';
@@ -17,6 +17,13 @@ const GAMES_RELATED_PATHS = new Set([
   '/PronunciationDrill',
 ]);
 
+const AI_NAV_LINKS = [
+  { label: 'Chat Assistant', path: '/Assistant' },
+  { label: 'Transcripts', path: '/TranscriptView' },
+];
+
+const AI_SECTION_PATHS = new Set(AI_NAV_LINKS.map((l) => l.path));
+
 const NAV_SLOTS = [
   { type: 'simple', label: 'Home', path: '/Dashboard' },
   { type: 'games' },
@@ -24,8 +31,7 @@ const NAV_SLOTS = [
   { type: 'simple', label: 'Calls', path: '/Videocall' },
   { type: 'simple', label: 'Translator', path: '/Translator' },
   { type: 'simple', label: 'Scheduler', path: '/Scheduler' },
-  { type: 'simple', label: 'AI Chat', path: '/Assistant' },
-  { type: 'simple', label: 'Transcripts', path: '/TranscriptView' },
+  { type: 'ai' },
   { type: 'simple', label: 'Profile', path: '/UpdateProfile' },
 ];
 
@@ -37,6 +43,8 @@ function Navbar({ id }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { toggleTranslator } = useTranslator();
+  const [aiMenuOpen, setAiMenuOpen] = useState(false);
+  const aiNavWrapRef = useRef(null);
 
   const [pendingChallenges, setPendingChallenges] = useState(0);
   const [yourTurnChallenges, setYourTurnChallenges] = useState(0);
@@ -56,6 +64,19 @@ function Navbar({ id }) {
   };
 
   const isGamesPathActive = () => GAMES_RELATED_PATHS.has(location.pathname);
+
+  const isAiSectionActive = () => AI_SECTION_PATHS.has(location.pathname);
+
+  useEffect(() => {
+    if (!aiMenuOpen) return;
+    const onDocMouseDown = (e) => {
+      if (aiNavWrapRef.current && !aiNavWrapRef.current.contains(e.target)) {
+        setAiMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocMouseDown);
+    return () => document.removeEventListener('mousedown', onDocMouseDown);
+  }, [aiMenuOpen]);
 
   const simpleBtnClass = (path) => {
     let active = location.pathname === path;
@@ -154,6 +175,44 @@ function Navbar({ id }) {
               >
                 {slot.label}
               </button>
+            );
+          }
+
+          if (slot.type === 'ai') {
+            return (
+              <div key="nav-ai" className="nav-ai-wrap" ref={aiNavWrapRef}>
+                <button
+                  type="button"
+                  className={isAiSectionActive() ? 'top-nav-btn top-nav-btn--active' : 'top-nav-btn'}
+                  aria-expanded={aiMenuOpen}
+                  aria-haspopup="true"
+                  aria-label="AI tools menu"
+                  onClick={() => setAiMenuOpen((o) => !o)}
+                >
+                  AI
+                  <span className="nav-ai-chevron" aria-hidden>
+                    ▾
+                  </span>
+                </button>
+                {aiMenuOpen ? (
+                  <div className="navbar-dropdown nav-ai-dropdown" role="menu">
+                    {AI_NAV_LINKS.map((item) => (
+                      <button
+                        key={item.path}
+                        type="button"
+                        role="menuitem"
+                        className={`dropdown-link${location.pathname === item.path ? ' dropdown-link-active' : ''}`}
+                        onClick={() => {
+                          setAiMenuOpen(false);
+                          goTo(item.path);
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             );
           }
 

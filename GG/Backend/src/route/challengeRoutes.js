@@ -1,9 +1,8 @@
 import express from 'express';
 import db from '../models/index.js';
+import { CHALLENGE_XP_BONUS, XP_PER_LEVEL } from '../Service/gameConfig.js';
 
 const router = express.Router();
-const CHALLENGE_XP_BONUS = 25;
-const XP_PER_LEVEL = 500;
 
 async function awardXp(userId, xpAmount) {
   const user = await db.UserAccount.findByPk(userId);

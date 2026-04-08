@@ -1,10 +1,8 @@
-
 import express from 'express';
 import db from '../models/index.js';
+import { XP_PER_LEVEL } from '../Service/gameConfig.js';
 
 const router = express.Router();
-
-const XP_PER_LEVEL = 500;
 
 // GET /api/games/user-stats/:userId
 router.get('/user-stats/:userId', async (req, res) => {

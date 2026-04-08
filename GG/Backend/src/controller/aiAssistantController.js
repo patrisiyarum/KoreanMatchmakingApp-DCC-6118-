@@ -14,6 +14,11 @@ if (!GEMINI_KEY || GEMINI_KEY === "your_gemini_api_key_here") {
 const genAI = new GoogleGenerativeAI(GEMINI_KEY || "placeholder");
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
+/** Google returns 403 if the key was exposed publicly and revoked. */
+function isGeminiKeyBlockedError(err) {
+  const msg = String(err?.message || err || "");
+  return /403|Forbidden|leaked|API key was reported/i.test(msg);
+}
 
 const conversationStore = new Map();
 
@@ -510,6 +515,13 @@ When giving longer responses, use markdown formatting for clarity: use **bold** 
     return res.json({ reply });
   } catch (err) {
     console.error("chatWithAssistant error:", err);
+    if (isGeminiKeyBlockedError(err)) {
+      return res.status(503).json({
+        code: "GEMINI_KEY_REVOKED",
+        error:
+          "The Gemini API key was rejected (invalid, revoked, or reported as leaked). Create a new key at https://aistudio.google.com/apikey , set GEMINI_API_KEY on the server, restart the backend, and never commit keys to git or expose them in the browser.",
+      });
+    }
     res.status(500).json({ error: err.message });
   }
 }

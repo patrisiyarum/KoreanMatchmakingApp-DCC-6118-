@@ -17,6 +17,7 @@ __pycache__/
 
 # Build output
 GG/Frontend/build/
+GG/Frontend/build.zip
 dist/
 *.log
 npm-debug.log*

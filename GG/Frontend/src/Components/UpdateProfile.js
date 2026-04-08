@@ -52,7 +52,6 @@ function UpdateProfile() {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [step, setStep] = useState(0);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showStats, setShowStats] = useState(false);
 
   const [search] = useSearchParams();
   const id = search.get("id");
@@ -296,6 +295,77 @@ function UpdateProfile() {
             </div>
           </div>
 
+          {(userStats || challengeStats || badges.length > 0) && (
+            <div className="up-integrated-summary">
+              <h2 className="up-integrated-title">Points, games, and challenges</h2>
+              {userStats && (
+                <div className="up-integrated-block">
+                  <div className="up-integrated-row">
+                    <span className="up-integrated-strong">Level {userStats.level ?? 1}</span>
+                    <span className="up-integrated-muted">{userStats.xp ?? 0} / {userStats.xpToNext ?? 500} XP this level</span>
+                  </div>
+                  <div className="up-xp-bar-track">
+                    <div
+                      className="up-xp-bar-fill"
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          ((userStats.xp ?? 0) / Math.max(1, userStats.xpToNext ?? 500)) * 100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {challengeStats && (
+                <div className="up-integrated-block">
+                  <div className="up-integrated-section-label">Challenge record</div>
+                  <div className="up-integrated-challenge-grid">
+                    <div className="up-mini-stat"><span className="up-mini-val">{challengeStats.wins ?? 0}</span><span className="up-mini-lbl">Wins</span></div>
+                    <div className="up-mini-stat"><span className="up-mini-val">{challengeStats.losses ?? 0}</span><span className="up-mini-lbl">Losses</span></div>
+                    <div className="up-mini-stat"><span className="up-mini-val">{challengeStats.draws ?? 0}</span><span className="up-mini-lbl">Draws</span></div>
+                    <div className="up-mini-stat"><span className="up-mini-val">{challengeStats.winRate ?? 0}%</span><span className="up-mini-lbl">Win rate</span></div>
+                    <div className="up-mini-stat"><span className="up-mini-val">{challengeStats.totalChallenges ?? 0}</span><span className="up-mini-lbl">Finished</span></div>
+                    <div className="up-mini-stat"><span className="up-mini-val">{challengeStats.teamContributions ?? challengeStats.totalChallenges ?? 0}</span><span className="up-mini-lbl">Contributions</span></div>
+                  </div>
+                  {((challengeStats.completedGameSessions ?? 0) > 0 || (challengeStats.xpFromSessions ?? 0) > 0) && (
+                    <p className="up-integrated-muted up-integrated-tight">
+                      {challengeStats.completedGameSessions ?? 0} practice sessions completed
+                      {(challengeStats.xpFromSessions ?? 0) > 0 ? ` · ${challengeStats.xpFromSessions} XP from games` : ''}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {userStats?.gameActivity && (
+                <div className="up-integrated-block">
+                  <div className="up-integrated-section-label">Game activity</div>
+                  <div className="up-activity-grid">
+                    <span>Term matching: <strong>{userStats.gameActivity.termMatching}</strong></span>
+                    <span>Grammar: <strong>{userStats.gameActivity.grammarQuiz}</strong></span>
+                    <span>Pronunciation: <strong>{userStats.gameActivity.pronunciation}</strong></span>
+                    <span>Perfect rounds: <strong>{userStats.gameActivity.perfectRounds}</strong></span>
+                    <span className="up-activity-total">Total games: <strong>{userStats.gameActivity.gamesPlayed}</strong></span>
+                  </div>
+                </div>
+              )}
+
+              {badges.length > 0 && (
+                <div className="up-integrated-block">
+                  <div className="up-integrated-section-label">Badges ({badges.length})</div>
+                  <div className="up-badge-list up-badge-list-integrated">
+                    {badges.map(b => (
+                      <span key={b.id} className="up-badge-chip" title={b.description}>
+                        {b.icon ? `${b.icon} ` : ''}{b.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="up-messages">
             {error && <div className="up-error">Please enter all required fields.</div>}
             {submitted && !errMsg && <div className="up-success">Profile updated successfully!</div>}
@@ -415,53 +485,6 @@ function UpdateProfile() {
                   </div>
                 </div>
 
-                {(userStats || badges.length > 0 || challengeStats) && (
-                  <button className="up-accordion" type="button" onClick={() => setShowStats(v => !v)}>
-                    {showStats ? 'Hide my stats' : 'Show my stats'}
-                  </button>
-                )}
-
-                {showStats && (userStats || badges.length > 0 || challengeStats) && (
-                  <div className="up-stats-wrap">
-                    {userStats && (
-                      <div className="up-stats-grid">
-                        <div className="up-stat-card">
-                          <div className="up-stat-val">{userStats.level || 1}</div>
-                          <div className="up-stat-label">Level</div>
-                        </div>
-                        <div className="up-stat-card">
-                          <div className="up-stat-val">{userStats.xp || 0}</div>
-                          <div className="up-stat-label">XP</div>
-                        </div>
-                        {challengeStats && (
-                          <>
-                            <div className="up-stat-card">
-                              <div className="up-stat-val">{challengeStats.wins || 0}</div>
-                              <div className="up-stat-label">Challenge Wins</div>
-                            </div>
-                            <div className="up-stat-card">
-                              <div className="up-stat-val">{challengeStats.winRate || 0}%</div>
-                              <div className="up-stat-label">Win Rate</div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )}
-
-                    {badges.length > 0 && (
-                      <div>
-                        <label className="up-label" style={{ margin: '12px 0 6px' }}>Badges Earned</label>
-                        <div className="up-badge-list">
-                          {badges.map(b => (
-                            <span key={b.id} className="up-badge-chip" title={b.description}>
-                              {b.name}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )}
 

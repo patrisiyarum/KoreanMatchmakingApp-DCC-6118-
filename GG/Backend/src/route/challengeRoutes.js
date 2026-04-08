@@ -171,6 +171,67 @@ router.get('/user/:userId', async (req, res) => {
   }
 });
 
+// GET /api/challenges/user/:userId/stats — one aggregation for challenges + completed sessions (must stay before /:id)
+router.get('/user/:userId/stats', async (req, res) => {
+  try {
+    const userId = Number(req.params.userId);
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    const { QueryTypes } = db.Sequelize;
+    const uid = userId;
+
+    const [challengeRow] = await db.sequelize.query(
+      `
+      SELECT
+        SUM(CASE WHEN status = 'completed' AND (challengerId = :uid OR challengedId = :uid) THEN 1 ELSE 0 END) AS totalChallenges,
+        SUM(CASE WHEN winnerId = :uid THEN 1 ELSE 0 END) AS wins,
+        SUM(CASE
+          WHEN status = 'completed' AND winnerId IS NULL AND (challengerId = :uid OR challengedId = :uid)
+          THEN 1 ELSE 0 END) AS draws
+      FROM Challenge
+      WHERE challengerId = :uid OR challengedId = :uid
+      `,
+      { replacements: { uid }, type: QueryTypes.SELECT }
+    );
+
+    let completedGameSessions = 0;
+    let xpFromSessions = 0;
+    if (db.GameSession) {
+      const [sessionRow] = await db.sequelize.query(
+        `
+        SELECT
+          COUNT(*) AS completedSessions,
+          COALESCE(SUM(xpEarned), 0) AS sessionXpEarned
+        FROM GameSession
+        WHERE userId = :uid AND status = 'completed'
+        `,
+        { replacements: { uid }, type: QueryTypes.SELECT }
+      );
+      completedGameSessions = Number(sessionRow?.completedSessions || 0);
+      xpFromSessions = Number(sessionRow?.sessionXpEarned || 0);
+    }
+
+    const totalChallenges = Number(challengeRow?.totalChallenges || 0);
+    const wins = Number(challengeRow?.wins || 0);
+    const draws = Number(challengeRow?.draws || 0);
+    const losses = Math.max(0, totalChallenges - wins - draws);
+
+    return res.status(200).json({
+      totalChallenges,
+      wins,
+      losses,
+      draws,
+      winRate: totalChallenges > 0 ? Math.round((wins / totalChallenges) * 100) : 0,
+      teamContributions: totalChallenges,
+      completedGameSessions,
+      xpFromSessions,
+    });
+  } catch (err) {
+    console.error('Error fetching challenge stats:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/challenges/:id  — get a specific challenge
 router.get('/:id', async (req, res) => {
   try {
@@ -279,43 +340,6 @@ router.post('/:id/submit-score', async (req, res) => {
     return res.status(200).json({ challenge });
   } catch (err) {
     console.error('Error submitting challenge score:', err);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// GET /api/challenges/user/:userId/stats  — get challenge stats for a user
-router.get('/user/:userId/stats', async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    const totalChallenges = await db.Challenge.count({
-      where: {
-        [db.Sequelize.Op.or]: [{ challengerId: userId }, { challengedId: userId }],
-        status: 'completed',
-      },
-    });
-
-    const wins = await db.Challenge.count({
-      where: { winnerId: userId },
-    });
-
-    const draws = await db.Challenge.count({
-      where: {
-        [db.Sequelize.Op.or]: [{ challengerId: userId }, { challengedId: userId }],
-        status: 'completed',
-        winnerId: null,
-      },
-    });
-
-    return res.status(200).json({
-      totalChallenges,
-      wins,
-      losses: totalChallenges - wins - draws,
-      draws,
-      winRate: totalChallenges > 0 ? Math.round((wins / totalChallenges) * 100) : 0,
-    });
-  } catch (err) {
-    console.error('Error fetching challenge stats:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

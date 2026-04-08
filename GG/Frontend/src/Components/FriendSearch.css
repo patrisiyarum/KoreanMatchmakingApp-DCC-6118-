@@ -33,6 +33,10 @@
   gap: 20px;
 }
 
+.fs-results-card {
+  max-width: 640px;
+}
+
 .fs-card .back-to-dashboard {
   align-self: flex-start;
   margin-bottom: 4px;
@@ -295,12 +299,164 @@
   white-space: nowrap;
 }
 
-/* ── User result rows ── */
+/* ── User result rows (requests + legacy) ── */
 .fs-results-list {
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.fs-results-cards {
+  gap: 14px;
+}
+
+.fs-profile-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 16px 14px;
+  background: linear-gradient(180deg, #faf8ff 0%, #ffffff 42%);
+  border: 1px solid #e9e3f5;
+  border-radius: 14px;
+  box-shadow: 0 2px 0 #ede9fe;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.fs-profile-card:hover {
+  border-color: #c4b5fd;
+  box-shadow: 0 4px 14px rgba(99, 68, 166, 0.1);
+}
+
+.fs-profile-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.fs-profile-card-head {
+  flex: 1;
+  min-width: 0;
+}
+
+.fs-profile-card-sub {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.fs-profile-card-cta {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.fs-profile-goal {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #ede9fe;
+}
+
+.fs-profile-goal-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6344A6;
+}
+
+.fs-profile-goal-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: #364659;
+  line-height: 1.35;
+}
+
+.fs-profile-langs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fs-profile-lang-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
+}
+
+.fs-profile-lang-line {
+  font-size: 13px;
+  font-weight: 600;
+  color: #364659;
+}
+
+.fs-profile-lang-prof {
+  font-weight: 500;
+  color: #64748b;
+}
+
+.fs-profile-stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fs-profile-stat-pill {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6344A6;
+  background: #f3f0fa;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.fs-profile-stat-pill.fs-profile-match {
+  background: #ede9fe;
+}
+
+.fs-profile-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.fs-profile-badges-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
+  width: 100%;
+}
+
+.fs-profile-badges-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.fs-badge-emoji {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.fs-profile-badge-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.fs-profile-footer-tags {
+  margin-top: 2px;
 }
 
 .fs-user-row {

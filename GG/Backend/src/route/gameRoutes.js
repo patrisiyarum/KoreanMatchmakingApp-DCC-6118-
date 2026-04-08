@@ -11,7 +11,7 @@ router.get('/user-stats/:userId', async (req, res) => {
   try {
     const UserAccount = db.UserAccount;
     const user = await UserAccount.findByPk(req.params.userId, {
-      attributes: ['id', 'email', 'firstName', 'xp', 'level', 'profileImage'],
+      attributes: ['id', 'email', 'firstName', 'xp', 'level', 'profileImage', 'gameStats'],
     });
 
     if (!user) {
@@ -20,6 +20,25 @@ router.get('/user-stats/:userId', async (req, res) => {
 
     const xpToNext = user.level * XP_PER_LEVEL;
 
+    let gameActivity = null;
+    if (user.gameStats) {
+      try {
+        const stats = typeof user.gameStats === 'string' ? JSON.parse(user.gameStats) : user.gameStats;
+        const term = stats.term_matching_played || 0;
+        const grammar = stats.grammar_quiz_played || 0;
+        const pron = stats.pronunciation_played || 0;
+        gameActivity = {
+          gamesPlayed: stats.games_played ?? term + grammar + pron,
+          termMatching: term,
+          grammarQuiz: grammar,
+          pronunciation: pron,
+          perfectRounds: stats.perfect_score || 0,
+        };
+      } catch {
+        gameActivity = null;
+      }
+    }
+
     return res.json({
       id: user.id,
       username: user.firstName,
@@ -27,6 +46,7 @@ router.get('/user-stats/:userId', async (req, res) => {
       level: user.level,
       xpToNext,
       profileImage: user.profileImage || null,
+      gameActivity,
     });
   } catch (err) {
     console.error('Error fetching user stats:', err);

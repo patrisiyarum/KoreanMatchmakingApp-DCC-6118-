@@ -43,6 +43,9 @@ const handleDiscoverUsersApi = (requesterId, opts = {}) => {
     if (opts.commitmentFlex !== undefined && opts.commitmentFlex !== null) {
         p.set('commitmentFlex', String(opts.commitmentFlex));
     }
+    if (opts.search != null && String(opts.search).trim() !== '') {
+        p.set('search', String(opts.search).trim().slice(0, 120));
+    }
     return axios.get(`/api/v1/discover-users?${p.toString()}`);
 };
 

@@ -90,6 +90,123 @@
   color: #888;
 }
 
+.up-integrated-summary {
+  margin-top: 8px;
+  padding: 16px;
+  background: linear-gradient(180deg, #faf8ff 0%, #ffffff 55%);
+  border: 1px solid #ede9fe;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.up-integrated-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #364659;
+  font-family: var(--dl-font);
+}
+
+.up-integrated-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.up-integrated-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.up-integrated-strong {
+  font-weight: 800;
+  color: #6344A6;
+  font-size: 15px;
+}
+
+.up-integrated-muted {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.up-integrated-tight {
+  margin: 0;
+}
+
+.up-integrated-section-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+}
+
+.up-xp-bar-track {
+  height: 8px;
+  background: #ede9fe;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.up-xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6344A6 0%, #8B5FBF 100%);
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
+
+.up-integrated-challenge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 8px;
+}
+
+.up-mini-stat {
+  background: #f3f0fa;
+  border-radius: 10px;
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.up-mini-val {
+  display: block;
+  font-size: 18px;
+  font-weight: 800;
+  color: #6344A6;
+  font-family: var(--dl-font);
+}
+
+.up-mini-lbl {
+  font-size: 10px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.up-activity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px 12px;
+  font-size: 12px;
+  color: #364659;
+}
+
+.up-activity-total {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed #ede9fe;
+}
+
+.up-badge-list-integrated {
+  margin-top: 0;
+}
+
 .up-form {
   display: flex;
   flex-direction: column;

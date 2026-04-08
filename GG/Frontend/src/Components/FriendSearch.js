@@ -38,6 +38,26 @@ function Avatar({ src, name, size = 44 }) {
   );
 }
 
+function parseGameStats(raw) {
+  if (raw == null || raw === '') return null;
+  try {
+    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch {
+    return null;
+  }
+}
+
+function activityFromGameStats(raw) {
+  const o = parseGameStats(raw);
+  if (!o) return null;
+  const term = o.term_matching_played || 0;
+  const grammar = o.grammar_quiz_played || 0;
+  const pron = o.pronunciation_played || 0;
+  const played = o.games_played ?? term + grammar + pron;
+  if (!played && !o.perfect_score) return null;
+  return { gamesPlayed: played, perfectRounds: o.perfect_score || 0 };
+}
+
 const MBTI_OPTIONS = [
   'INTJ','INTP','ENTJ','ENTP',
   'INFJ','INFP','ENFJ','ENFP',
@@ -273,60 +293,17 @@ const FriendSearch = ({ embedded = false }) => {
     }
   };
 
-  const applyMatchFilters = async () => {
-    if (!id) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const visibleUsers = await fetchDiscoverAndEnrich({
-        sort: sortDiscover,
-        learningGoal: filterMatchLearningGoal || undefined,
-        communicationStyle: filterMatchCommunicationStyle || undefined,
-        commitmentLevel: filterMatchCommitment === '' ? undefined : Number(filterMatchCommitment),
-        commitmentFlex: filterCommitmentFlex,
-      });
-      setAllUserNames(visibleUsers);
-      setUserNames(visibleUsers);
-      setActiveFilter(-1);
-    } catch (e) {
-      setError(e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const discoverRequestOpts = (sortVal) => ({
+    sort: sortVal,
+    learningGoal: filterMatchLearningGoal || undefined,
+    communicationStyle: filterMatchCommunicationStyle || undefined,
+    commitmentLevel: filterMatchCommitment === '' ? undefined : Number(filterMatchCommitment),
+    commitmentFlex: filterCommitmentFlex,
+    search: (filterInput || '').trim() || undefined,
+  });
 
-  const applySortDiscover = async (nextSort) => {
-    if (!id) return;
-    setSortDiscover(nextSort);
-    setLoading(true);
-    setError(null);
-    try {
-      const visibleUsers = await fetchDiscoverAndEnrich({
-        sort: nextSort,
-        learningGoal: filterMatchLearningGoal || undefined,
-        communicationStyle: filterMatchCommunicationStyle || undefined,
-        commitmentLevel: filterMatchCommitment === '' ? undefined : Number(filterMatchCommitment),
-        commitmentFlex: filterCommitmentFlex,
-      });
-      setAllUserNames(visibleUsers);
-      setUserNames(visibleUsers);
-    } catch (e) {
-      setError(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const applyFilters = () => {
-    let base = allUserNames;
-    const q = (filterInput || '').trim().toLowerCase();
-    if (q) {
-      base = base.filter(u =>
-        (u.firstName || '').toLowerCase().includes(q) ||
-        (u.lastName || '').toLowerCase().includes(q) ||
-        (u.email || '').toLowerCase().includes(q)
-      );
-    }
+  const applyClientOnlyFilters = (visibleUsers) => {
+    let base = visibleUsers;
     if (selectedMbti.length) {
       const s = new Set(selectedMbti.map(v => v.toUpperCase()));
       base = base.filter(u => s.has(String(u.mbti || '').toUpperCase()));
@@ -348,10 +325,71 @@ const FriendSearch = ({ embedded = false }) => {
         [u.interests, u.interest, u.hobby].filter(Boolean)
           .flatMap(v => Array.isArray(v) ? v : [v])
           .forEach(v => names.push(String(v).toLowerCase()));
-        return names.some(s => wanted.has(s));
+        return names.some(x => wanted.has(x));
       });
     }
-    setUserNames(base);
+    return base;
+  };
+
+  const applyMatchFilters = async () => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const visibleUsers = await fetchDiscoverAndEnrich(discoverRequestOpts(sortDiscover));
+      setAllUserNames(visibleUsers);
+      setUserNames(applyClientOnlyFilters(visibleUsers));
+      setActiveFilter(-1);
+    } catch (e) {
+      setError(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applySortDiscover = async (nextSort) => {
+    if (!id) return;
+    setSortDiscover(nextSort);
+    setLoading(true);
+    setError(null);
+    try {
+      const visibleUsers = await fetchDiscoverAndEnrich(discoverRequestOpts(nextSort));
+      setAllUserNames(visibleUsers);
+      setUserNames(applyClientOnlyFilters(visibleUsers));
+    } catch (e) {
+      setError(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyFilters = async () => {
+    const qNorm = (filterInput || '').trim().toLowerCase();
+
+    if (!id) {
+      let base = allUserNames;
+      if (qNorm) {
+        base = base.filter(u =>
+          (u.firstName || '').toLowerCase().includes(qNorm) ||
+          (u.lastName || '').toLowerCase().includes(qNorm) ||
+          (u.email || '').toLowerCase().includes(qNorm)
+        );
+      }
+      setUserNames(applyClientOnlyFilters(base));
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const visibleUsers = await fetchDiscoverAndEnrich(discoverRequestOpts(sortDiscover));
+      setAllUserNames(visibleUsers);
+      setUserNames(applyClientOnlyFilters(visibleUsers));
+    } catch (e) {
+      setError(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const clearAll = async () => {
@@ -372,7 +410,10 @@ const FriendSearch = ({ embedded = false }) => {
     setLoading(true);
     setError(null);
     try {
-      const visibleUsers = await fetchDiscoverAndEnrich({ sort: 'best_match' });
+      const visibleUsers = await fetchDiscoverAndEnrich({
+        sort: 'best_match',
+        commitmentFlex: 0,
+      });
       setAllUserNames(visibleUsers);
       setUserNames(visibleUsers);
     } catch {
@@ -636,7 +677,7 @@ const FriendSearch = ({ embedded = false }) => {
         )}
 
         {/* Results card */}
-        <div className="fs-card">
+        <div className="fs-card fs-results-card">
           <div className="fs-results-header">
             <span className="fs-results-count">{userNames.length} suggested</span>
             <div className="fs-sort-group">
@@ -660,54 +701,108 @@ const FriendSearch = ({ embedded = false }) => {
           {userNames.length === 0 ? (
             <p className="fs-empty">No one matches your search.</p>
           ) : (
-            <div className="fs-results-list">
-              {userNames.map((user, i) => (
-                <div key={i} className="fs-user-row">
-                  <Avatar src={user.profileImage} name={user.firstName} />
+            <div className="fs-results-list fs-results-cards">
+              {userNames.map((user, i) => {
+                const nativeL = getField(user, ['nativeLanguage', 'native_language']);
+                const targetL = getField(user, ['targetLanguage', 'target_language']);
+                const prof = getField(user, ['targetLanguageProficiency', 'target_language_proficiency']);
+                const activity = activityFromGameStats(user.gameStats);
+                const badgeCount = user.badgeCount != null ? Number(user.badgeCount) : 0;
+                const badgeIcons = typeof user.badgeIcons === 'string' && user.badgeIcons.trim()
+                  ? user.badgeIcons.trim().split(/\s+/).filter(Boolean)
+                  : [];
 
-                  <div className="fs-user-info">
-                    <div className="fs-user-name">{user.firstName} {user.lastName}</div>
-                    <div className="fs-user-meta">
-                      {user.profession && <span>{user.profession}</span>}
-                      {user.age && <span> · {user.age}</span>}
-                      {getField(user, ["nativeLanguage", "native_language"]) && (
-                        <span> · {getField(user, ["nativeLanguage", "native_language"])} → {getField(user, ["targetLanguage", "target_language"])}</span>
-                      )}
+                return (
+                  <div key={i} className="fs-profile-card">
+                    <div className="fs-profile-card-top">
+                      <Avatar src={user.profileImage} name={user.firstName} size={52} />
+                      <div className="fs-profile-card-head">
+                        <div className="fs-user-name">{user.firstName} {user.lastName}</div>
+                        <div className="fs-profile-card-sub">
+                          {[user.profession, user.age ? `${user.age}` : null].filter(Boolean).join(' · ') || ' '}
+                        </div>
+                      </div>
+                      <div className="fs-profile-card-cta">
+                        {(() => {
+                          const reqStatus = getRequestStatusForUser(user.id);
+                          if (reqStatus.status === 'pending_sent') {
+                            return <span className="fs-status-requested">Requested</span>;
+                          }
+                          if (reqStatus.status === 'pending_received' && reqStatus.requestId) {
+                            const requesterName = `${user.firstName} ${user.lastName || ''}`.trim();
+                            return (
+                              <div className="fs-request-actions">
+                                <button type="button" className="fs-btn-accept" onClick={(e) => { e.stopPropagation(); handleAccept(reqStatus.requestId, requesterName); }}>Accept</button>
+                                <button type="button" className="fs-btn-decline" onClick={(e) => { e.stopPropagation(); handleDecline(reqStatus.requestId, requesterName); }}>Decline</button>
+                              </div>
+                            );
+                          }
+                          return (
+                            <button type="button" className="fs-btn-follow"
+                              onClick={(e) => { e.stopPropagation(); handleSendRequest(user); }}>
+                              Follow
+                            </button>
+                          );
+                        })()}
+                      </div>
                     </div>
-                    {(user.learning_goal || user.communication_style || user.commitment_level != null) && (
-                      <div className="fs-user-match-tags">
-                        {user.learning_goal && <span className="fs-tag">{user.learning_goal}</span>}
+
+                    {user.learning_goal ? (
+                      <div className="fs-profile-goal">
+                        <span className="fs-profile-goal-label">Goal</span>
+                        <span className="fs-profile-goal-text">{user.learning_goal}</span>
+                      </div>
+                    ) : null}
+
+                    {(nativeL || targetL) ? (
+                      <div className="fs-profile-langs">
+                        <span className="fs-profile-lang-label">Languages</span>
+                        <span className="fs-profile-lang-line">
+                          {nativeL || '—'} → {targetL || '—'}
+                          {prof ? <span className="fs-profile-lang-prof"> · {prof}</span> : null}
+                        </span>
+                      </div>
+                    ) : null}
+
+                    <div className="fs-profile-stats-row">
+                      {(user.level != null || user.xp != null) && (
+                        <span className="fs-profile-stat-pill">
+                          Lv {user.level ?? 1} · {user.xp ?? 0} XP
+                        </span>
+                      )}
+                      {activity?.gamesPlayed ? (
+                        <span className="fs-profile-stat-pill">{activity.gamesPlayed} games</span>
+                      ) : null}
+                      {user.matchScore != null && sortDiscover === 'best_match' ? (
+                        <span className="fs-profile-stat-pill fs-profile-match">Match {user.matchScore}</span>
+                      ) : null}
+                    </div>
+
+                    {(badgeCount > 0 || badgeIcons.length > 0) ? (
+                      <div className="fs-profile-badges">
+                        <span className="fs-profile-badges-label">Badges</span>
+                        <div className="fs-profile-badges-icons">
+                          {badgeIcons.map((icon, j) => (
+                            <span key={j} className="fs-badge-emoji" title="Badge">{icon}</span>
+                          ))}
+                        </div>
+                        {badgeCount > 0 ? (
+                          <span className="fs-profile-badge-count">{badgeCount} earned</span>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {(user.communication_style || user.commitment_level != null) ? (
+                      <div className="fs-user-match-tags fs-profile-footer-tags">
                         {user.communication_style && <span className="fs-tag">{user.communication_style}</span>}
                         {user.commitment_level != null && user.commitment_level !== '' && (
                           <span className="fs-tag">Commitment {user.commitment_level}/5</span>
                         )}
                       </div>
-                    )}
+                    ) : null}
                   </div>
-
-                  {(() => {
-                    const reqStatus = getRequestStatusForUser(user.id);
-                    if (reqStatus.status === 'pending_sent') {
-                      return <span className="fs-status-requested">Requested</span>;
-                    }
-                    if (reqStatus.status === 'pending_received' && reqStatus.requestId) {
-                      const requesterName = `${user.firstName} ${user.lastName || ''}`.trim();
-                      return (
-                        <div className="fs-request-actions">
-                          <button className="fs-btn-accept" onClick={(e) => { e.stopPropagation(); handleAccept(reqStatus.requestId, requesterName); }}>Accept</button>
-                          <button className="fs-btn-decline" onClick={(e) => { e.stopPropagation(); handleDecline(reqStatus.requestId, requesterName); }}>Decline</button>
-                        </div>
-                      );
-                    }
-                    return (
-                      <button className="fs-btn-follow"
-                        onClick={(e) => { e.stopPropagation(); handleSendRequest(user); }}>
-                        Follow
-                      </button>
-                    );
-                  })()}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

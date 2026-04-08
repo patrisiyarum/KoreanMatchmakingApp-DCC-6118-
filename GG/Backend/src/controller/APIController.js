@@ -162,7 +162,7 @@ const getUserNames = async (req, res) => {
 
 /**
  * Discover users for Find Friends: join account + profile, optional filters on learning goal,
- * communication style, commitment; sort by affinity to requester or by name.
+ * communication style, commitment, optional name/email search; sort by affinity or name.
  */
 const getDiscoverUsers = async (req, res) => {
   try {
@@ -228,6 +228,23 @@ const getDiscoverUsers = async (req, res) => {
       }
     }
 
+    let searchClause = '';
+    const searchParams = [];
+    const rawSearch = req.query.search != null ? String(req.query.search) : '';
+    const searchTrim = rawSearch.trim().slice(0, 120);
+    if (searchTrim) {
+      const escaped = searchTrim
+        .replace(/\\/g, '\\\\')
+        .replace(/%/g, '\\%')
+        .replace(/_/g, '\\_');
+      const pattern = `%${escaped}%`;
+      searchClause = ` AND (
+        ua.firstName LIKE ? OR ua.lastName LIKE ? OR ua.email LIKE ? OR
+        CONCAT(COALESCE(ua.firstName, ''), ' ', COALESCE(ua.lastName, '')) LIKE ?
+      )`;
+      searchParams.push(pattern, pattern, pattern, pattern);
+    }
+
     const matchExpr = `(
       (CASE WHEN up.learning_goal <=> rp.learning_goal AND rp.learning_goal IS NOT NULL AND TRIM(rp.learning_goal) <> '' THEN 40 ELSE 0 END) +
       (CASE WHEN up.communication_style <=> rp.communication_style AND rp.communication_style IS NOT NULL AND TRIM(rp.communication_style) <> '' THEN 40 ELSE 0 END) +
@@ -244,18 +261,33 @@ const getDiscoverUsers = async (req, res) => {
         ua.id, ua.email, ua.firstName, ua.lastName, ua.createdAt, ua.updatedAt, ua.loggedIn, ua.gameStats, ua.xp, ua.level, ua.profileImage,
         up.native_language, up.target_language, up.target_language_proficiency, up.age, up.gender, up.profession, up.mbti, up.zodiac, up.visibility,
         up.default_time_zone, up.rating, up.learning_goal, up.communication_style, up.commitment_level,
+        COALESCE(badge_counts.cnt, 0) AS badgeCount,
+        badge_strip.icons AS badgeIcons,
         ${matchExpr} AS matchScore
       FROM useraccount ua
       INNER JOIN UserProfile up ON up.id = ua.id
       INNER JOIN UserProfile rp ON rp.id = ?
+      LEFT JOIN (
+        SELECT userId, COUNT(*) AS cnt
+        FROM UserBadge
+        GROUP BY userId
+      ) badge_counts ON badge_counts.userId = ua.id
+      LEFT JOIN (
+        SELECT ub.userId,
+          SUBSTRING(GROUP_CONCAT(b.icon ORDER BY ub.earnedAt DESC SEPARATOR ' '), 1, 64) AS icons
+        FROM UserBadge ub
+        INNER JOIN Badge b ON b.id = ub.badgeId
+        GROUP BY ub.userId
+      ) badge_strip ON badge_strip.userId = ua.id
       WHERE ua.id <> ?
       AND (up.visibility IS NULL OR up.visibility = '' OR up.visibility = 'Show')
       ${whereExtra}
+      ${searchClause}
       ${orderClause}
     `;
 
     try {
-      const [rows] = await pool.execute(sql, execParams);
+      const [rows] = await pool.execute(sql, [...execParams, ...searchParams]);
       return res.status(200).json({
         message: 'ok',
         data: rows,
@@ -279,15 +311,17 @@ const getDiscoverUsers = async (req, res) => {
           up.native_language, up.target_language, up.target_language_proficiency, up.age, up.gender, up.profession, up.mbti, up.zodiac, up.visibility,
           up.default_time_zone, up.rating,
           NULL AS learning_goal, NULL AS communication_style, NULL AS commitment_level,
+          0 AS badgeCount, NULL AS badgeIcons,
           0 AS matchScore
         FROM useraccount ua
         INNER JOIN UserProfile up ON up.id = ua.id
         INNER JOIN UserProfile rp ON rp.id = ?
         WHERE ua.id <> ?
         AND (up.visibility IS NULL OR up.visibility = '' OR up.visibility = 'Show')
+        ${searchClause}
         ${legacyOrder}
       `;
-      const legacyParams = [requesterId, requesterId];
+      const legacyParams = [requesterId, requesterId, ...searchParams];
       const [legacyRows] = await pool.execute(legacySql, legacyParams);
       return res.status(200).json({
         message: 'ok',

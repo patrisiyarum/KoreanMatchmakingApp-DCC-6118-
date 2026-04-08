@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, createSearchParams } from 'react-router-dom';
 import Navbar from './NavBar';
+import GameNavbar from './GameNavbar';
 import {
   handleJoinTeamApi,
   handleGetMyTeamApi,
@@ -125,6 +126,7 @@ function TeamLobby() {
   return (
     <div className="team-page-bg">
       <Navbar id={id} />
+      <GameNavbar />
       <div className="team-center">
         {invites.length > 0 && (
           <div className="team-card team-invites-card">
@@ -257,9 +259,6 @@ function TeamLobby() {
             </div>
           )}
 
-          <div className="team-btn-row" style={{ marginTop: 14 }}>
-            <button type="button" className="back-to-dashboard" onClick={goToGames}>Games</button>
-          </div>
         </div>
       </div>
     </div>

@@ -32,30 +32,37 @@ function Dashboard() {
   const navigate = useNavigate();
 
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await handleUserDashBoardApi(id);
-        const user = data.user || {};
-        console.log('User data:', user);
-        console.log('Profile image:', user.profileImage);
-        setFirstName(user.firstName || '');
-        setLastName(user.lastName || '');
-        if (user.profileImage) {
-          setProfileImage(user.profileImage);
-          setProfileImgError(false);
-        }
-        setUserData({
-          firstName: user.firstName || '',
-          lastName: user.lastName || '',
-          email: user.email || '',
-        });
-      } catch (err) {
-        console.log(err);
+useEffect(() => {
+  const load = async () => {
+    try {
+      const [dashData, statsData] = await Promise.allSettled([
+        handleUserDashBoardApi(id),
+        handleGetUserStatsApi(id),
+      ]);
+
+      const user = dashData.status === 'fulfilled' ? (dashData.value?.user || {}) : {};
+      setFirstName(user.firstName || '');
+      setLastName(user.lastName || '');
+      setUserData({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+      });
+
+      // Profile image lives on the stats endpoint (same source as UpdateProfile)
+      const imgPath = statsData.status === 'fulfilled'
+        ? statsData.value?.profileImage
+        : user.profileImage;
+      if (imgPath) {
+        setProfileImage(imgPath);
+        setProfileImgError(false);
       }
-    };
-    if (id) load();
-  }, [id]);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  if (id) load();
+}, [id]);
 
   useEffect(() => {
     if (!id) {
@@ -186,7 +193,6 @@ function Dashboard() {
 
       <div className="dashboard-welcome">
         <h1>Welcome back, {firstName} {lastName || ''}</h1>
-        <p>Select a section to continue</p>
       </div>
 
       {id && progressLoaded && userStats && challengeStats && (
@@ -287,23 +293,24 @@ function Dashboard() {
       <div className="dashboard-main-grid">
         <div className="dashboard-left-panel">
           <section className="dashboard-card profile-card">
-            <div className="profile-avatar">
-                {profileImage && !profileImgError ? (
-                  <img
-                    src={getImageUrl(profileImage)}
-                    alt="Profile"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                    onError={() => setProfileImgError(true)}
-                  />
-                ) : (
-                  getInitial()
-                )}
-                </div>
-            <div className="profile-details">
-              <h2>{firstName} {lastName}</h2>
-              <button className="profile-edit-btn" onClick={() => goTo('/UpdateProfile')}>Edit Profile</button>
-            </div>
-          </section>
+          <div className="profile-avatar">
+            {profileImage && !profileImgError ? (
+              <img
+                src={getImageUrl(profileImage)}
+                alt="Profile"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                onError={() => setProfileImgError(true)}
+              />
+            ) : (
+              getInitial()
+            )}
+          </div>
+          <div className="profile-details">
+            <h2>{firstName} {lastName}</h2>
+            <button className="profile-edit-btn" onClick={() => goTo('/ViewProfile')}>View Profile</button>
+            <button className="profile-edit-btn" onClick={() => goTo('/UpdateProfile')}>Edit Profile</button>
+          </div>
+        </section>
 
           <section className="dashboard-card schedule-card">
             <div className="panel-header">
@@ -352,15 +359,6 @@ function Dashboard() {
         </div>
       </div>
 
-
-      <div className="dashboard-footer">
-        <button
-          className="dash-logout-btn"
-          onClick={() => goTo('/LogoutConfirmation')}
-        >
-          Log Out
-        </button>
-      </div>
     </div>
   );
 }

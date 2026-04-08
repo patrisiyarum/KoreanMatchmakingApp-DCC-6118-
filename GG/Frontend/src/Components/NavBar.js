@@ -32,7 +32,7 @@ const NAV_SLOTS = [
   { type: 'simple', label: 'Translator', path: '/Translator' },
   { type: 'simple', label: 'Scheduler', path: '/Scheduler' },
   { type: 'ai' },
-  { type: 'simple', label: 'Profile', path: '/UpdateProfile' },
+  { type: 'simple', label: 'Profile', path: '/ViewProfile' },
 ];
 
 const PARENT_ROUTES = {

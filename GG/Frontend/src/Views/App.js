@@ -33,6 +33,7 @@ import ChallengeHub from '../Components/ChallengeHub';
 import TeamLobby  from '../Components/TeamLobby';
 import TeamCreate from '../Components/TeamCreate';
 import TeamPage   from '../Components/TeamPage';
+import ViewProfile from '../Components/ViewProfile';
 
 function RedirectToFriends({ discover }) {
   const [sp] = useSearchParams();
@@ -77,6 +78,7 @@ const App = () => {
           <Route path="/TeamLobby"  element={<TeamLobby />} />
           <Route path="/TeamCreate" element={<TeamCreate />} />
           <Route path="/TeamPage"   element={<TeamPage />} />
+          <Route path="/ViewProfile" element={<ViewProfile />} />
        </Routes>
       </Router>
       <TranslatorPanel />

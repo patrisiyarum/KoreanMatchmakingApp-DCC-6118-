@@ -16,8 +16,6 @@ import {
 
 import { handleGetUserProfileApi } from '../Services/findFriendsService';
 import { handleGetUserStatsApi } from '../Services/gameSelectionService';
-import { handleGetUserBadgesApi } from '../Services/badgeService';
-import { getChallengeStats } from '../Services/challengeService';
 import { createSearchParams, useNavigate, useSearchParams } from "react-router-dom";
 
 const selectStyles = {
@@ -40,9 +38,6 @@ function UpdateProfile() {
   const [communicationStyle, setCommunicationStyle] = useState('');
   const [commitmentLevel, setCommitmentLevel] = useState(3);
   const [profileImage, setProfileImage] = useState(null);
-  const [userStats, setUserStats] = useState(null);
-  const [badges, setBadges] = useState([]);
-  const [challengeStats, setChallengeStats] = useState(null);
   const [allInterests, setAllInterests] = useState([]);
   const [selectedInterests, setSelectedInterests] = useState([]);
   const [availability, setAvailability] = useState([]);
@@ -162,19 +157,9 @@ function UpdateProfile() {
           }
         }
 
-        if (userStatsRes.status === 'fulfilled') {
-          setUserStats(userStatsRes.value);
-          if (userStatsRes.value?.profileImage) setProfileImage(userStatsRes.value.profileImage);
+        if (userStatsRes.status === 'fulfilled' && userStatsRes.value?.profileImage) {
+          setProfileImage(userStatsRes.value.profileImage);
         }
-
-        try {
-          const [badgeRes, challengeStatsRes] = await Promise.allSettled([
-            handleGetUserBadgesApi(id),
-            getChallengeStats(id),
-          ]);
-          if (badgeRes.status === 'fulfilled') setBadges(badgeRes.value?.badges || []);
-          if (challengeStatsRes.status === 'fulfilled') setChallengeStats(challengeStatsRes.value);
-        } catch {}
 
         if (interestsAllRes.status === 'fulfilled') {
           const raw = interestsAllRes.value;
@@ -294,58 +279,6 @@ function UpdateProfile() {
               <div className="up-progress-sub">{STEPS[step].subtitle}</div>
             </div>
           </div>
-
-          {(challengeStats || badges.length > 0 || userStats?.gameActivity) && (
-            <div className="up-integrated-summary">
-              <h2 className="up-integrated-title">Games and challenges</h2>
-
-              {challengeStats && (
-                <div className="up-integrated-block">
-                  <div className="up-integrated-section-label">Challenge record</div>
-                  <div className="up-integrated-challenge-grid">
-                    <div className="up-mini-stat"><span className="up-mini-val">{challengeStats.wins ?? 0}</span><span className="up-mini-lbl">Wins</span></div>
-                    <div className="up-mini-stat"><span className="up-mini-val">{challengeStats.losses ?? 0}</span><span className="up-mini-lbl">Losses</span></div>
-                    <div className="up-mini-stat"><span className="up-mini-val">{challengeStats.draws ?? 0}</span><span className="up-mini-lbl">Draws</span></div>
-                    <div className="up-mini-stat"><span className="up-mini-val">{challengeStats.winRate ?? 0}%</span><span className="up-mini-lbl">Win rate</span></div>
-                    <div className="up-mini-stat"><span className="up-mini-val">{challengeStats.totalChallenges ?? 0}</span><span className="up-mini-lbl">Finished</span></div>
-                    <div className="up-mini-stat"><span className="up-mini-val">{challengeStats.teamContributions ?? challengeStats.totalChallenges ?? 0}</span><span className="up-mini-lbl">Contributions</span></div>
-                  </div>
-                  {((challengeStats.completedGameSessions ?? 0) > 0 || (challengeStats.xpFromSessions ?? 0) > 0) && (
-                    <p className="up-integrated-muted up-integrated-tight">
-                      {challengeStats.completedGameSessions ?? 0} practice sessions completed
-                      {(challengeStats.xpFromSessions ?? 0) > 0 ? ` · ${challengeStats.xpFromSessions} XP from games` : ''}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {userStats?.gameActivity && (
-                <div className="up-integrated-block">
-                  <div className="up-integrated-section-label">Game activity</div>
-                  <div className="up-activity-grid">
-                    <span>Term matching: <strong>{userStats.gameActivity.termMatching}</strong></span>
-                    <span>Grammar: <strong>{userStats.gameActivity.grammarQuiz}</strong></span>
-                    <span>Pronunciation: <strong>{userStats.gameActivity.pronunciation}</strong></span>
-                    <span>Perfect rounds: <strong>{userStats.gameActivity.perfectRounds}</strong></span>
-                    <span className="up-activity-total">Total games: <strong>{userStats.gameActivity.gamesPlayed}</strong></span>
-                  </div>
-                </div>
-              )}
-
-              {badges.length > 0 && (
-                <div className="up-integrated-block">
-                  <div className="up-integrated-section-label">Badges ({badges.length})</div>
-                  <div className="up-badge-list up-badge-list-integrated">
-                    {badges.map(b => (
-                      <span key={b.id} className="up-badge-chip" title={b.description}>
-                        {b.icon ? `${b.icon} ` : ''}{b.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           <div className="up-messages">
             {error && <div className="up-error">Please enter all required fields.</div>}

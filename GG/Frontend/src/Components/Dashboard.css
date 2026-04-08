@@ -25,6 +25,29 @@
   margin: 0;
 }
 
+.dashboard-progress-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 8px 24px 0;
+  box-sizing: border-box;
+}
+
+.dashboard-progress-card.up-integrated-summary {
+  margin-top: 0;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.dashboard-progress-wrap .up-integrated-title {
+  text-align: center;
+  font-size: 17px;
+}
+
+.dashboard-progress-wrap .up-integrated-section-label {
+  text-align: center;
+}
+
 .dash-challenge-banner {
   width: 100%;
   padding: 14px 24px;

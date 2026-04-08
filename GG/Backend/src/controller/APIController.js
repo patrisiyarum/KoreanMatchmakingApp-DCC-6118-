@@ -263,7 +263,7 @@ const getDiscoverUsers = async (req, res) => {
         up.default_time_zone, up.rating, up.learning_goal, up.communication_style, up.commitment_level,
         COALESCE(badge_counts.cnt, 0) AS badgeCount,
         badge_strip.icons AS badgeIcons,
-        ${matchExpr} AS matchScore
+        LEAST(100, GREATEST(0, ROUND(100 * (${matchExpr}) / 105))) AS matchScore
       FROM useraccount ua
       INNER JOIN UserProfile up ON up.id = ua.id
       INNER JOIN UserProfile rp ON rp.id = ?

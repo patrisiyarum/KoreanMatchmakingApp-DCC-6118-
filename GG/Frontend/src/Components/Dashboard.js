@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import React from "react";
 import './Dashboard.css';
+import './UpdateProfile.css';
 import { createSearchParams, useSearchParams, useNavigate } from "react-router-dom";
 import { handleUserDashBoardApi } from '../Services/dashboardService';
 import { handleGetTrueFriendsList, handleGetMeetings } from '../Services/userService';
-import { getUserChallenges } from '../Services/challengeService';
+import { getUserChallenges, getChallengeStats } from '../Services/challengeService';
+import { handleGetUserStatsApi } from '../Services/gameSelectionService';
+import { handleGetUserBadgesApi } from '../Services/badgeService';
 import { setUserData } from '../Utils/userData';
 import { getImageUrl } from '../Services/uploadImageService';
 import Navbar from './NavBar';
@@ -21,6 +24,10 @@ function Dashboard() {
   const [yourTurnChallenges, setYourTurnChallenges] = useState(0);
   const [friendsList, setFriendsList] = useState([]);
   const [meetings, setMeetings] = useState([]);
+  const [userStats, setUserStats] = useState(null);
+  const [challengeStats, setChallengeStats] = useState(null);
+  const [badges, setBadges] = useState([]);
+  const [progressLoaded, setProgressLoaded] = useState(false);
   const navigate = useNavigate();
 
 
@@ -47,6 +54,52 @@ function Dashboard() {
       }
     };
     if (id) load();
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) {
+      setProgressLoaded(false);
+      return;
+    }
+    let cancelled = false;
+    const loadProgress = async () => {
+      try {
+        const [statsRes, chRes, badgeRes] = await Promise.allSettled([
+          handleGetUserStatsApi(id),
+          getChallengeStats(id),
+          handleGetUserBadgesApi(id),
+        ]);
+        if (cancelled) return;
+        if (statsRes.status === 'fulfilled' && statsRes.value) {
+          setUserStats(statsRes.value);
+        } else {
+          setUserStats({ level: 1, xp: 0, xpToNext: 500, gameActivity: null });
+        }
+        if (chRes.status === 'fulfilled' && chRes.value) {
+          setChallengeStats(chRes.value);
+        } else {
+          setChallengeStats({
+            wins: 0,
+            losses: 0,
+            draws: 0,
+            winRate: 0,
+            totalChallenges: 0,
+            teamContributions: 0,
+            completedGameSessions: 0,
+            xpFromSessions: 0,
+          });
+        }
+        if (badgeRes.status === 'fulfilled') {
+          setBadges(badgeRes.value?.badges || []);
+        } else {
+          setBadges([]);
+        }
+      } finally {
+        if (!cancelled) setProgressLoaded(true);
+      }
+    };
+    loadProgress();
+    return () => { cancelled = true; };
   }, [id]);
 
   useEffect(() => {
@@ -134,6 +187,101 @@ function Dashboard() {
         <h1>Welcome back, {firstName} {lastName || ''}</h1>
         <p>Select a section to continue</p>
       </div>
+
+      {id && progressLoaded && userStats && challengeStats && (
+        <div className="dashboard-progress-wrap">
+          <div className="up-integrated-summary dashboard-progress-card">
+            <h2 className="up-integrated-title">Points, games, and challenges</h2>
+            <div className="up-integrated-block">
+              <div className="up-integrated-row">
+                <span className="up-integrated-strong">Level {userStats.level ?? 1}</span>
+                <span className="up-integrated-muted">
+                  {userStats.xp ?? 0} / {userStats.xpToNext ?? 500} XP this level
+                </span>
+              </div>
+              <div className="up-xp-bar-track">
+                <div
+                  className="up-xp-bar-fill"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      ((userStats.xp ?? 0) / Math.max(1, userStats.xpToNext ?? 500)) * 100
+                    )}%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="up-integrated-block">
+              <div className="up-integrated-section-label">Challenge record</div>
+              <div className="up-integrated-challenge-grid">
+                <div className="up-mini-stat">
+                  <span className="up-mini-val">{challengeStats.wins ?? 0}</span>
+                  <span className="up-mini-lbl">Wins</span>
+                </div>
+                <div className="up-mini-stat">
+                  <span className="up-mini-val">{challengeStats.losses ?? 0}</span>
+                  <span className="up-mini-lbl">Losses</span>
+                </div>
+                <div className="up-mini-stat">
+                  <span className="up-mini-val">{challengeStats.draws ?? 0}</span>
+                  <span className="up-mini-lbl">Draws</span>
+                </div>
+                <div className="up-mini-stat">
+                  <span className="up-mini-val">{challengeStats.winRate ?? 0}%</span>
+                  <span className="up-mini-lbl">Win rate</span>
+                </div>
+                <div className="up-mini-stat">
+                  <span className="up-mini-val">{challengeStats.totalChallenges ?? 0}</span>
+                  <span className="up-mini-lbl">Finished</span>
+                </div>
+                <div className="up-mini-stat">
+                  <span className="up-mini-val">
+                    {challengeStats.teamContributions ?? challengeStats.totalChallenges ?? 0}
+                  </span>
+                  <span className="up-mini-lbl">Contributions</span>
+                </div>
+              </div>
+              {((challengeStats.completedGameSessions ?? 0) > 0 || (challengeStats.xpFromSessions ?? 0) > 0) && (
+                <p className="up-integrated-muted up-integrated-tight">
+                  {challengeStats.completedGameSessions ?? 0} practice sessions completed
+                  {(challengeStats.xpFromSessions ?? 0) > 0
+                    ? ` · ${challengeStats.xpFromSessions} XP from games`
+                    : ''}
+                </p>
+              )}
+            </div>
+
+            {userStats.gameActivity && (
+              <div className="up-integrated-block">
+                <div className="up-integrated-section-label">Game activity</div>
+                <div className="up-activity-grid">
+                  <span>Term matching: <strong>{userStats.gameActivity.termMatching}</strong></span>
+                  <span>Grammar: <strong>{userStats.gameActivity.grammarQuiz}</strong></span>
+                  <span>Pronunciation: <strong>{userStats.gameActivity.pronunciation}</strong></span>
+                  <span>Perfect rounds: <strong>{userStats.gameActivity.perfectRounds}</strong></span>
+                  <span className="up-activity-total">
+                    Total games: <strong>{userStats.gameActivity.gamesPlayed}</strong>
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {badges.length > 0 && (
+              <div className="up-integrated-block">
+                <div className="up-integrated-section-label">Badges ({badges.length})</div>
+                <div className="up-badge-list up-badge-list-integrated">
+                  {badges.map((b) => (
+                    <span key={b.id} className="up-badge-chip" title={b.description}>
+                      {b.icon ? `${b.icon} ` : ''}{b.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="dashboard-main-grid">
         <div className="dashboard-left-panel">

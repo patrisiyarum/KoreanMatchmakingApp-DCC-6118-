@@ -774,7 +774,9 @@ const FriendSearch = ({ embedded = false }) => {
                         <span className="fs-profile-stat-pill">{activity.gamesPlayed} games</span>
                       ) : null}
                       {user.matchScore != null && sortDiscover === 'best_match' ? (
-                        <span className="fs-profile-stat-pill fs-profile-match">Match {user.matchScore}</span>
+                        <span className="fs-profile-stat-pill fs-profile-match" title="How well their learning goal, style, and commitment align with yours (0–100).">
+                          Match {Math.round(Number(user.matchScore))}/100
+                        </span>
                       ) : null}
                     </div>
 

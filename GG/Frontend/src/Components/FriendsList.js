@@ -243,7 +243,24 @@ const FriendsList = ({ embedded = false }) => {
                         </span>
                       )}
                     </div>
-                    <div className={`lm-partner-actions${embedded ? ' lm-mp-actions' : ''}`}>
+                    <div className={`lm-partner-actions lm-partner-actions--triple${embedded ? ' lm-mp-actions' : ''}`}>
+                      <button
+                        type="button"
+                        className={`lm-partner-btn-call${embedded ? ' lm-mp-btn-call' : ''}`}
+                        onClick={() =>
+                          navigate({
+                            pathname: '/Videocall',
+                            search: createSearchParams({
+                              id: String(id),
+                              partnerName: `${friend.firstName} ${friend.lastName || ''}`.trim(),
+                            }).toString(),
+                          })
+                        }
+                      >
+                        {embedded ? 'Call' : (
+                          <>📹 Call <span className="lm-partner-btn-ko" lang="ko">통화</span></>
+                        )}
+                      </button>
                       <button
                         type="button"
                         className={`lm-partner-btn-chat${embedded ? ' lm-mp-btn-chat' : ''}`}
@@ -268,8 +285,8 @@ const FriendsList = ({ embedded = false }) => {
                           })
                         }
                       >
-                        {embedded ? 'Play game' : (
-                          <>🎮 Game <span className="lm-partner-btn-ko" lang="ko">게임</span></>
+                        {embedded ? 'Games' : (
+                          <>🎮 Games <span className="lm-partner-btn-ko" lang="ko">게임</span></>
                         )}
                       </button>
                     </div>

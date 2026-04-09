@@ -24,7 +24,9 @@ const TABS = [
     labelKo: '파트너',
     path: '/Friends',
     match: (pathname, friendsSub) =>
-      (pathname === '/Friends' && friendsSub !== 'discover') || pathname === '/Chat',
+      (pathname === '/Friends' && friendsSub !== 'discover')
+      || pathname === '/Chat'
+      || pathname === '/Videocall',
     searchExtras: {},
   },
   {

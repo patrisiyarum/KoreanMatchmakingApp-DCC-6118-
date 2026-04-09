@@ -1,43 +1,13 @@
 import { useState, useEffect } from 'react';
 import React from "react";
 import './Dashboard.css';
-import './UpdateProfile.css';
 import { createSearchParams, useSearchParams, useNavigate } from "react-router-dom";
 import { handleUserDashBoardApi } from '../Services/dashboardService';
-import { handleGetTrueFriendsList, handleGetMeetings } from '../Services/userService';
-import { getUserChallenges, getChallengeStats } from '../Services/challengeService';
+import { getUserChallenges } from '../Services/challengeService';
 import { handleGetUserStatsApi } from '../Services/gameSelectionService';
-import { handleGetUserBadgesApi } from '../Services/badgeService';
 import { setUserData } from '../Utils/userData';
 import { getImageUrl } from '../Services/uploadImageService';
-import { XP_PER_LEVEL } from '../config/gameRuntime.js';
 import Navbar from './NavBar';
-
-/**
- * GET /api/v1/meetings returns rows with user1_id / user2_id but no partner name.
- * Match the other participant to the friends list so we show a real name instead of a generic label.
- */
-function getSchedulePartnerDisplayName(meeting, currentUserId, friendsList) {
-  const uid = Number(currentUserId);
-  const u1 = meeting.user1_id != null ? Number(meeting.user1_id) : null;
-  const u2 = meeting.user2_id != null ? Number(meeting.user2_id) : null;
-  const otherId = u1 === uid ? u2 : u1;
-  if (otherId != null && Number.isFinite(otherId)) {
-    const friend = friendsList.find((f) => Number(f.id) === otherId);
-    if (friend) {
-      const name = `${friend.firstName || ''} ${friend.lastName || ''}`.trim();
-      if (name) return name;
-    }
-  }
-  return (
-    meeting.friendName ||
-    meeting.partnerName ||
-    meeting.displayName ||
-    meeting.user2_name ||
-    meeting.user_name ||
-    'Partner'
-  );
-}
 
 function Dashboard() {
   const [search] = useSearchParams();
@@ -49,12 +19,6 @@ function Dashboard() {
   const [profileImgError, setProfileImgError] = useState(false);
   const [pendingChallenges, setPendingChallenges] = useState(0);
   const [yourTurnChallenges, setYourTurnChallenges] = useState(0);
-  const [friendsList, setFriendsList] = useState([]);
-  const [meetings, setMeetings] = useState([]);
-  const [userStats, setUserStats] = useState(null);
-  const [challengeStats, setChallengeStats] = useState(null);
-  const [badges, setBadges] = useState([]);
-  const [progressLoaded, setProgressLoaded] = useState(false);
   const navigate = useNavigate();
 
 
@@ -92,54 +56,9 @@ useEffect(() => {
 }, [id]);
 
   useEffect(() => {
-    if (!id) {
-      setProgressLoaded(false);
-      return;
-    }
-    let cancelled = false;
-    const loadProgress = async () => {
-      try {
-        const [statsRes, chRes, badgeRes] = await Promise.allSettled([
-          handleGetUserStatsApi(id),
-          getChallengeStats(id),
-          handleGetUserBadgesApi(id),
-        ]);
-        if (cancelled) return;
-        if (statsRes.status === 'fulfilled' && statsRes.value) {
-          setUserStats(statsRes.value);
-        } else {
-          setUserStats({ level: 1, xp: 0, xpToNext: XP_PER_LEVEL, gameActivity: null });
-        }
-        if (chRes.status === 'fulfilled' && chRes.value) {
-          setChallengeStats(chRes.value);
-        } else {
-          setChallengeStats({
-            wins: 0,
-            losses: 0,
-            draws: 0,
-            winRate: 0,
-            totalChallenges: 0,
-            completedGameSessions: 0,
-            xpFromSessions: 0,
-          });
-        }
-        if (badgeRes.status === 'fulfilled') {
-          setBadges(badgeRes.value?.badges || []);
-        } else {
-          setBadges([]);
-        }
-      } finally {
-        if (!cancelled) setProgressLoaded(true);
-      }
-    };
-    loadProgress();
-    return () => { cancelled = true; };
-  }, [id]);
-
-  useEffect(() => {
     if (!id) return;
 
-    const fetchData = async () => {
+    const fetchChallenges = async () => {
       try {
         const res = await getUserChallenges(id);
         const list = res?.challenges || res?.data?.challenges || [];
@@ -161,31 +80,10 @@ useEffect(() => {
         setPendingChallenges(0);
         setYourTurnChallenges(0);
       }
-
-      try {
-        const friendData = await handleGetTrueFriendsList(id);
-        setFriendsList(Array.isArray(friendData.friendsList) ? friendData.friendsList : friendData || []);
-      } catch {
-        setFriendsList([]);
-      }
-
-      try {
-        const meetData = await handleGetMeetings(id);
-        console.log('Meetings data:', meetData);
-        const meetingsResult = Array.isArray(meetData)
-          ? meetData
-          : Array.isArray(meetData.data)
-          ? meetData.data
-          : [];
-        setMeetings(meetingsResult);
-      } catch (error) {
-        console.log('Error fetching meetings:', error);
-        setMeetings([]);
-      }
     };
 
-    fetchData();
-    const interval = setInterval(fetchData, 15000);
+    fetchChallenges();
+    const interval = setInterval(fetchChallenges, 15000);
     return () => clearInterval(interval);
   }, [id]);
 
@@ -195,7 +93,7 @@ useEffect(() => {
   const getInitial   = () => firstName ? firstName.charAt(0).toUpperCase() : '?';
 
   return (
-    <div className="dashboard-page">
+    <div className="dashboard-page dashboard-page--lm-home">
       <Navbar id={id} />
 
       {(pendingChallenges > 0 || yourTurnChallenges > 0) && (
@@ -227,203 +125,67 @@ useEffect(() => {
         </div>
       )}
 
-      <div className="dashboard-welcome">
-        <h1>Welcome back, {firstName} {lastName || ''}</h1>
-        <p className="dashboard-welcome-ko" lang="ko">
-          언어 교환 여정을 이어가요
-        </p>
-      </div>
+      {id ? (
+        <div className="lm-home-wrap">
+          <header className="lm-home-hero">
+            <h1 className="lm-home-hero-title">Welcome back{firstName ? `, ${firstName}` : ''}</h1>
+            <p className="lm-home-hero-tagline">Connect with language partners worldwide</p>
+            <p className="lm-home-hero-ko" lang="ko">전 세계 언어 파트너와 연결하세요</p>
+          </header>
 
-      {id && progressLoaded && userStats && challengeStats && (() => {
-        const lv = userStats.level ?? 1;
-        const xpNow = userStats.xp ?? 0;
-        const xpCap = userStats.xpToNext ?? XP_PER_LEVEL;
-        const xpPct = Math.min(100, (xpNow / Math.max(1, xpCap)) * 100);
-        const ga = userStats.gameActivity;
-        const ch = challengeStats;
-        const gamesPlayed = ga?.gamesPlayed ?? 0;
-        const wins = ch?.wins ?? 0;
-        const losses = ch?.losses ?? 0;
-        const finished = ch?.totalChallenges ?? 0;
-        return (
-          <div className="dashboard-progress-wrap">
-            <div className="dashboard-progress-card dash-duo-card">
-              <h2 className="dash-duo-title">Your progress</h2>
-              <div className="dash-duo-hero">
-                <div
-                  className="dash-duo-ring"
-                  style={{ '--xp-pct': String(xpPct) }}
-                  aria-label={`Level ${lv}. ${Math.round(xpPct)} percent of the way to the next level.`}
-                >
-                  <div className="dash-duo-ring-inner">
-                    <span className="dash-duo-level-num">{lv}</span>
-                  </div>
-                </div>
-                <div className="dash-duo-xp-block">
-                  <span className="dash-duo-xp-label">This level</span>
-                  <span className="dash-duo-xp-nums">{xpNow} / {xpCap} XP</span>
-                  <div className="dash-duo-bar-track">
-                    <div className="dash-duo-bar-fill" style={{ width: `${xpPct}%` }} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="dash-duo-stat-grid">
-                <div className="dash-duo-stat">
-                  <span className="dash-duo-stat-emoji" aria-hidden="true">🎮</span>
-                  <span className="dash-duo-stat-num">{gamesPlayed}</span>
-                  <span className="dash-duo-stat-cap">Games</span>
-                </div>
-                <div className="dash-duo-stat">
-                  <span className="dash-duo-stat-emoji" aria-hidden="true">⚔️</span>
-                  <span className="dash-duo-stat-num">{wins}–{losses}</span>
-                  <span className="dash-duo-stat-cap">1v1</span>
-                </div>
-                <div className="dash-duo-stat">
-                  <span className="dash-duo-stat-emoji" aria-hidden="true">🏁</span>
-                  <span className="dash-duo-stat-num">{finished}</span>
-                  <span className="dash-duo-stat-cap">Challenges</span>
-                </div>
-              </div>
-
-              {badges.length > 0 && (
-                <div className="dash-duo-badges-wrap">
-                  <span className="dash-duo-badges-label">Badges</span>
-                  <div className="dash-duo-badges">
-                    {badges.map((b) => (
-                      <span key={b.id} className="dash-duo-badge" title={b.description}>
-                        {b.icon ? `${b.icon} ` : ''}{b.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })()}
-
-      {id && (
-        <div className="dashboard-home-tiles">
-          <section className="dashboard-card dashboard-tile dash-tile-profile">
-            <div className="profile-card dash-profile-tile">
-              <div className="profile-avatar">
+          <div className="lm-home-profile-card">
+            <div className="lm-home-avatar-wrap">
+              <div className="lm-home-avatar">
                 {profileImage && !profileImgError ? (
                   <img
                     src={getImageUrl(profileImage)}
-                    alt="Profile"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                    alt=""
                     onError={() => setProfileImgError(true)}
                   />
                 ) : (
-                  getInitial()
+                  <span className="lm-home-avatar-initial">{getInitial()}</span>
                 )}
               </div>
-              <div className="profile-details">
-                <h2>{firstName} {lastName}</h2>
-                {email ? <p className="profile-email">{email}</p> : null}
-                <div className="profile-card-actions-games">
-                  <button
-                    type="button"
-                    className="dash-games-btn dash-games-btn-primary"
-                    onClick={() => goTo('/ViewProfile')}
-                  >
-                    View Profile
-                  </button>
-                  <button
-                    type="button"
-                    className="dash-games-btn dash-games-btn-secondary"
-                    onClick={() => goTo('/UpdateProfile')}
-                  >
-                    Edit Profile
-                  </button>
-                </div>
-              </div>
             </div>
-          </section>
-
-          <section className="dashboard-card dashboard-tile dash-tile-games dash-games-card">
-            <div className="dash-games-card-inner dash-games-card-inner--stack dash-tile-fill">
-              <div className="dash-games-copy">
-                <h3 className="dash-games-title">Games & teams</h3>
-                <p className="dash-games-desc">
-                  Practice vocabulary, grammar, and pronunciation, challenge a friend to 1v1, or join your team lobby.
-                </p>
-              </div>
-              <div className="dash-games-actions dash-games-actions--centered">
-                <button
-                  type="button"
-                  className="dash-games-btn dash-games-btn-primary"
-                  onClick={() => goTo('/GameSelection')}
-                >
-                  Play games
-                </button>
-                <button
-                  type="button"
-                  className="dash-games-btn dash-games-btn-secondary"
-                  onClick={() => goTo('/Challenges')}
-                >
-                  1v1 challenges
-                </button>
-                <button
-                  type="button"
-                  className="dash-games-btn dash-games-btn-secondary"
-                  onClick={() => goTo('/TeamLobby')}
-                >
-                  Teams
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <section className="dashboard-card dashboard-tile dash-tile-friends friends-card">
-            <div className="panel-header">
-              <h3>Friends</h3>
-              <button type="button" className="dash-games-btn dash-games-btn-secondary" onClick={() => goTo('/Friends')}>
-                View All
+            <div className="lm-home-profile-body">
+              <h2 className="lm-home-profile-name">{firstName || lastName ? `${firstName} ${lastName || ''}`.trim() : 'Your profile'}</h2>
+              {email ? <p className="lm-home-profile-email">{email}</p> : null}
+              <p className="lm-home-profile-hint">
+                Set up languages, goals, and interests so Discover can match you with the right partners.
+              </p>
+              <button
+                type="button"
+                className="lm-home-btn-primary"
+                onClick={() => goTo('/UpdateProfile')}
+              >
+                Make your profile
+                <span className="lm-home-btn-ko" lang="ko">프로필 만들기</span>
+              </button>
+              <button
+                type="button"
+                className="lm-home-btn-secondary"
+                onClick={() => goTo('/ViewProfile')}
+              >
+                View profile
               </button>
             </div>
-            <ul className="friends-list">
-              {friendsList.slice(0, 5).map((friend) => (
-                <li key={friend.id} className="friend-item" onClick={() => goTo('/Friends')}>
-                  <span className="friend-name">{friend.firstName} {friend.lastName}</span>
-                  <span className="friend-status">{friend.online ? 'Online' : 'Offline'}</span>
-                </li>
-              ))}
-              {friendsList.length === 0 && <li className="friend-empty">No friends yet. Add someone to start!</li>}
-            </ul>
-          </section>
+          </div>
 
-          <section className="dashboard-card dashboard-tile dash-tile-schedule schedule-card">
-            <div className="panel-header">
-              <h3>Today’s Schedule</h3>
-              <button type="button" className="dash-games-btn dash-games-btn-secondary" onClick={() => goTo('/Scheduler')}>
-                View All
-              </button>
-            </div>
-            {meetings.length > 0 ? (
-              <div className="schedule-list">
-                {meetings.map((meeting, idx) => {
-                  const displayName = getSchedulePartnerDisplayName(meeting, id, friendsList);
-                  const dayText = meeting.day_of_week || meeting.date || 'Today';
-                  const start = meeting.start_time || meeting.startTime || meeting.start || 'TBD';
-                  const end = meeting.end_time || meeting.endTime || meeting.end || 'TBD';
-                  return (
-                    <div key={`${meeting.id || idx}`} className="schedule-item">
-                      <div>
-                        <strong>{displayName}</strong>
-                        <span className="schedule-subtitle">{dayText} • {start} - {end}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="schedule-empty">No meetings for today. Schedule your first session!</p>
-            )}
-          </section>
+          <p className="lm-home-nav-hint">
+            Use <strong>Discover</strong> to find people, <strong>Partners</strong> to call or chat, and <strong>Games</strong> to practice.
+          </p>
+
+          <div className="lm-home-more">
+            <span className="lm-home-more-label">More in the menu</span>
+            <button type="button" className="lm-home-more-link" onClick={() => goTo('/Scheduler')}>
+              Scheduler
+            </button>
+            <button type="button" className="lm-home-more-link" onClick={() => goTo('/GameSelection')}>
+              All games &amp; XP
+            </button>
+          </div>
         </div>
-      )}
+      ) : null}
 
     </div>
   );

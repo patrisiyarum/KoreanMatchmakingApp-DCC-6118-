@@ -25,6 +25,7 @@ function Videocall() {
   const userId = search.get('id') || '';
   const chatId = search.get('chatId') || '';
   const zoomFromQuery = search.get('zoom');
+  const partnerName = (search.get('partnerName') || '').trim();
 
   useEffect(() => {
     if (zoomFromQuery && zoomFromQuery.trim()) {
@@ -110,6 +111,11 @@ function Videocall() {
                 <div className="join-card vc-join-card-centered">
                   <h2 className="join-title">Video call (Zoom)</h2>
                   <p className="join-subtitle">
+                    {partnerName ? (
+                      <>
+                        <strong>With {partnerName}.</strong>{' '}
+                      </>
+                    ) : null}
                     Create a meeting in the Zoom app or at{' '}
                     <a href="https://zoom.us/start" target="_blank" rel="noopener noreferrer">
                       zoom.us/start

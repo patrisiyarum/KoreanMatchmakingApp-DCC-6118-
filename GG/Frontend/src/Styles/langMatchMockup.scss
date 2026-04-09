@@ -717,12 +717,39 @@ body.lm-mockup-ui .lm-mp-pct {
   margin-left: 8px;
 }
 
+body.lm-mockup-ui .lm-partner-actions--triple {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+body.lm-mockup-ui .lm-partner-btn-call,
+body.lm-mockup-ui .lm-mp-btn-call {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  background: #059669 !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+body.lm-mockup-ui .lm-partner-btn-call:hover,
+body.lm-mockup-ui .lm-mp-btn-call:hover {
+  filter: brightness(1.05);
+}
+
 body.lm-mockup-ui .lm-mp-actions .lm-mp-btn-chat {
   flex: 1;
   border-radius: 8px;
-  padding: 12px 16px;
+  padding: 12px 8px;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 13px;
   background: #2563eb !important;
   background-image: none !important;
   box-shadow: none !important;
@@ -731,9 +758,9 @@ body.lm-mockup-ui .lm-mp-actions .lm-mp-btn-chat {
 body.lm-mockup-ui .lm-mp-actions .lm-mp-btn-game {
   flex: 1;
   border-radius: 8px;
-  padding: 12px 16px;
+  padding: 12px 8px;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 13px;
   background: #9333ea !important;
   background-image: none !important;
   box-shadow: none !important;
@@ -742,4 +769,192 @@ body.lm-mockup-ui .lm-mp-actions .lm-mp-btn-game {
 body.lm-mockup-ui .lm-mp-remove {
   text-decoration: none;
   margin-top: 8px;
+}
+
+/* —— Home / Dashboard (reference Layout + Home.tsx) —— */
+body.lm-mockup-ui .dashboard-page--lm-home {
+  background: #fafafa;
+}
+
+body.lm-mockup-ui .lm-home-wrap {
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 16px 20px 32px;
+  box-sizing: border-box;
+}
+
+body.lm-mockup-ui .lm-home-hero {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+body.lm-mockup-ui .lm-home-hero-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #171717;
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+}
+
+body.lm-mockup-ui .lm-home-hero-tagline {
+  font-size: 15px;
+  color: #525252;
+  margin: 0;
+}
+
+body.lm-mockup-ui .lm-home-hero-ko {
+  font-family: var(--dl-font-ko);
+  font-size: 14px;
+  color: #737373;
+  margin: 8px 0 0;
+}
+
+body.lm-mockup-ui .lm-home-profile-card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  padding: 28px 22px 24px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+}
+
+body.lm-mockup-ui .lm-home-avatar-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+body.lm-mockup-ui .lm-home-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #3b82f6, #a855f7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.lm-mockup-ui .lm-home-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+body.lm-mockup-ui .lm-home-avatar-initial {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+body.lm-mockup-ui .lm-home-profile-body {
+  text-align: center;
+}
+
+body.lm-mockup-ui .lm-home-profile-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #171717;
+  margin: 0 0 4px;
+}
+
+body.lm-mockup-ui .lm-home-profile-email {
+  font-size: 14px;
+  color: #737373;
+  margin: 0 0 12px;
+  word-break: break-word;
+}
+
+body.lm-mockup-ui .lm-home-profile-hint {
+  font-size: 14px;
+  line-height: 1.45;
+  color: #525252;
+  margin: 0 0 20px;
+  text-align: left;
+}
+
+body.lm-mockup-ui .lm-home-btn-primary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 4px;
+  padding: 16px 20px;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #fff !important;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+}
+
+body.lm-mockup-ui .lm-home-btn-primary:hover {
+  background: #1d4ed8;
+}
+
+body.lm-mockup-ui .lm-home-btn-ko {
+  font-family: var(--dl-font-ko);
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.95;
+}
+
+body.lm-mockup-ui .lm-home-btn-secondary {
+  display: block;
+  width: 100%;
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: 1px solid #d4d4d4;
+  background: #fff;
+  color: #262626 !important;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+body.lm-mockup-ui .lm-home-btn-secondary:hover {
+  background: #f5f5f5;
+}
+
+body.lm-mockup-ui .lm-home-nav-hint {
+  text-align: center;
+  font-size: 13px;
+  color: #737373;
+  line-height: 1.5;
+  margin: 24px 12px 0;
+}
+
+body.lm-mockup-ui .lm-home-more {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e5e5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 16px;
+}
+
+body.lm-mockup-ui .lm-home-more-label {
+  width: 100%;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a3a3a3;
+}
+
+body.lm-mockup-ui .lm-home-more-link {
+  border: none;
+  background: transparent;
+  color: #2563eb !important;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 4px 8px;
 }

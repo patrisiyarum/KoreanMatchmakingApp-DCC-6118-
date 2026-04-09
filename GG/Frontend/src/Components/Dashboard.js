@@ -19,6 +19,7 @@ function Dashboard() {
   const id = search.get("id");
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
   const [profileImage, setProfileImage] = useState(null);
   const [profileImgError, setProfileImgError] = useState(false);
   const [pendingChallenges, setPendingChallenges] = useState(0);
@@ -43,6 +44,7 @@ useEffect(() => {
       const user = dashData.status === 'fulfilled' ? (dashData.value?.user || {}) : {};
       setFirstName(user.firstName || '');
       setLastName(user.lastName || '');
+      setEmail(user.email || '');
       setUserData({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
@@ -282,13 +284,13 @@ useEffect(() => {
       )}
 
       {id && (
-        <div className="dashboard-games-row">
-          <section className="dashboard-card dash-games-card">
-            <div className="dash-games-card-inner">
+        <div className="dashboard-home-tiles">
+          <section className="dashboard-card dashboard-tile dash-tile-games dash-games-card">
+            <div className="dash-games-card-inner dash-tile-fill">
               <div className="dash-games-copy">
                 <h3 className="dash-games-title">Games</h3>
                 <p className="dash-games-desc">
-                  Practice vocabulary, grammar, and pronunciation — or challenge a friend to a 1v1 match.
+                  Practice vocabulary, grammar, and pronunciation, or challenge a friend to a 1v1 match.
                 </p>
               </div>
               <div className="dash-games-actions">
@@ -309,35 +311,50 @@ useEffect(() => {
               </div>
             </div>
           </section>
-        </div>
-      )}
 
-      <div className="dashboard-main-grid">
-        <div className="dashboard-left-panel">
-          <section className="dashboard-card profile-card">
-          <div className="profile-avatar">
-            {profileImage && !profileImgError ? (
-              <img
-                src={getImageUrl(profileImage)}
-                alt="Profile"
-                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                onError={() => setProfileImgError(true)}
-              />
-            ) : (
-              getInitial()
-            )}
-          </div>
-          <div className="profile-details">
-            <h2>{firstName} {lastName}</h2>
-            <button className="profile-edit-btn" onClick={() => goTo('/ViewProfile')}>View Profile</button>
-            <button className="profile-edit-btn" onClick={() => goTo('/UpdateProfile')}>Edit Profile</button>
-          </div>
-        </section>
+          <section className="dashboard-card dashboard-tile dash-tile-profile">
+            <div className="profile-card dash-profile-tile">
+              <div className="profile-avatar">
+                {profileImage && !profileImgError ? (
+                  <img
+                    src={getImageUrl(profileImage)}
+                    alt="Profile"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                    onError={() => setProfileImgError(true)}
+                  />
+                ) : (
+                  getInitial()
+                )}
+              </div>
+              <div className="profile-details">
+                <h2>{firstName} {lastName}</h2>
+                {email ? <p className="profile-email">{email}</p> : null}
+                <button type="button" className="profile-edit-btn" onClick={() => goTo('/ViewProfile')}>View Profile</button>
+                <button type="button" className="profile-edit-btn" onClick={() => goTo('/UpdateProfile')}>Edit Profile</button>
+              </div>
+            </div>
+          </section>
 
-          <section className="dashboard-card schedule-card">
+          <section className="dashboard-card dashboard-tile dash-tile-friends friends-card">
+            <div className="panel-header">
+              <h3>Friends</h3>
+              <button type="button" className="small-btn" onClick={() => goTo('/Friends')}>View All</button>
+            </div>
+            <ul className="friends-list">
+              {friendsList.slice(0, 5).map((friend) => (
+                <li key={friend.id} className="friend-item" onClick={() => goTo('/Friends')}>
+                  <span className="friend-name">{friend.firstName} {friend.lastName}</span>
+                  <span className="friend-status">{friend.online ? 'Online' : 'Offline'}</span>
+                </li>
+              ))}
+              {friendsList.length === 0 && <li className="friend-empty">No friends yet. Add someone to start!</li>}
+            </ul>
+          </section>
+
+          <section className="dashboard-card dashboard-tile dash-tile-schedule schedule-card">
             <div className="panel-header">
               <h3>Today’s Schedule</h3>
-              <button className="small-btn" onClick={() => goTo('/Scheduler')}>View All</button>
+              <button type="button" className="small-btn" onClick={() => goTo('/Scheduler')}>View All</button>
             </div>
             {meetings.length > 0 ? (
               <div className="schedule-list">
@@ -357,29 +374,11 @@ useEffect(() => {
                 })}
               </div>
             ) : (
-              <p className="schedule-empty">No meetings for today — schedule your first session!</p>
+              <p className="schedule-empty">No meetings for today. Schedule your first session!</p>
             )}
           </section>
         </div>
-
-        <div className="dashboard-right-panel">
-          <section className="dashboard-card friends-card">
-            <div className="panel-header">
-              <h3>Friends</h3>
-              <button className="small-btn" onClick={() => goTo('/Friends')}>View All</button>
-            </div>
-            <ul className="friends-list">
-              {friendsList.slice(0, 5).map((friend) => (
-                <li key={friend.id} className="friend-item" onClick={() => goTo('/Friends')}>
-                  <span className="friend-name">{friend.firstName} {friend.lastName}</span>
-                  <span className="friend-status">{friend.online ? 'Online' : 'Offline'}</span>
-                </li>
-              ))}
-              {friendsList.length === 0 && <li className="friend-empty">No friends yet. Add someone to start!</li>}
-            </ul>
-          </section>
-        </div>
-      </div>
+      )}
 
     </div>
   );

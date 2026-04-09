@@ -550,9 +550,6 @@ const FriendSearch = ({ embedded = false }) => {
             <button className="back-to-dashboard" onClick={() => navigate({ pathname: '/Dashboard', search: createSearchParams({ id }).toString() })}>Dashboard</button>
           )}
           <h1 className="fs-card-title">{embedded ? 'Discover' : 'Find Friends'}</h1>
-          <p className="fs-card-subtitle">
-            Use search for names, then open a section below to narrow by personality, interests, schedule, or study style.
-          </p>
 
           {/* Search bar — Instagram-style */}
           <div className="fs-search-wrap">
@@ -586,10 +583,14 @@ const FriendSearch = ({ embedded = false }) => {
             <div className="fs-filter-panel fs-filter-panel-tip">
               <p className="fs-help-lead">How this page works</p>
               <ol className="fs-help-list">
-                <li><strong>Search</strong> — finds people by name (tap Search or Enter).</li>
-                <li><strong>Personality / Interests</strong> — optional; tap <em>Apply</em> after choosing.</li>
-                <li><strong>Schedule</strong> — pick times you are free; we show anyone with <em>overlapping</em> hours (not identical slots).</li>
-                <li><strong>Study match</strong> — filter by learning goal and style; use sort below for best fit vs A–Z.</li>
+                <li><strong>Search</strong> finds people by name (tap Search or Enter).</li>
+                <li><strong>Personality and interests</strong> are optional. Tap <em>Apply</em> after choosing.</li>
+                <li>
+                  <strong>Schedule.</strong>{' '}
+                  Choose when you are usually free. We list people who have at least one overlapping hour on the same day
+                  (times can differ slightly; we match overlap, not exact copies).
+                </li>
+                <li><strong>Study match</strong> filters by learning goal and style. Use the sort buttons below for best fit or name order.</li>
               </ol>
             </div>
           )}
@@ -641,7 +642,7 @@ const FriendSearch = ({ embedded = false }) => {
             <div className="fs-filter-panel">
               <p className="fs-panel-desc">
                 Choose when you are usually free. We list people who have at least one overlapping hour on the same day
-                (times can differ slightly — we match overlap, not exact copies).
+                (times can differ slightly; we match overlap, not exact copies).
               </p>
               <button
                 type="button"

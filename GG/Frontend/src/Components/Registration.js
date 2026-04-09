@@ -84,27 +84,58 @@ function Registration() {
         <div>{errorMessage()}</div>
 
         <form onSubmit={handleSubmit}>
-          <div className="login-input">
-            <label className="button-header">First Name</label>
-            <input placeholder="Enter first name" onChange={handleFirstName} value={firstName} type="text" />
+          <div className="login-input login-input--minimal">
+            <label htmlFor="reg-first">First name</label>
+            <input
+              id="reg-first"
+              placeholder=""
+              onChange={handleFirstName}
+              value={firstName}
+              type="text"
+              autoComplete="given-name"
+            />
           </div>
-          <div className="login-input">
-            <label className="button-header">Last Name</label>
-            <input placeholder="Enter last name"  onChange={handleLastName}  value={lastName}  type="text" />
+          <div className="login-input login-input--minimal">
+            <label htmlFor="reg-last">Last name</label>
+            <input
+              id="reg-last"
+              placeholder=""
+              onChange={handleLastName}
+              value={lastName}
+              type="text"
+              autoComplete="family-name"
+            />
           </div>
-          <div className="login-input">
-            <label className="button-header">Email</label>
-            <input placeholder="Enter email"     onChange={handleEmail}     value={email}     type="text" />
+          <div className="login-input login-input--minimal">
+            <label htmlFor="reg-email">Email</label>
+            <input
+              id="reg-email"
+              placeholder=""
+              onChange={handleEmail}
+              value={email}
+              type="email"
+              autoComplete="email"
+            />
           </div>
-          <div className="login-input">
-            <label className="button-header">Password</label>
-            <input placeholder="Enter password"  onChange={handlePassword}  value={password}  type="password" />
+          <div className="login-input login-input--minimal">
+            <label htmlFor="reg-password">Password</label>
+            <input
+              id="reg-password"
+              placeholder=""
+              onChange={handlePassword}
+              value={password}
+              type="password"
+              autoComplete="new-password"
+            />
           </div>
 
           <div className="auth-actions">
-            <button className="auth-primary" type="submit">Create Profile</button>
+            <button className="auth-primary" type="submit">Create an account</button>
+          </div>
+          <div className="auth-actions auth-actions--stacked">
+            <p className="auth-prompt">Already have an account?</p>
             <button className="auth-secondary" type="button" onClick={handleBack}>
-              Already have an account? Log in
+              Log in
             </button>
           </div>
         </form>

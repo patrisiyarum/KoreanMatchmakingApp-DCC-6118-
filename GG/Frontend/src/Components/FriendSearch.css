@@ -48,17 +48,9 @@
   font-weight: 800;
   color: var(--dl-dark);
   margin: 0;
-  text-align: center;
-}
-
-.fs-card-subtitle {
-  font-size: 13px;
-  color: rgba(54, 70, 89, 0.75);
-  text-align: center;
-  margin: 4px 0 0 0;
-  line-height: 1.45;
-  max-width: 36em;
-  align-self: center;
+  text-align: left;
+  align-self: stretch;
+  width: 100%;
 }
 
 .fs-filter-panel-tip {
@@ -66,6 +58,10 @@
   border: 1px solid #e8ecf1;
   border-radius: 12px;
   padding: 14px 16px;
+  text-align: left;
+  align-self: stretch;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .fs-help-lead {
@@ -73,14 +69,16 @@
   font-size: 14px;
   font-weight: 700;
   color: #1e293b;
+  text-align: left;
 }
 
 .fs-help-list {
   margin: 0;
-  padding-left: 1.2em;
+  padding-left: 1.25em;
   font-size: 13px;
   color: #475569;
   line-height: 1.55;
+  text-align: left;
 }
 
 .fs-help-list li {
@@ -92,6 +90,9 @@
   font-size: 13px;
   color: #64748b;
   line-height: 1.5;
+  text-align: left;
+  align-self: stretch;
+  width: 100%;
 }
 
 .fs-empty-block {

@@ -22,6 +22,8 @@ export function AssistantProvider({ children }) {
 
   const addMessage = (msg) => setMessages((prev) => [...prev, msg]);
 
+  const clearMessages = () => setMessages([]);
+
   const openWithSummary = (uid, sessionId) => {
     if (uid != null) setUserId(uid);
     setTab('chat');
@@ -38,7 +40,7 @@ export function AssistantProvider({ children }) {
     <AssistantContext.Provider value={{
       isOpen, userId, messages, tab,
       openAssistant, closeAssistant, toggleAssistant,
-      addMessage, setMessages, setTab,
+      addMessage, setMessages, clearMessages, setTab,
       openWithSummary, pendingPrompt, clearPendingPrompt,
     }}>
       {children}

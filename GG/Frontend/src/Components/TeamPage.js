@@ -330,7 +330,7 @@ function TeamPage() {
  
               <div className="team-footer-actions">
                 <button type="button" className="team-footer-link" onClick={handleBackToGames}>
-                  ← Games
+                  Games
                 </button>
                 <div className="team-footer-buttons">
                   {myRole === 'owner' && (
@@ -392,8 +392,12 @@ function TeamPage() {
                         </span>
                         <span className="leaderboard-name">
                           {name}
-                          {member.role === 'owner' && <span className="owner-badge">Owner</span>}
-                          {isMe && <span className="me-badge"> (you)</span>}
+                          {member.role === 'owner' && (
+                            <>
+                              {' '}
+                              <span className="owner-badge">Owner</span>
+                            </>
+                          )}
                         </span>
                         <span className="leaderboard-level">Lv.{level}</span>
                         <span className="leaderboard-xp">{xp.toLocaleString()} XP</span>

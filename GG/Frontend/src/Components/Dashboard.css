@@ -40,12 +40,12 @@
 }
 
 .dashboard-progress-wrap .up-integrated-title {
-  text-align: center;
+  text-align: left;
   font-size: 17px;
 }
 
 .dashboard-progress-wrap .up-integrated-section-label {
-  text-align: center;
+  text-align: left;
 }
 
 /* Richer challenge stats (5 tiles, no contributions) */
@@ -82,19 +82,34 @@
   background: #ede9fe;
 }
 
-/* Games promo card */
-.dashboard-games-row {
+/* Home: 2×2 tiles (Games, Profile, Friends, Schedule) below progress card */
+.dashboard-home-tiles {
   max-width: 1100px;
-  margin: 20px auto 0;
+  margin: 20px auto 40px;
   padding: 0 24px;
   box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: stretch;
 }
 
-.dash-games-card {
+.dashboard-tile {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dashboard-tile.dash-games-card {
   padding: 0;
   overflow: hidden;
   border: 1px solid rgba(99, 68, 166, 0.2);
   background: linear-gradient(125deg, #faf8ff 0%, #ffffff 45%, #f3f0fa 100%);
+}
+
+.dash-tile-fill {
+  flex: 1;
+  min-height: 100%;
 }
 
 .dash-games-card-inner {
@@ -261,6 +276,12 @@
   gap: 20px;
 }
 
+/* Tiles: compact friends + schedule lists */
+.dashboard-tile.friends-card .friends-list,
+.dashboard-tile.schedule-card .schedule-list {
+  max-height: 200px;
+}
+
 .dashboard-card {
   background: var(--dl-white);
   border-radius: var(--dl-radius-lg);
@@ -273,6 +294,28 @@
   display: flex;
   align-items: center;
   gap: 18px;
+}
+
+.dash-profile-tile {
+  align-items: flex-start;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-email {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #64748b;
+  word-break: break-word;
 }
 
 .profile-avatar {
@@ -291,11 +334,12 @@
 }
 
 .profile-details h2 {
-  margin: 0;
+  margin: 0 0 4px 0;
   font-size: 22px;
+  text-align: left;
 }
 
-.profile-details p {
+.profile-details p:not(.profile-email) {
   margin: 4px 0 10px;
   color: var(--dl-gray-dark);
 }
@@ -475,6 +519,10 @@
   .dashboard-left-panel,
   .dashboard-right-panel {
     width: 100%;
+  }
+
+  .dashboard-home-tiles {
+    grid-template-columns: 1fr;
   }
 }
 

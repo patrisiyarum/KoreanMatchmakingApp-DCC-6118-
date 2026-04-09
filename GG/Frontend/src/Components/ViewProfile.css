@@ -5,6 +5,11 @@
   max-width: 720px;
 }
 
+/* Left-align header text (parent .up-center centers the card) */
+.up-center .vp-card {
+  text-align: left;
+}
+
 .vp-hero {
   display: flex;
   align-items: center;
@@ -46,7 +51,11 @@
 .vp-hero-info {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
 }
 
 .vp-name {

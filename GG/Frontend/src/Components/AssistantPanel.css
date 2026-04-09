@@ -81,7 +81,31 @@
 .ap-header-right {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 62%;
+}
+
+.ap-prompts-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--dl-font);
+  transition: color 0.15s, background 0.15s;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ap-prompts-btn:hover {
+  color: var(--dl-primary);
+  background: rgba(99, 68, 166, 0.06);
 }
 
 .ap-fullview-btn {
@@ -166,6 +190,34 @@
 .ap-shortcut-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Sticky strip below messages (same prompts as welcome) */
+.ap-more-prompts {
+  flex-shrink: 0;
+  padding: 10px 16px 8px;
+  border-top: 1px solid #ede9fe;
+  background: linear-gradient(180deg, #faf8ff 0%, #fff 100%);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.ap-more-prompts-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  margin: 0 0 8px 0;
+}
+
+.ap-shortcuts--compact {
+  gap: 5px;
+}
+
+.ap-shortcuts--compact .ap-shortcut-btn {
+  padding: 6px 10px;
+  font-size: 12px;
 }
 
 /* Messages */

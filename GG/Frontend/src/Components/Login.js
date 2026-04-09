@@ -60,27 +60,29 @@ function Login() {
         <div className="auth-page">
           <div className="auth-card">
             <img src={logo} alt="Language Exchange Matchmaker logo" className="auth-logo" />
-            <h1 className="auth-title">Log In</h1>
+            <h1 className="auth-title">Login</h1>
             <p className="auth-subtitle">Welcome back. Let’s pick up where you left off.</p>
 
-            <div className="login-input">
-              <label>Email</label>
+            <div className="login-input login-input--minimal">
+              <label htmlFor="login-email">Email</label>
               <input
-                placeholder="Enter your email"
+                id="login-email"
+                type="email"
+                autoComplete="email"
+                placeholder=""
                 value={username}
                 onChange={handleOnChangeUserInput}
               />
             </div>
 
-            <div className="login-input">
-              <label htmlFor="password" className="field-label">Password</label>
-              <div className="password-field">
+            <div className="login-input login-input--minimal">
+              <label htmlFor="password">Password</label>
+              <div className="password-field password-field--minimal">
                 <input
                   id="password"
                   name="password"
-                  className="field-input"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder=""
                   value={password}
                   onChange={handleOnChangePassword}
                   autoComplete="current-password"
@@ -88,9 +90,9 @@ function Login() {
                 <button
                   type="button"
                   className="toggle-password-btn"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   onClick={() => setShowPassword((s) => !s)}
-                  title={showPassword ? "Hide password" : "Show password"}
+                  title={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
                 </button>
@@ -99,8 +101,22 @@ function Login() {
 
             <div className="error-message">{errMsg}</div>
 
-            <div className="auth-actions">
-              <button className="auth-primary" onClick={handleOnClick}>Log In</button>
+            <div className="auth-signin-row">
+              <button type="button" className="auth-pill-submit" onClick={handleOnClick}>
+                Sign in
+              </button>
+              <button
+                type="button"
+                className="auth-arrow-submit"
+                onClick={handleOnClick}
+                aria-label="Sign in"
+              >
+                →
+              </button>
+            </div>
+
+            <div className="auth-actions auth-actions--stacked">
+              <p className="auth-prompt">New here?</p>
               <button className="auth-secondary" type="button" onClick={handleBack}>
                 Create an account
               </button>

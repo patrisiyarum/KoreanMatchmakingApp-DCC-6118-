@@ -16,7 +16,7 @@ const QUICK_ACTIONS = [
 function AssistantPanel() {
   const {
     isOpen, userId, messages,
-    closeAssistant, addMessage,
+    closeAssistant, addMessage, clearMessages,
     pendingPrompt, clearPendingPrompt,
   } = useAssistant();
   const { isOpen: isTranslatorOpen } = useTranslator();
@@ -108,7 +108,17 @@ function AssistantPanel() {
             <h3 className="ap-title">AI Assistant</h3>
           </div>
           <div className="ap-header-right">
-            <button className="ap-fullview-btn" onClick={openFullView}>
+            {messages.length > 0 && (
+              <button
+                type="button"
+                className="ap-prompts-btn"
+                onClick={() => clearMessages()}
+                title="Clear this chat and show the starter prompts again"
+              >
+                Back to prompts
+              </button>
+            )}
+            <button type="button" className="ap-fullview-btn" onClick={openFullView}>
               Open Full Assistant
             </button>
           </div>
@@ -152,6 +162,25 @@ function AssistantPanel() {
 
             <div ref={messagesEndRef} />
           </div>
+
+          {messages.length > 0 && (
+            <div className="ap-more-prompts">
+              <p className="ap-more-prompts-label">Other ways I can help</p>
+              <div className="ap-shortcuts ap-shortcuts--compact">
+                {QUICK_ACTIONS.map((action) => (
+                  <button
+                    key={`more-${action.label}`}
+                    type="button"
+                    className="ap-shortcut-btn"
+                    onClick={() => handleSend(action.prompt)}
+                    disabled={loading}
+                  >
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="ap-input-row">
             <input

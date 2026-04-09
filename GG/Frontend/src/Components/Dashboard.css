@@ -48,6 +48,119 @@
   text-align: center;
 }
 
+/* Richer challenge stats (5 tiles, no contributions) */
+.dashboard-progress-wrap .up-integrated-challenge-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .dashboard-progress-wrap .up-integrated-challenge-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.dashboard-progress-wrap .up-mini-stat {
+  background: linear-gradient(160deg, #ffffff 0%, #f5f3ff 100%);
+  border: 1px solid #e9e4f7;
+  box-shadow: 0 4px 14px rgba(99, 68, 166, 0.08);
+  padding: 14px 10px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dashboard-progress-wrap .up-mini-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(99, 68, 166, 0.12);
+}
+
+.dashboard-progress-wrap .up-mini-val {
+  font-size: 20px;
+}
+
+.dashboard-progress-wrap .up-xp-bar-track {
+  height: 10px;
+  background: #ede9fe;
+}
+
+/* Games promo card */
+.dashboard-games-row {
+  max-width: 1100px;
+  margin: 20px auto 0;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+
+.dash-games-card {
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(99, 68, 166, 0.2);
+  background: linear-gradient(125deg, #faf8ff 0%, #ffffff 45%, #f3f0fa 100%);
+}
+
+.dash-games-card-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 24px;
+  flex-wrap: wrap;
+}
+
+.dash-games-title {
+  margin: 0 0 6px 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #364659;
+  font-family: var(--dl-font);
+}
+
+.dash-games-desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #64748b;
+  max-width: 520px;
+}
+
+.dash-games-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.dash-games-btn {
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 800;
+  font-family: var(--dl-font);
+  cursor: pointer;
+  border: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dash-games-btn-primary {
+  background: linear-gradient(135deg, #6344a6 0%, #8b5cf6 100%);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(99, 68, 166, 0.35);
+}
+
+.dash-games-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(99, 68, 166, 0.45);
+}
+
+.dash-games-btn-secondary {
+  background: #fff;
+  color: #6344a6;
+  border: 2px solid #6344a6;
+}
+
+.dash-games-btn-secondary:hover {
+  background: rgba(99, 68, 166, 0.08);
+}
+
 .dash-challenge-banner {
   width: 100%;
   padding: 14px 24px;

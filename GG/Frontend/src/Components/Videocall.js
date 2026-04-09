@@ -25,6 +25,7 @@ function Videocall() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [aiAllowed, setAiAllowed] = useState(true);
   const [transcripts, setTranscripts] = useState([]);
+  const [showTranscriptsModal, setShowTranscriptsModal] = useState(false);
 
   const navigate = useNavigate();
   const [search] = useSearchParams();
@@ -100,93 +101,115 @@ function Videocall() {
     <div className="vc-page">
       {!joined && <Navbar id={userId} />}
       <div className="vc-center">
-        <div className="video-call-container">
+        <div className={`video-call-container${joined ? ' video-call-container--in-call' : ''}`}>
           {!joined ? (
             <>
-              <div className="join-card">
-                <h2 className="join-title">Ready to join?</h2>
+              <div className="vc-lobby">
+                <div className="join-card vc-join-card-centered">
+                  <h2 className="join-title">Ready to join?</h2>
+                  <p className="join-subtitle">Start an instant meeting or enter a code someone shared.</p>
 
-                {/* Create path */}
-                <div className="join-section">
-                  <h3 className="join-section-title">Start a new meeting</h3>
-                  {mode === 'create' ? (
-                    <>
-                      <div className="join-code-display">
-                        <span className="join-code-text">{room}</span>
-                        <button className="join-copy-btn" onClick={handleCopy}>
-                          {copied ? '\u2713 Copied' : 'Copy'}
-                        </button>
-                      </div>
-                      <p className="join-code-hint">Share this code with others so they can join.</p>
-                      <button className="btn-cta" onClick={handleJoinClick}>Start Meeting</button>
-                    </>
-                  ) : (
-                    <button className="btn-secondary" onClick={handleGenerate}>
-                      Generate a room code
-                    </button>
-                  )}
-                </div>
-
-                <div className="join-divider"><span>or</span></div>
-
-                {/* Join path */}
-                <div className="join-section">
-                  <h3 className="join-section-title">Join an existing meeting</h3>
-                  <div className="join-form">
-                    <label htmlFor="room-input" className="join-label">Room code</label>
-                    <Form.Control
-                      id="room-input"
-                      placeholder="e.g., kr-a3f9xz"
-                      value={mode === 'join' ? room : ''}
-                      onChange={handleJoinInputChange}
-                      onBlur={() => setRoomTouched(true)}
-                    />
-                    {roomHasError && mode === 'join' && (
-                      <div className="join-error">Please enter a room code.</div>
-                    )}
-                  </div>
-                  <button className="btn-cta" onClick={handleJoinClick}>Join</button>
-                </div>
-
-                <button className="back-to-dashboard" onClick={goHome}>Dashboard</button>
-              </div>
-
-              <div className="vc-transcripts-panel">
-                <h3 className="vc-transcripts-title">Video Transcripts</h3>
-                <div className="vc-transcripts-list">
-                  {transcripts.length === 0 ? (
-                    <p className="vc-transcripts-empty">
-                      No transcripts yet. Record a video call first to generate one.
-                    </p>
-                  ) : (
-                    transcripts.map((t) => {
-                      const ts = new Date(t.createdAt || t.created_at);
-                      const dateStr = ts.toLocaleDateString();
-                      const timeStr = ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                      const other = Array.isArray(t.userAccounts)
-                        ? t.userAccounts.find(u => String(u.id) !== String(userId))
-                        : null;
-                      const withName = other
-                        ? `${other.firstName} ${other.lastName}`
-                        : 'Unknown';
-                      return (
-                        <div key={t.id} className="vc-transcript-item">
-                          <div className="vc-transcript-meta">
-                            <span className="vc-transcript-with">With {withName}</span>
-                            <span className="vc-transcript-date">{dateStr} · {timeStr}</span>
-                          </div>
-                          <button
-                            className="vc-transcript-btn"
-                            onClick={() => navigate(`/Assistant?id=${userId}&chatId=${t.sessionId}`)}
-                          >
-                            Summarize with AI
+                  {/* Create path */}
+                  <div className="join-section">
+                    <h3 className="join-section-title">Start a new meeting</h3>
+                    {mode === 'create' ? (
+                      <>
+                        <div className="join-code-display">
+                          <span className="join-code-text">{room}</span>
+                          <button type="button" className="join-copy-btn" onClick={handleCopy}>
+                            {copied ? '\u2713 Copied' : 'Copy'}
                           </button>
                         </div>
-                      );
-                    })
-                  )}
+                        <p className="join-code-hint">Share this code with others so they can join.</p>
+                        <button type="button" className="btn-cta" onClick={handleJoinClick}>Start meeting</button>
+                      </>
+                    ) : (
+                      <button type="button" className="btn-secondary" onClick={handleGenerate}>
+                        New meeting
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="join-divider"><span>or</span></div>
+
+                  {/* Join path */}
+                  <div className="join-section">
+                    <h3 className="join-section-title">Join with a code</h3>
+                    <div className="join-form">
+                      <label htmlFor="room-input" className="join-label">Meeting ID</label>
+                      <Form.Control
+                        id="room-input"
+                        placeholder="e.g. kr-a3f9xz"
+                        value={mode === 'join' ? room : ''}
+                        onChange={handleJoinInputChange}
+                        onBlur={() => setRoomTouched(true)}
+                      />
+                      {roomHasError && mode === 'join' && (
+                        <div className="join-error">Enter a meeting ID to join.</div>
+                      )}
+                    </div>
+                    <button type="button" className="btn-cta" onClick={handleJoinClick}>Join</button>
+                  </div>
+
+                  <button type="button" className="back-to-dashboard vc-lobby-back" onClick={goHome}>Back to dashboard</button>
                 </div>
+
+                <button
+                  type="button"
+                  className="vc-transcripts-trigger"
+                  onClick={() => setShowTranscriptsModal(true)}
+                >
+                  Video transcripts
+                  {transcripts.length > 0 && (
+                    <span className="vc-transcripts-badge">{transcripts.length}</span>
+                  )}
+                </button>
               </div>
+
+              <Modal show={showTranscriptsModal} onHide={() => setShowTranscriptsModal(false)} centered size="lg">
+                <Modal.Header closeButton>
+                  <Modal.Title>Video transcripts</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="vc-transcripts-modal-body">
+                  {transcripts.length === 0 ? (
+                    <p className="vc-transcripts-empty">
+                      No transcripts yet. Finish a recorded call to see sessions here.
+                    </p>
+                  ) : (
+                    <div className="vc-transcripts-list">
+                      {transcripts.map((t) => {
+                        const ts = new Date(t.createdAt || t.created_at);
+                        const dateStr = ts.toLocaleDateString();
+                        const timeStr = ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const other = Array.isArray(t.userAccounts)
+                          ? t.userAccounts.find(u => String(u.id) !== String(userId))
+                          : null;
+                        const withName = other
+                          ? `${other.firstName} ${other.lastName}`
+                          : 'Unknown';
+                        return (
+                          <div key={t.id} className="vc-transcript-item">
+                            <div className="vc-transcript-meta">
+                              <span className="vc-transcript-with">With {withName}</span>
+                              <span className="vc-transcript-date">{dateStr} · {timeStr}</span>
+                            </div>
+                            <button
+                              type="button"
+                              className="vc-transcript-btn"
+                              onClick={() => {
+                                setShowTranscriptsModal(false);
+                                navigate(`/Assistant?id=${userId}&chatId=${t.sessionId}`);
+                              }}
+                            >
+                              Summarize with AI
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Modal.Body>
+              </Modal>
             </>
           ) : (
             <VideoRoom

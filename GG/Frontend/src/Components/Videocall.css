@@ -10,39 +10,88 @@
 .vc-center {
   display: flex;
   flex: 1;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding: 24px;
-  padding-top: 40px;
+  padding: 32px 20px 48px;
+  min-height: calc(100vh - 56px);
+  box-sizing: border-box;
 }
 
 .video-call-container {
   width: 100%;
-  max-width: 900px;
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-}
-
-/* Transcripts panel (pre-join, right of join card) */
-.vc-transcripts-panel {
-  flex: 1;
-  min-width: 220px;
-  max-width: 280px;
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  max-width: 520px;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  align-items: center;
+  justify-content: center;
 }
 
-.vc-transcripts-title {
-  margin: 0 0 16px 0;
-  font-size: 15px;
-  font-weight: 700;
+.video-call-container--in-call {
+  max-width: none;
+  align-items: stretch;
+  min-height: calc(100vh - 56px);
+  padding: 0;
+}
+
+/* Zoom-style lobby: single column, centered */
+.vc-lobby {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+
+.vc-join-card-centered {
+  width: 100%;
+  max-width: 440px;
+  flex: none;
+  margin: 0 auto;
+}
+
+.vc-lobby-back {
+  margin-top: 4px;
+}
+
+.vc-transcripts-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 22px;
+  background: #303134;
+  border: 1px solid #5f6368;
+  border-radius: 999px;
+  color: #e8eaed;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--dl-font);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.vc-transcripts-trigger:hover {
+  background: #3c4043;
+  border-color: #8ab4f8;
+}
+
+.vc-transcripts-badge {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #8ab4f8;
   color: #202124;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vc-transcripts-modal-body {
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
 }
 
 .vc-transcripts-list {
@@ -105,28 +154,28 @@
   padding: 8px 0;
 }
 
-/* Join card - Meet-style */
+/* Join card - Meet / Zoom–style */
 .join-card {
   background: #fff;
-  border-radius: 12px;
-  padding: 32px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  border-radius: 16px;
+  padding: 32px 28px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  flex: 0 0 420px;
+  gap: 20px;
 }
 
 .join-title {
   margin: 0;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   color: #202124;
   text-align: center;
+  letter-spacing: -0.02em;
 }
 
 .join-subtitle {
-  margin: 0;
+  margin: -8px 0 0 0;
   font-size: 14px;
   color: #5f6368;
   text-align: center;

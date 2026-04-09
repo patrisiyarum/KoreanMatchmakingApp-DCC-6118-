@@ -92,7 +92,6 @@ useEffect(() => {
             draws: 0,
             winRate: 0,
             totalChallenges: 0,
-            teamContributions: 0,
             completedGameSessions: 0,
             xpFromSessions: 0,
           });
@@ -168,8 +167,6 @@ useEffect(() => {
   };
   const getInitial   = () => firstName ? firstName.charAt(0).toUpperCase() : '?';
 
-  const upcomingMeeting = meetings && meetings.length > 0 ? meetings[0] : null;
-
   return (
     <div className="dashboard-page">
       <Navbar id={id} />
@@ -242,12 +239,6 @@ useEffect(() => {
                   <span className="up-mini-val">{challengeStats.totalChallenges ?? 0}</span>
                   <span className="up-mini-lbl">Finished</span>
                 </div>
-                <div className="up-mini-stat">
-                  <span className="up-mini-val">
-                    {challengeStats.teamContributions ?? challengeStats.totalChallenges ?? 0}
-                  </span>
-                  <span className="up-mini-lbl">Contributions</span>
-                </div>
               </div>
               {((challengeStats.completedGameSessions ?? 0) > 0 || (challengeStats.xpFromSessions ?? 0) > 0) && (
                 <p className="up-integrated-muted up-integrated-tight">
@@ -287,6 +278,37 @@ useEffect(() => {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {id && (
+        <div className="dashboard-games-row">
+          <section className="dashboard-card dash-games-card">
+            <div className="dash-games-card-inner">
+              <div className="dash-games-copy">
+                <h3 className="dash-games-title">Games</h3>
+                <p className="dash-games-desc">
+                  Practice vocabulary, grammar, and pronunciation — or challenge a friend to a 1v1 match.
+                </p>
+              </div>
+              <div className="dash-games-actions">
+                <button
+                  type="button"
+                  className="dash-games-btn dash-games-btn-primary"
+                  onClick={() => goTo('/GameSelection')}
+                >
+                  Play games
+                </button>
+                <button
+                  type="button"
+                  className="dash-games-btn dash-games-btn-secondary"
+                  onClick={() => goTo('/Challenges')}
+                >
+                  1v1 challenges
+                </button>
+              </div>
+            </div>
+          </section>
         </div>
       )}
 

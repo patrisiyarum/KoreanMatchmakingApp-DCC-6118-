@@ -7,6 +7,8 @@ import {
   handleGetProfileCustomizationOptionsApi,
 } from '../Services/findFriendsService';
 import './FriendSearch.css';
+import './ViewProfile.css';
+import './UpdateProfile.css';
 import {
   createSearchParams,
   useSearchParams,
@@ -36,6 +38,24 @@ function Avatar({ src, name, size = 44 }) {
       )}
     </div>
   );
+}
+
+function DiscoverInfoCard({ label, value }) {
+  if (value === null || value === undefined || value === '') return null;
+  return (
+    <div className="vp-info-card">
+      <span className="vp-field-label">{label}</span>
+      <span className="vp-field-value">{String(value)}</span>
+    </div>
+  );
+}
+
+function commitmentHintText(level) {
+  const n = Number(level);
+  if (!Number.isFinite(n)) return '';
+  if (n <= 2) return 'Casual';
+  if (n >= 4) return 'Very committed';
+  return 'Moderate';
 }
 
 function parseGameStats(raw) {
@@ -581,10 +601,11 @@ const FriendSearch = ({ embedded = false }) => {
           </div>
 
           {/* Filter tabs */}
-          <div className="fs-filter-tabs">
+          <div className="fs-filter-tabs" aria-label="Discover filters">
             {FILTER_TABS.map((tab, i) => (
               <button
                 key={tab}
+                type="button"
                 className={`fs-filter-tab ${activeFilter === i ? 'fs-filter-tab-active' : ''}`}
                 onClick={() => setActiveFilter(activeFilter === i ? -1 : i)}
               >
@@ -782,29 +803,30 @@ const FriendSearch = ({ embedded = false }) => {
               {displayedUsers.length} {displayedUsers.length === 1 ? 'person' : 'people'}
             </span>
             <div className="fs-sort-group">
-              <button
-                type="button"
-                className={`fs-btn-sort${sortDiscover === 'best_match' ? ' fs-btn-sort-active' : ''}`}
-                onClick={() => applySortDiscover('best_match')}
-                title="Sort by profile alignment: compares each person’s learning goal, communication style, and commitment to yours. Search, Match filters, Personality, Interests, and Schedule only restrict who is listed—they do not change the percentage."
-              >
-                Best profile match
-              </button>
-              <button
-                type="button"
-                className={`fs-btn-sort${sortDiscover === 'name' ? ' fs-btn-sort-active' : ''}`}
-                onClick={() => applySortDiscover('name')}
-                title="Alphabetical by first name"
-              >
-                Name A–Z
-              </button>
+              <div className="fs-sort-toggle" role="group" aria-label="Sort discovery results">
+                <button
+                  type="button"
+                  className={`fs-btn-sort${sortDiscover === 'best_match' ? ' fs-btn-sort-active' : ''}`}
+                  onClick={() => applySortDiscover('best_match')}
+                  title="Sort by profile alignment: compares each person’s learning goal, communication style, and commitment to yours. Search, Match filters, Personality, Interests, and Schedule only restrict who is listed—they do not change the percentage."
+                >
+                  Best profile match
+                </button>
+                <button
+                  type="button"
+                  className={`fs-btn-sort${sortDiscover === 'name' ? ' fs-btn-sort-active' : ''}`}
+                  onClick={() => applySortDiscover('name')}
+                  title="Alphabetical by first name"
+                >
+                  Name A–Z
+                </button>
+              </div>
             </div>
           </div>
           <p className="fs-results-sort-hint">
             {sortDiscover === 'best_match' ? (
               <>
                 Sorted by how well each person’s <strong>goal, style, and commitment</strong> match your profile.
-                Filters (search, personality, interests, schedule, match filters) only hide people who don’t fit—they don’t change the match %.
               </>
             ) : (
               <>Sorted alphabetically by first name.</>
@@ -839,19 +861,57 @@ const FriendSearch = ({ embedded = false }) => {
                   ? user.badgeIcons.trim().split(/\s+/).filter(Boolean)
                   : [];
 
+                const emailLine = typeof user.email === 'string' && user.email.trim()
+                  ? user.email.trim()
+                  : '';
+                const subLine = emailLine
+                  || [user.profession, user.age != null && user.age !== '' ? String(user.age) : null]
+                    .filter(Boolean)
+                    .join(' · ')
+                  || null;
+
+                const commitmentRaw = user.commitment_level;
+                const commitmentNum = commitmentRaw === '' || commitmentRaw == null
+                  ? null
+                  : Number(commitmentRaw);
+                const hasCommitment = commitmentNum != null && !Number.isNaN(commitmentNum);
+
+                const showLanguages = Boolean(nativeL || targetL || prof);
+                const showAbout = Boolean(
+                  (user.age != null && user.age !== '')
+                  || user.profession
+                  || user.gender
+                  || user.mbti
+                  || user.zodiac
+                );
+                const showLearningStyle = Boolean(
+                  user.learning_goal
+                  || user.communication_style
+                  || hasCommitment
+                );
+                const showActivity = Boolean(
+                  user.level != null
+                  || user.xp != null
+                  || activity?.gamesPlayed
+                  || (user.matchScore != null && sortDiscover === 'best_match')
+                );
+                const showBadges = badgeCount > 0 || badgeIcons.length > 0;
+
                 return (
-                  <div key={i} className="fs-profile-card">
-                    <div className="fs-profile-card-top">
-                      <div className="fs-profile-card-identity">
-                        <Avatar src={user.profileImage} name={user.firstName} size={52} />
-                        <div className="fs-profile-card-head">
-                          <div className="fs-user-name">{user.firstName} {user.lastName}</div>
-                          <div className="fs-profile-card-sub">
-                            {[user.profession, user.age ? `${user.age}` : null].filter(Boolean).join(' · ') || ' '}
-                          </div>
-                        </div>
+                  <div key={i} className="fs-profile-card fs-discover-card">
+                    <div className="vp-hero fs-discover-vp-hero">
+                      <div className="vp-avatar-wrap">
+                        <Avatar src={user.profileImage} name={user.firstName} size={110} />
                       </div>
-                      <div className="fs-profile-card-cta">
+                      <div className="vp-hero-info">
+                        <h2 className="vp-name">
+                          {user.firstName} {user.lastName}
+                        </h2>
+                        {subLine ? (
+                          <p className="vp-email">{subLine}</p>
+                        ) : null}
+                      </div>
+                      <div className="fs-discover-hero-cta">
                         {(() => {
                           const reqStatus = getRequestStatusForUser(user.id);
                           if (reqStatus.status === 'pending_sent') {
@@ -867,8 +927,11 @@ const FriendSearch = ({ embedded = false }) => {
                             );
                           }
                           return (
-                            <button type="button" className="fs-btn-follow"
-                              onClick={(e) => { e.stopPropagation(); handleSendRequest(user); }}>
+                            <button
+                              type="button"
+                              className="fs-btn-follow"
+                              onClick={(e) => { e.stopPropagation(); handleSendRequest(user); }}
+                            >
                               Follow
                             </button>
                           );
@@ -876,63 +939,93 @@ const FriendSearch = ({ embedded = false }) => {
                       </div>
                     </div>
 
-                    {user.learning_goal ? (
-                      <div className="fs-profile-goal">
-                        <span className="fs-profile-goal-label">Goal</span>
-                        <span className="fs-profile-goal-text">{user.learning_goal}</span>
-                      </div>
-                    ) : null}
-
-                    {(nativeL || targetL) ? (
-                      <div className="fs-profile-langs">
-                        <span className="fs-profile-lang-label">Languages</span>
-                        <span className="fs-profile-lang-line">
-                          {nativeL || '—'} → {targetL || '—'}
-                          {prof ? <span className="fs-profile-lang-prof"> · {prof}</span> : null}
-                        </span>
-                      </div>
-                    ) : null}
-
-                    <div className="fs-profile-stats-row">
-                      {(user.level != null || user.xp != null) && (
-                        <span className="fs-profile-stat-pill">
-                          Lv {user.level ?? 1} · {user.xp ?? 0} XP
-                        </span>
-                      )}
-                      {activity?.gamesPlayed ? (
-                        <span className="fs-profile-stat-pill">{activity.gamesPlayed} games</span>
-                      ) : null}
-                      {user.matchScore != null && sortDiscover === 'best_match' ? (
-                        <span
-                          className="fs-profile-stat-pill fs-profile-match"
-                          title="Based on learning goal, communication style, and commitment vs your profile (not MBTI, interests, or schedule)."
-                        >
-                          Profile match {Math.round(Number(user.matchScore))}%
-                        </span>
-                      ) : null}
-                    </div>
-
-                    {(badgeCount > 0 || badgeIcons.length > 0) ? (
-                      <div className="fs-profile-badges">
-                        <span className="fs-profile-badges-label">Badges</span>
-                        <div className="fs-profile-badges-icons">
-                          {badgeIcons.map((icon, j) => (
-                            <span key={j} className="fs-badge-emoji" title="Badge">{icon}</span>
-                          ))}
+                    {showLanguages ? (
+                      <section className="vp-section">
+                        <h2 className="vp-section-title">Languages</h2>
+                        <div className="vp-grid">
+                          <DiscoverInfoCard label="Native Language" value={nativeL} />
+                          <DiscoverInfoCard label="Target Language" value={targetL} />
+                          <DiscoverInfoCard label="Proficiency Level" value={prof} />
                         </div>
-                        {badgeCount > 0 ? (
-                          <span className="fs-profile-badge-count">{badgeCount} earned</span>
-                        ) : null}
-                      </div>
+                      </section>
                     ) : null}
 
-                    {(user.communication_style || user.commitment_level != null) ? (
-                      <div className="fs-user-match-tags fs-profile-footer-tags">
-                        {user.communication_style && <span className="fs-tag">{user.communication_style}</span>}
-                        {user.commitment_level != null && user.commitment_level !== '' && (
-                          <span className="fs-tag">Commitment {user.commitment_level}/5</span>
-                        )}
-                      </div>
+                    {showAbout ? (
+                      <section className="vp-section">
+                        <h2 className="vp-section-title">About</h2>
+                        <div className="vp-grid">
+                          <DiscoverInfoCard label="Age" value={user.age != null && user.age !== '' ? user.age : null} />
+                          <DiscoverInfoCard label="Gender" value={user.gender} />
+                          <DiscoverInfoCard label="Profession" value={user.profession} />
+                          <DiscoverInfoCard label="MBTI" value={user.mbti} />
+                          <DiscoverInfoCard label="Zodiac" value={user.zodiac} />
+                        </div>
+                      </section>
+                    ) : null}
+
+                    {showLearningStyle ? (
+                      <section className="vp-section">
+                        <h2 className="vp-section-title">Learning Style</h2>
+                        <div className="vp-grid">
+                          <DiscoverInfoCard label="Learning Goal" value={user.learning_goal} />
+                          <DiscoverInfoCard label="Communication Style" value={user.communication_style} />
+                        </div>
+                        {hasCommitment ? (
+                          <div className="vp-commitment">
+                            <span className="vp-field-label">Commitment Level</span>
+                            <div className="vp-stars">
+                              {[1, 2, 3, 4, 5].map((n) => (
+                                <span
+                                  key={n}
+                                  className={`up-star ${n <= commitmentNum ? 'up-star-active' : 'up-star-inactive'}`}
+                                >
+                                  &#9733;
+                                </span>
+                              ))}
+                              <span className="vp-commitment-hint">{commitmentHintText(commitmentNum)}</span>
+                            </div>
+                          </div>
+                        ) : null}
+                      </section>
+                    ) : null}
+
+                    {showActivity ? (
+                      <section className="vp-section">
+                        <h2 className="vp-section-title">Activity</h2>
+                        <div className="vp-grid">
+                          {(user.level != null || user.xp != null) ? (
+                            <DiscoverInfoCard
+                              label="Level & XP"
+                              value={`Lv ${user.level ?? 1} · ${user.xp ?? 0} XP`}
+                            />
+                          ) : null}
+                          {activity?.gamesPlayed ? (
+                            <DiscoverInfoCard label="Games played" value={String(activity.gamesPlayed)} />
+                          ) : null}
+                          {user.matchScore != null && sortDiscover === 'best_match' ? (
+                            <DiscoverInfoCard
+                              label="Profile match"
+                              value={`${Math.round(Number(user.matchScore))}%`}
+                            />
+                          ) : null}
+                        </div>
+                      </section>
+                    ) : null}
+
+                    {showBadges ? (
+                      <section className="vp-section">
+                        <h2 className="vp-section-title">Badges</h2>
+                        <div className="fs-discover-badges-row">
+                          <div className="vp-tags fs-discover-badge-tags">
+                            {badgeIcons.map((icon, j) => (
+                              <span key={j} className="fs-badge-emoji" title="Badge">{icon}</span>
+                            ))}
+                          </div>
+                          {badgeCount > 0 ? (
+                            <span className="fs-discover-badge-count">{badgeCount} earned</span>
+                          ) : null}
+                        </div>
+                      </section>
                     ) : null}
                   </div>
                 );

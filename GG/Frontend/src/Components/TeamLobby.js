@@ -140,7 +140,7 @@ function TeamLobby() {
               const loadingInv = inviteAction === inv.id;
               return (
                 <div key={inv.id} className="team-invite-row-card">
-                  <span className="team-invite-row-logo">{team?.logo || '?'}</span>
+                  <span className="team-invite-row-logo">{team?.logo || '👥'}</span>
                   <div className="team-invite-row-info">
                     <strong>{inviterName}</strong> invited you to join <strong>{teamName}</strong>
                   </div>
@@ -167,7 +167,7 @@ function TeamLobby() {
         )}
 
         <div className="team-card">
-          <div className="team-card-logo">?</div>
+          <div className="team-card-logo" aria-hidden="true">👥</div>
           <h1 className="team-card-title">Teams</h1>
           <p className="team-card-subtitle">
             Join a team and complete challenges together!

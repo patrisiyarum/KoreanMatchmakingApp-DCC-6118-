@@ -269,7 +269,7 @@ function TeamPage() {
                     style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 14, display: 'block' }}
                   />
                 ) : (
-                  team.logo
+                  team.logo || '👥'
                 )}
               </div>
               <h1 className="team-card-title">{team.name}</h1>

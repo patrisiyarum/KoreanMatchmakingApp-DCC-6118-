@@ -217,7 +217,7 @@ function TeamPage() {
       <Navbar id={id} />
       <div className="team-center">
         {/* ── Team Header Card ── */}
-        <div className="team-card">
+        <div className="team-card team-card--overview">
           {editing ? (
             <>
             <ImageUpload
@@ -304,9 +304,9 @@ function TeamPage() {
               {/* Share with friends */}
               {friendsNotInTeam.length > 0 && (
                 <div className="team-share-section">
-                  <p className="team-share-title">Invite a friend to your team</p>
+                  <h3 className="team-share-heading">Invite friends</h3>
                   <p className="team-share-desc">
-                    Click to send an invite — they'll see a notification and can accept to join. The code is also copied so you can share via text if needed.
+                    Tap a name to send an in-app invite (your invite code is copied for texting too).
                   </p>
                   <div className="team-share-friends">
                     {friendsNotInTeam.map((f) => (
@@ -328,30 +328,34 @@ function TeamPage() {
               {successMsg && <p className="team-success">{successMsg}</p>}
               {errMsg     && <p className="team-error">{errMsg}</p>}
  
-              <div className="team-btn-row">
-                <button type="button" className="back-to-dashboard" onClick={handleBackToGames}>Games</button>
-                {myRole === 'owner' && (
-                  <>
-                    <button className="team-btn-secondary" onClick={() => setEditing(true)}>
-                      Edit Team
+              <div className="team-footer-actions">
+                <button type="button" className="team-footer-link" onClick={handleBackToGames}>
+                  ← Games
+                </button>
+                <div className="team-footer-buttons">
+                  {myRole === 'owner' && (
+                    <>
+                      <button type="button" className="team-btn-secondary" onClick={() => setEditing(true)}>
+                        Edit team
+                      </button>
+                      <button type="button" className="team-btn-danger" onClick={handleDisband}>
+                        Disband
+                      </button>
+                    </>
+                  )}
+                  {myRole === 'member' && (
+                    <button type="button" className="team-btn-danger" onClick={handleLeave}>
+                      Leave team
                     </button>
-                    <button className="team-btn-danger" onClick={handleDisband}>
-                      Disband
-                    </button>
-                  </>
-                )}
-                {myRole === 'member' && (
-                  <button className="team-btn-danger" onClick={handleLeave}>
-                    Leave Team
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
             </>
           )}
         </div>
  
         {/* ── Section tabs ── */}
-        <div className="team-card" style={{ padding: '0', overflow: 'hidden' }}>
+        <div className="team-card team-card--detail">
           <div className="team-section-tabs">
             <button
               className={`team-section-tab ${section === 'members' ? 'team-section-tab-active' : ''}`}
@@ -367,13 +371,13 @@ function TeamPage() {
             </button>
           </div>
  
-          <div style={{ padding: '20px 28px 24px' }}>
+          <div className="team-tab-panel">
  
             {/* ── Members & Leaderboard ── */}
             {section === 'members' && (
               <>
-                <h2 className="team-section-title" style={{ marginBottom: 14 }}>
-                  Member Leaderboard
+                <h2 className="team-section-title team-section-title--left">
+                  Member leaderboard
                 </h2>
                 <div className="leaderboard-list">
                   {sortedMembers.map((member, index) => {
@@ -388,7 +392,7 @@ function TeamPage() {
                         </span>
                         <span className="leaderboard-name">
                           {name}
-                          {member.role === 'owner' && <span className="owner-badge"> Owner</span>}
+                          {member.role === 'owner' && <span className="owner-badge">Owner</span>}
                           {isMe && <span className="me-badge"> (you)</span>}
                         </span>
                         <span className="leaderboard-level">Lv.{level}</span>
@@ -408,8 +412,8 @@ function TeamPage() {
             {/* ── Shared Quests ── */}
             {section === 'quests' && (
               <>
-                <h2 className="team-section-title" style={{ marginBottom: 14 }}>
-                  Team Quests
+                <h2 className="team-section-title team-section-title--left">
+                  Team quests
                 </h2>
 
                 {/* Create Quest (team owners only) */}

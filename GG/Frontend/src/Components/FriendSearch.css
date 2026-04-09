@@ -53,9 +53,58 @@
 
 .fs-card-subtitle {
   font-size: 13px;
-  color: rgba(54, 70, 89, 0.7);
+  color: rgba(54, 70, 89, 0.75);
   text-align: center;
-  margin: -8px 0 0 0;
+  margin: 4px 0 0 0;
+  line-height: 1.45;
+  max-width: 36em;
+  align-self: center;
+}
+
+.fs-filter-panel-tip {
+  background: #f8fafc;
+  border: 1px solid #e8ecf1;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.fs-help-lead {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.fs-help-list {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.fs-help-list li {
+  margin-bottom: 6px;
+}
+
+.fs-panel-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.fs-empty-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fs-empty-hint {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.45;
 }
 
 .fs-section-label {

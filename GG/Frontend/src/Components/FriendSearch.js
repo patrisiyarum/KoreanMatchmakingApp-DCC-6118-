@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { DateTime } from "luxon";
 import Select from "react-select";
 
@@ -58,6 +58,81 @@ function activityFromGameStats(raw) {
   return { gamesPlayed: played, perfectRounds: o.perfect_score || 0 };
 }
 
+/** "Monday" / "monday" → canonical weekday name for comparison */
+function normalizeDayName(d) {
+  if (d == null) return '';
+  const s = String(d).trim();
+  if (!s) return '';
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
+/** Parse HH:MM or HH:MM:SS to minutes from midnight */
+function timeToMinutes(t) {
+  if (t == null || t === '') return 0;
+  const parts = String(t).trim().slice(0, 8).split(':');
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10) || 0;
+  if (Number.isNaN(h)) return 0;
+  return h * 60 + m;
+}
+
+function intervalsOverlap(a0, a1, b0, b1) {
+  return a0 < b1 && b0 < a1;
+}
+
+/**
+ * Selected slots from AvailabilityPicker use day_of_week + start_time/end_time.
+ * Legacy shapes used day + time ("8 am"). We normalize to { day, startMin, endMin }.
+ */
+function normalizeSelectedAvailabilitySlots(slots, viewerTimeZone) {
+  if (!Array.isArray(slots) || slots.length === 0) return [];
+  const zone = viewerTimeZone || 'UTC';
+  const out = [];
+  for (const slot of slots) {
+    const day = normalizeDayName(slot.day_of_week || slot.day);
+    if (!day) continue;
+
+    let startMin;
+    let endMin;
+    if (slot.start_time != null && String(slot.start_time).trim() !== '') {
+      startMin = timeToMinutes(slot.start_time);
+      endMin =
+        slot.end_time != null && String(slot.end_time).trim() !== ''
+          ? timeToMinutes(slot.end_time)
+          : startMin + 60;
+    } else if (slot.time) {
+      const dt = DateTime.fromFormat(String(slot.time).trim(), 'h a', { zone });
+      if (!dt.isValid) continue;
+      startMin = dt.hour * 60 + dt.minute;
+      endMin = startMin + 60;
+    } else {
+      continue;
+    }
+    if (endMin <= startMin) endMin = startMin + 60;
+    out.push({ day, startMin, endMin });
+  }
+  return out;
+}
+
+function userOverlapsSelectedSchedule(user, normalizedSlots) {
+  if (!normalizedSlots.length) return true;
+  if (!Array.isArray(user.Availability) || user.Availability.length === 0) return false;
+
+  return normalizedSlots.some((sel) =>
+    user.Availability.some((us) => {
+      const uDay = normalizeDayName(us.day_of_week);
+      if (uDay !== sel.day) return false;
+      const uStart = timeToMinutes(us.start_time);
+      let uEnd =
+        us.end_time != null && String(us.end_time).trim() !== ''
+          ? timeToMinutes(us.end_time)
+          : uStart + 60;
+      if (uEnd <= uStart) uEnd = uStart + 60;
+      return intervalsOverlap(sel.startMin, sel.endMin, uStart, uEnd);
+    })
+  );
+}
+
 const MBTI_OPTIONS = [
   'INTJ','INTP','ENTJ','ENTP',
   'INFJ','INFP','ENFJ','ENFP',
@@ -70,7 +145,7 @@ const ZODIAC_OPTIONS = [
   'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'
 ].map(v => ({ value: v, label: v }));
 
-const FILTER_TABS = ['Name', 'MBTI / Zodiac', 'Interests', 'Availability', 'Match profile'];
+const FILTER_TABS = ['Start here', 'Personality', 'Interests', 'Schedule', 'Study match'];
 
 const COMMITMENT_FLEX_OPTIONS = [
   { value: 0, label: 'Exact level' },
@@ -99,7 +174,6 @@ const FriendSearch = ({ embedded = false }) => {
   const currentUserEmail = getUserData()?.email;
 
   const [filterInput, setFilterInput] = useState('');
-  const [userNames, setUserNames] = useState([]);
   const [allUserNames, setAllUserNames] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -133,7 +207,8 @@ const FriendSearch = ({ embedded = false }) => {
         let userAvailability = [];
         try {
           const r = await handleGetUserAvailability(user.id);
-          userAvailability = r || [];
+          const av = r?.availability ?? r;
+          userAvailability = Array.isArray(av) ? av : [];
         } catch { /* ignore */ }
         return {
           ...user,
@@ -165,7 +240,6 @@ const FriendSearch = ({ embedded = false }) => {
         setFilterCommitmentFlex(0);
         setSortDiscover('best_match');
         const visibleUsers = await fetchDiscoverAndEnrich({ sort: 'best_match' });
-        setUserNames(visibleUsers);
         setAllUserNames(visibleUsers);
         setCurrentUser(getUserData());
         setLoading(false);
@@ -233,13 +307,6 @@ const FriendSearch = ({ embedded = false }) => {
       try { setSelectedAvailability(JSON.parse(availabilityParam)); } catch {}
     }
   }, [search]);
-
-  useEffect(() => {
-    if (selectedAvailability && selectedAvailability.length > 0 && allUserNames.length > 0) {
-      handleAvailabilityFilter();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAvailability, allUserNames]);
 
   const flash = (msg) => { setSuccessMessage(msg); setTimeout(() => setSuccessMessage(''), 2500); };
 
@@ -331,6 +398,35 @@ const FriendSearch = ({ embedded = false }) => {
     return base;
   };
 
+  const displayedUsers = useMemo(() => {
+    let base = allUserNames;
+    const qNorm = (filterInput || '').trim().toLowerCase();
+    if (!id && qNorm) {
+      base = base.filter(
+        (u) =>
+          (u.firstName || '').toLowerCase().includes(qNorm) ||
+          (u.lastName || '').toLowerCase().includes(qNorm) ||
+          (u.email || '').toLowerCase().includes(qNorm)
+      );
+    }
+    base = applyClientOnlyFilters(base);
+    const viewerTz = currentUser?.default_time_zone || getUserData()?.default_time_zone || 'UTC';
+    const slots = normalizeSelectedAvailabilitySlots(selectedAvailability, viewerTz);
+    if (slots.length) {
+      base = base.filter((u) => userOverlapsSelectedSchedule(u, slots));
+    }
+    return base;
+  }, [
+    allUserNames,
+    filterInput,
+    id,
+    selectedMbti,
+    selectedZodiac,
+    selectedInterests,
+    selectedAvailability,
+    currentUser?.default_time_zone,
+  ]);
+
   const applyMatchFilters = async () => {
     if (!id) return;
     setLoading(true);
@@ -338,7 +434,6 @@ const FriendSearch = ({ embedded = false }) => {
     try {
       const visibleUsers = await fetchDiscoverAndEnrich(discoverRequestOpts(sortDiscover));
       setAllUserNames(visibleUsers);
-      setUserNames(applyClientOnlyFilters(visibleUsers));
       setActiveFilter(-1);
     } catch (e) {
       setError(e);
@@ -355,7 +450,6 @@ const FriendSearch = ({ embedded = false }) => {
     try {
       const visibleUsers = await fetchDiscoverAndEnrich(discoverRequestOpts(nextSort));
       setAllUserNames(visibleUsers);
-      setUserNames(applyClientOnlyFilters(visibleUsers));
     } catch (e) {
       setError(e);
     } finally {
@@ -364,18 +458,7 @@ const FriendSearch = ({ embedded = false }) => {
   };
 
   const applyFilters = async () => {
-    const qNorm = (filterInput || '').trim().toLowerCase();
-
     if (!id) {
-      let base = allUserNames;
-      if (qNorm) {
-        base = base.filter(u =>
-          (u.firstName || '').toLowerCase().includes(qNorm) ||
-          (u.lastName || '').toLowerCase().includes(qNorm) ||
-          (u.email || '').toLowerCase().includes(qNorm)
-        );
-      }
-      setUserNames(applyClientOnlyFilters(base));
       return;
     }
 
@@ -384,7 +467,6 @@ const FriendSearch = ({ embedded = false }) => {
     try {
       const visibleUsers = await fetchDiscoverAndEnrich(discoverRequestOpts(sortDiscover));
       setAllUserNames(visibleUsers);
-      setUserNames(applyClientOnlyFilters(visibleUsers));
     } catch (e) {
       setError(e);
     } finally {
@@ -404,7 +486,6 @@ const FriendSearch = ({ embedded = false }) => {
     setFilterCommitmentFlex(0);
     setSortDiscover('best_match');
     if (!id) {
-      setUserNames(allUserNames);
       return;
     }
     setLoading(true);
@@ -415,45 +496,11 @@ const FriendSearch = ({ embedded = false }) => {
         commitmentFlex: 0,
       });
       setAllUserNames(visibleUsers);
-      setUserNames(visibleUsers);
     } catch {
-      setUserNames(allUserNames);
+      /* keep list */
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleAvailabilityFilter = () => {
-    if (!selectedAvailability || selectedAvailability.length === 0) return;
-    try {
-      const selectedSlotsUTC = selectedAvailability.map(slot => {
-        const convertTo24Hr = (timeStr) => {
-          const dt = DateTime.fromFormat(timeStr.trim(), "h a", { zone: currentUser?.default_time_zone || "UTC" });
-          return dt.isValid ? dt.toFormat("HH:mm") : null;
-        };
-        const start = convertTo24Hr(slot.time);
-        const end = DateTime.fromFormat(start, "HH:mm").plus({ hours: 1 }).toFormat("HH:mm");
-        return {
-          day_of_week: slot.day,
-          start_utc: DateTime.fromISO(`2024-01-01T${start}`, { zone: currentUser?.default_time_zone || "UTC" }).toUTC(),
-          end_utc: DateTime.fromISO(`2024-01-01T${end}`, { zone: currentUser?.default_time_zone || "UTC" }).toUTC(),
-        };
-      });
-      const filtered = allUserNames.filter(user => {
-        if (!Array.isArray(user.Availability) || user.Availability.length === 0) return false;
-        const userZone = user.default_time_zone || "UTC";
-        return user.Availability.some(userSlot => {
-          const userStartUTC = DateTime.fromISO(`2024-01-01T${userSlot.start_time}`, { zone: userZone }).toUTC();
-          const userEndUTC = DateTime.fromISO(`2024-01-01T${userSlot.end_time}`, { zone: userZone }).toUTC();
-          return selectedSlotsUTC.some(selSlot =>
-            userSlot.day_of_week === selSlot.day_of_week &&
-            userStartUTC.toISO() === selSlot.start_utc.toISO() &&
-            userEndUTC.toISO() === selSlot.end_utc.toISO()
-          );
-        });
-      });
-      setUserNames(filtered);
-    } catch {}
   };
 
   const getField = (user, fields) => {
@@ -503,19 +550,23 @@ const FriendSearch = ({ embedded = false }) => {
             <button className="back-to-dashboard" onClick={() => navigate({ pathname: '/Dashboard', search: createSearchParams({ id }).toString() })}>Dashboard</button>
           )}
           <h1 className="fs-card-title">{embedded ? 'Discover' : 'Find Friends'}</h1>
-          <p className="fs-card-subtitle">Search and filter to find your perfect language partner</p>
+          <p className="fs-card-subtitle">
+            Use search for names, then open a section below to narrow by personality, interests, schedule, or study style.
+          </p>
 
           {/* Search bar — Instagram-style */}
           <div className="fs-search-wrap">
             <input
               className="fs-input"
               type="text"
-              placeholder="Search"
+              placeholder="Search by first or last name"
               value={filterInput}
               onChange={(e) => setFilterInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
             />
-            <button className="fs-btn-follow" onClick={applyFilters}>Search</button>
+            <button type="button" className="fs-btn-follow" onClick={applyFilters} title="Runs search on the server (case-insensitive)">
+              Search
+            </button>
           </div>
 
           {/* Filter tabs */}
@@ -530,6 +581,18 @@ const FriendSearch = ({ embedded = false }) => {
               </button>
             ))}
           </div>
+
+          {activeFilter === 0 && (
+            <div className="fs-filter-panel fs-filter-panel-tip">
+              <p className="fs-help-lead">How this page works</p>
+              <ol className="fs-help-list">
+                <li><strong>Search</strong> — finds people by name (tap Search or Enter).</li>
+                <li><strong>Personality / Interests</strong> — optional; tap <em>Apply</em> after choosing.</li>
+                <li><strong>Schedule</strong> — pick times you are free; we show anyone with <em>overlapping</em> hours (not identical slots).</li>
+                <li><strong>Study match</strong> — filter by learning goal and style; use sort below for best fit vs A–Z.</li>
+              </ol>
+            </div>
+          )}
 
           {/* MBTI / Zodiac panel */}
           {activeFilter === 1 && (
@@ -567,7 +630,7 @@ const FriendSearch = ({ embedded = false }) => {
                 onChange={(vals) => setSelectedInterests((vals || []).map(v => v.value))}
                 placeholder="Select interests..." styles={selectStyles} />
               <div className="fs-filter-actions">
-                <button className="fs-btn-secondary" onClick={() => { setSelectedInterests([]); setUserNames(allUserNames); }}>Clear</button>
+                <button type="button" className="fs-btn-secondary" onClick={() => setSelectedInterests([])}>Clear</button>
                 <button className="fs-btn-primary" onClick={applyFilters}>Apply</button>
               </div>
             </div>
@@ -576,23 +639,41 @@ const FriendSearch = ({ embedded = false }) => {
           {/* Availability panel */}
           {activeFilter === 3 && (
             <div className="fs-filter-panel">
-              <button className="fs-btn-primary" style={{ width: '100%' }}
+              <p className="fs-panel-desc">
+                Choose when you are usually free. We list people who have at least one overlapping hour on the same day
+                (times can differ slightly — we match overlap, not exact copies).
+              </p>
+              <button
+                type="button"
+                className="fs-btn-primary"
+                style={{ width: '100%' }}
                 onClick={() => navigate({
                   pathname: '/AvailabilityPicker',
                   search: createSearchParams({ id, returnTo: 'Friends', friendsSub: 'discover' }).toString(),
-                })}>
-                Pick Availability Times
+                })}
+              >
+                Choose my free times
               </button>
               {selectedAvailability && selectedAvailability.length > 0 && (
                 <>
                   <div className="fs-avail-display">
-                    {selectedAvailability.map((slot, i) => (
-                      <span key={i} className="fs-avail-slot">{slot.day} {slot.time}</span>
-                    ))}
+                    {selectedAvailability.map((slot, i) => {
+                      const day = slot.day_of_week || slot.day || '';
+                      const start = (slot.start_time || '').toString().slice(0, 5);
+                      const end = (slot.end_time || '').toString().slice(0, 5);
+                      const label = end ? `${day} ${start}–${end}` : `${day} ${start}`;
+                      return (
+                        <span key={i} className="fs-avail-slot">{label}</span>
+                      );
+                    })}
                   </div>
-                  <button className="fs-btn-secondary" style={{ width: '100%' }}
-                    onClick={() => { setSelectedAvailability(null); setUserNames(allUserNames); }}>
-                    Clear Availability
+                  <button
+                    type="button"
+                    className="fs-btn-secondary"
+                    style={{ width: '100%' }}
+                    onClick={() => setSelectedAvailability(null)}
+                  >
+                    Clear schedule filter
                   </button>
                 </>
               )}
@@ -679,30 +760,48 @@ const FriendSearch = ({ embedded = false }) => {
         {/* Results card */}
         <div className="fs-card fs-results-card">
           <div className="fs-results-header">
-            <span className="fs-results-count">{userNames.length} suggested</span>
+            <span className="fs-results-count">
+              {displayedUsers.length} {displayedUsers.length === 1 ? 'person' : 'people'}
+            </span>
             <div className="fs-sort-group">
               <button
                 type="button"
                 className={`fs-btn-sort${sortDiscover === 'best_match' ? ' fs-btn-sort-active' : ''}`}
                 onClick={() => applySortDiscover('best_match')}
+                title="Uses your learning goal, communication style, and commitment vs each profile"
               >
-                Best profile match
+                Best study match
               </button>
               <button
                 type="button"
                 className={`fs-btn-sort${sortDiscover === 'name' ? ' fs-btn-sort-active' : ''}`}
                 onClick={() => applySortDiscover('name')}
+                title="Alphabetical by first name"
               >
                 Name A–Z
               </button>
             </div>
           </div>
 
-          {userNames.length === 0 ? (
-            <p className="fs-empty">No one matches your search.</p>
+          {displayedUsers.length === 0 ? (
+            <div className="fs-empty-block">
+              <p className="fs-empty">No one matches yet.</p>
+              {normalizeSelectedAvailabilitySlots(
+                selectedAvailability,
+                currentUser?.default_time_zone || getUserData()?.default_time_zone || 'UTC'
+              ).length > 0 ? (
+                <p className="fs-empty-hint">
+                  No one with overlapping hours for those times. Try clearing the Schedule filter, or pick more time slots.
+                </p>
+              ) : (
+                <p className="fs-empty-hint">
+                  Try clearing filters, searching a shorter name, or switching sort to Name A–Z.
+                </p>
+              )}
+            </div>
           ) : (
             <div className="fs-results-list fs-results-cards">
-              {userNames.map((user, i) => {
+              {displayedUsers.map((user, i) => {
                 const nativeL = getField(user, ['nativeLanguage', 'native_language']);
                 const targetL = getField(user, ['targetLanguage', 'target_language']);
                 const prof = getField(user, ['targetLanguageProficiency', 'target_language_proficiency']);

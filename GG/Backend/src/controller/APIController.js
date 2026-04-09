@@ -971,6 +971,18 @@ let createMeeting = async (req, res) => {
       });
     }
 
+    const [profileRows] = await pool.query(
+      "SELECT id FROM UserProfile WHERE id IN (?, ?)",
+      [u1, u2]
+    );
+    if (!Array.isArray(profileRows) || profileRows.length < 2) {
+      return res.status(400).json({
+        message:
+          "Cannot schedule: both users need a saved profile (UserProfile row). Ask the other person to finish profile setup, or complete yours.",
+        code: "MEETING_MISSING_PROFILE",
+      });
+    }
+
     const st = normalizeMeetingTime(start_time);
     const et = normalizeMeetingTime(end_time);
 
@@ -988,9 +1000,20 @@ let createMeeting = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating meeting:", error);
+    const raw = error?.message || String(error);
+    let message = "Failed to create meeting";
+    if (/foreign key|ER_NO_REFERENCED|Cannot add or update a child row|1452/i.test(raw)) {
+      message =
+        "Cannot save meeting (database constraint). Both accounts need a UserProfile; run migrations if the meetings table is missing.";
+    } else if (/doesn't exist|Unknown table|1146/i.test(raw)) {
+      message =
+        "Meetings table is missing or the name does not match on this server. Run DB migrations and restart the app.";
+    } else {
+      message = `Failed to create meeting: ${raw}`;
+    }
     return res.status(500).json({
-      message: "Failed to create meeting",
-      error: error.message,
+      message,
+      error: raw,
     });
   }
 };

@@ -4,7 +4,10 @@ import { Op } from "sequelize";
 export const getMeetingsForUser = async (req, res) => {
 
   try {
-    const userId = req.params.userId;
+    const userId = Number(req.params.userId);
+    if (!Number.isFinite(userId) || userId <= 0) {
+      return res.status(400).json({ error: "Invalid userId" });
+    }
     console.log("Fetching meetings for user:", userId);
 
     const meetings = await db.Meeting.findAll({
@@ -13,7 +16,11 @@ export const getMeetingsForUser = async (req, res) => {
           { user1_id: userId },
           { user2_id: userId }
         ]
-      }
+      },
+      order: [
+        ["day_of_week", "ASC"],
+        ["start_time", "ASC"],
+      ],
     });
 
     return res.json(meetings);

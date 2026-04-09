@@ -946,33 +946,46 @@ let getUserAvailability = async (req, res) => {
   }
 };
 
+/** MySQL TIME + Sequelize model table name (meetingmodel) vs raw SQL (MeetingModel) caused failures on Linux/Plesk. */
+function normalizeMeetingTime(t) {
+  if (t == null || t === "") return t;
+  const s = String(t).trim();
+  const parts = s.split(":").map((p) => p.trim());
+  if (parts.length === 2) {
+    const h = parts[0].padStart(2, "0");
+    const m = (parts[1] || "0").slice(0, 2).padStart(2, "0");
+    return `${h}:${m}:00`;
+  }
+  return s;
+}
+
 let createMeeting = async (req, res) => {
   try {
     const { user1_id, user2_id, day_of_week, start_time, end_time } = req.body;
 
-    // Basic validation
-    if (!user1_id || !user2_id || !day_of_week || !start_time || !end_time) {
+    const u1 = Number(user1_id);
+    const u2 = Number(user2_id);
+    if (!u1 || !u2 || !day_of_week || start_time == null || end_time == null || `${start_time}` === "" || `${end_time}` === "") {
       return res.status(400).json({
-        message: "Missing required fields (user1_id, user2_id, start_time, end_time)"
+        message: "Missing required fields (user1_id, user2_id, day_of_week, start_time, end_time)",
       });
     }
 
-    // Create meeting
-    const [results] = await db.sequelize.query(
-      `
-      INSERT INTO MeetingModel (user1_id, user2_id, day_of_week, start_time, end_time)
-      VALUES (?, ?, ?, ?, ?)
-      `,
-      {
-        replacements: [user1_id, user2_id, day_of_week, start_time, end_time]
-      }
-    );
+    const st = normalizeMeetingTime(start_time);
+    const et = normalizeMeetingTime(end_time);
+
+    const row = await db.Meeting.create({
+      user1_id: u1,
+      user2_id: u2,
+      day_of_week: String(day_of_week),
+      start_time: st,
+      end_time: et,
+    });
 
     return res.status(201).json({
       message: "Meeting created successfully",
-      insertedId: results,  // MySQL returns the insertId here
+      id: row.id,
     });
-
   } catch (error) {
     console.error("Error creating meeting:", error);
     return res.status(500).json({
@@ -986,30 +999,29 @@ let deleteMeeting = async (req, res) => {
   try {
     const { user1_id, user2_id, day_of_week, start_time } = req.body;
 
-    if (!user1_id || !user2_id || !day_of_week || !start_time) {
+    const u1 = Number(user1_id);
+    const u2 = Number(user2_id);
+    if (!u1 || !u2 || !day_of_week || start_time == null || `${start_time}` === "") {
       return res.status(400).json({
         message: "Missing required fields (user1_id, user2_id, day_of_week, start_time)",
       });
     }
 
-    const [results] = await db.sequelize.query(
-      `
-      DELETE FROM MeetingModel
-      WHERE user1_id = ?
-        AND user2_id = ?
-        AND day_of_week = ?
-        AND start_time = ?
-      `,
-      {
-        replacements: [user1_id, user2_id, day_of_week, start_time],
-      }
-    );
+    const st = normalizeMeetingTime(start_time);
+
+    const n = await db.Meeting.destroy({
+      where: {
+        user1_id: u1,
+        user2_id: u2,
+        day_of_week: String(day_of_week),
+        start_time: st,
+      },
+    });
 
     return res.status(200).json({
       message: "Meeting removed successfully",
-      affectedRows: results.affectedRows || 0,
+      affectedRows: n,
     });
-
   } catch (error) {
     console.error("Error deleting meeting:", error);
     return res.status(500).json({

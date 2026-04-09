@@ -135,7 +135,12 @@ const Scheduler = () => {
       setSelectedSlotData(null);
       setScheduleFriendId("");
     } catch (err) {
-      setScheduleError(err?.response?.data?.error || err?.message || "Failed to schedule meeting.");
+      setScheduleError(
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err?.message ||
+          "Failed to schedule meeting."
+      );
     } finally {
       setScheduleLoading(false);
     }

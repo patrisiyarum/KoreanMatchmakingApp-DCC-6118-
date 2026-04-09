@@ -104,8 +104,6 @@ const initAPIRoute = (app) => {
     router.put('/friendRequests/:requestId/accept', APIController.acceptFriendRequest);
     router.put('/friendRequests/:requestId/reject', APIController.rejectFriendRequest);
 
-    router.get("/api/availability/:userId", APIController.getUserAvailability);
-
     router.post('/createMeeting', APIController.createMeeting);
     router.delete('/deleteMeeting', APIController.deleteMeeting);
 

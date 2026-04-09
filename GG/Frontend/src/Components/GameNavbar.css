@@ -26,7 +26,7 @@
 
 .gs-hub-btn:hover {
   transform: translateY(-1px);
-  color: var(--dl-primary);
+  color: var(--dl-white);
 }
 
 .gs-hub-btn:active {

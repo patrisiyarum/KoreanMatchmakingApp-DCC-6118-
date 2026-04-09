@@ -1,159 +1,152 @@
-import React, { useState } from "react";
-import {handleGetUser, getMessages,  addMessage} from '../Services/userService';
-import { useEffect } from "react";
-import { createSearchParams, useSearchParams, useNavigate } from "react-router-dom";
-
-import "./ChatBox.css";
-import profile from "../Styles/profilepic.jpg";
-import { format } from "timeago.js";
+import React, { useState, useEffect, useRef } from 'react';
+import { handleGetUser, getMessages, addMessage } from '../Services/userService';
+import './ChatBox.css';
+import profileFallback from '../Styles/profilepic.jpg';
+import { format } from 'timeago.js';
 import InputEmoji from 'react-input-emoji';
-import { useRef } from "react";
+import { getImageUrl } from '../Services/uploadImageService';
 
+function partnerIdFromChat(chat, currentUser) {
+  if (!chat || currentUser == null) return null;
+  const s = chat.senderId ?? chat.senderID;
+  const r = chat.receiverId ?? chat.receiverID;
+  if (s == null || r == null) return null;
+  return String(currentUser) === String(s) ? r : s;
+}
 
-const ChatBox = ({chat, currentUser, setSendMessage, receivedMessage}) => {
-    const [userData, setUserData] = useState(null)
-    const [messages, setMessages] = useState([]);
-    const [newMessage, setNewMessage] = useState("");
-    const handleChange = (newMessage)=> {
-        setNewMessage(newMessage)
-    }
-    const scroll = useRef();
-    // fetching data for header
-    useEffect(() => {
-          //Change operator since chat is not always avail
-          let userId = chat != null ? chat["receiverID"] : null
-          if (currentUser == userId) {
-            userId = chat != null ? chat["senderID"] : null
-          }
+const ChatBox = ({ chat, currentUser, setSendMessage, receivedMessage }) => {
+  const [userData, setUserData] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const scroll = useRef(null);
+  const chatId = chat?.id ?? chat?.chatId;
 
-          const getUserData = async () => {
-            try {
-              const data  = await handleGetUser(userId)
-              setUserData(data);
-            } catch (error) {
-              console.log(error);
-            }
-          };
-
-          if (chat !== null) getUserData();
-    }, [chat, currentUser]);
-
-
-  // fetch messages
   useEffect(() => {
-    const fetchMessages = async () => {
+    const userId = partnerIdFromChat(chat, currentUser);
+    const getUserData = async () => {
+      if (userId == null) {
+        setUserData(null);
+        return;
+      }
       try {
-        const data = await getMessages(chat.id);
-        setMessages(data.chatsData);
+        const data = await handleGetUser(userId);
+        setUserData(data && !Array.isArray(data) ? data : null);
       } catch (error) {
         console.log(error);
+        setUserData(null);
       }
     };
+    if (chat) getUserData();
+    else setUserData(null);
+  }, [chat, currentUser]);
 
-    if (chat !== null) fetchMessages();
-  }, [chat]);
-
-  // Receive Message from parent component
-  useEffect(()=> {
-    if (receivedMessage !== null && receivedMessage.chatId === chat.id) {
-      setMessages([...messages, receivedMessage]);
-    }
-
-  },[receivedMessage, chat, messages])
-
-
-    // Send Message
-  const handleSend = async(e)=> {
-      e.preventDefault()
-      const message = {
-        senderId : currentUser,
-        text: newMessage,
-        chatId: chat.id,
-  }
-
-  const receiverId = chat["receiverId"];
-  console.log(receiverId);
-  // send message to socket server
-  setSendMessage([...messages, receiverId])
-      // send message to database
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (chatId == null) return;
       try {
-            const data = await addMessage(message);
-            setMessages([...messages, data.messageData]);
-            setNewMessage("");
-        }
-      catch{
-            console.log("error")
+        const data = await getMessages(chatId);
+        const list = data?.chatsData;
+        setMessages(Array.isArray(list) ? list : []);
+      } catch (error) {
+        console.log(error);
+        setMessages([]);
       }
-  }
+    };
+    if (chat) fetchMessages();
+    else setMessages([]);
+  }, [chat, chatId]);
 
-  // Always scroll to last Message
-   useEffect(()=> {
-      scroll.current?.scrollIntoView({ behavior: "smooth" });
-   },[messages])
+  useEffect(() => {
+    if (!chat || !receivedMessage || receivedMessage.chatId !== chatId) return;
+    setMessages((prev) => [...prev, receivedMessage]);
+  }, [receivedMessage, chat, chatId]);
 
-   return (
-    <>
-        <div className="ChatBox-container">
-        {chat ? (
+  const handleSend = async (e) => {
+    e.preventDefault();
+    const text = (newMessage || '').trim();
+    if (!chat || chatId == null || !text) return;
+
+    const message = {
+      senderId: currentUser,
+      text,
+      chatId,
+    };
+
+    const receiverId = chat.receiverId ?? chat.receiverID;
+    setSendMessage([...messages, receiverId]);
+    try {
+      const data = await addMessage(message);
+      if (data?.messageData) {
+        setMessages((prev) => [...prev, data.messageData]);
+      }
+      setNewMessage('');
+    } catch {
+      console.log('error');
+    }
+  };
+
+  useEffect(() => {
+    scroll.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const displayName = userData
+    ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'Partner'
+    : '…';
+  const headerImg = userData?.profileImage ? getImageUrl(userData.profileImage) : profileFallback;
+
+  return (
+    <div className="lm-chatbox">
+      {chat ? (
         <>
-            {/*Chat Header*/}
-            <div className="chat-header">
-                <div className="follower">
-                    <div>
+          <header className="lm-chatbox-header">
+            <div className="lm-chatbox-header-main">
+              <img src={headerImg} alt="" className="lm-chatbox-header-avatar" />
+              <div>
+                <h2 className="lm-chatbox-header-name">{displayName}</h2>
+                <p className="lm-chatbox-header-sub" lang="ko">
+                  Message <span className="lm-chatbox-header-sub-ko">메시지</span>
+                </p>
+              </div>
+            </div>
+          </header>
 
-                      <img
-                        src={profile}
-                        alt="Profile"
-                        className="followerImage"
-                        style={{ width: "50px", height: "50px", borderRadius: "50%",float: "left" }}
-                      />
-                      <div className="name" style={{fontSize: '0.8rem',textAlign: "left"}}>
-                        <span>{userData?.firstName} {userData?.lastName}</span>
-                      </div>
-                    </div>
+          <div className="lm-chatbox-body">
+            {messages.map((message) => {
+              const own = String(message.senderId) === String(currentUser);
+              return (
+                <div
+                  key={message.id ?? `${message.createdAt}-${message.text}`}
+                  className={own ? 'lm-chat-bubble lm-chat-bubble--own' : 'lm-chat-bubble'}
+                >
+                  <span className="lm-chat-bubble-text">{message.text}</span>
+                  <time className="lm-chat-bubble-time">{format(message.createdAt)}</time>
                 </div>
-                <hr
-                style={{
-                  width: "95%",
-                  border: "0.1px solid #bebebe",
-                  marginTop: "20px",
-                }}
-              />
-            </div>
-            {/*Chat Message*/}
-            <div className="chat-body" >
-            {messages.map((message) => (
-                <>
-                  <div ref={scroll}
-                    className={
-                      message.senderId == currentUser
-                        ? "message own"
-                        : "message"
-                    }
-                  >
-                    <span>{message.text}</span>{" "}
-                    <span>{format(message.createdAt)}</span>
-                  </div>
-                </>
-            ))}
-            </div>
-             {/* chat-sender */}
-             <div className="chat-sender">
-             <div>+</div>
-              <InputEmoji
+              );
+            })}
+            <div ref={scroll} />
+          </div>
+
+          <form className="lm-chatbox-composer" onSubmit={handleSend}>
+            <InputEmoji
               value={newMessage}
-              onChange={handleChange}
-              />
-              <button className="send-button" onClick = {handleSend}>Send</button>
-             </div>
+              onChange={setNewMessage}
+              placeholder="Type a message…"
+            />
+            <button type="submit" className="lm-chatbox-send">
+              Send <span lang="ko">보내기</span>
+            </button>
+          </form>
         </>
-        ) : (
-          <span className="chatbox-empty-message">
-            Tap on a chat to start conversation...
-          </span>
-        )}
+      ) : (
+        <div className="lm-chatbox-empty">
+          <p className="lm-chatbox-empty-title">Select a chat</p>
+          <p className="lm-chatbox-empty-sub" lang="ko">
+            Tap a conversation to start · 대화를 선택하세요
+          </p>
         </div>
-    </>
-    );
-}
+      )}
+    </div>
+  );
+};
+
 export default ChatBox;

@@ -7,8 +7,6 @@ import {
   handleGetProfileCustomizationOptionsApi,
 } from '../Services/findFriendsService';
 import './FriendSearch.css';
-import './ViewProfile.css';
-import './UpdateProfile.css';
 import {
   createSearchParams,
   useSearchParams,
@@ -36,16 +34,6 @@ function Avatar({ src, name, size = 44 }) {
       ) : (
         <span>{initial}</span>
       )}
-    </div>
-  );
-}
-
-function DiscoverInfoCard({ label, value }) {
-  if (value === null || value === undefined || value === '') return null;
-  return (
-    <div className="vp-info-card">
-      <span className="vp-field-label">{label}</span>
-      <span className="vp-field-value">{String(value)}</span>
     </div>
   );
 }
@@ -876,14 +864,6 @@ const FriendSearch = ({ embedded = false }) => {
                   : Number(commitmentRaw);
                 const hasCommitment = commitmentNum != null && !Number.isNaN(commitmentNum);
 
-                const showLanguages = Boolean(nativeL || targetL || prof);
-                const showAbout = Boolean(
-                  (user.age != null && user.age !== '')
-                  || user.profession
-                  || user.gender
-                  || user.mbti
-                  || user.zodiac
-                );
                 const showLearningStyle = Boolean(
                   user.learning_goal
                   || user.communication_style
@@ -902,32 +882,66 @@ const FriendSearch = ({ embedded = false }) => {
                 );
                 const showBadges = badgeCount > 0 || badgeIcons.length > 0;
 
+                const langLine = [
+                  nativeL ? `Native ${nativeL}` : null,
+                  targetL ? `Target ${targetL}` : null,
+                  prof || null,
+                ].filter(Boolean).join(' · ');
+
+                const aboutLine = [
+                  user.age != null && user.age !== '' ? String(user.age) : null,
+                  user.gender || null,
+                  user.profession || null,
+                  user.mbti || null,
+                  user.zodiac || null,
+                ].filter(Boolean).join(' · ');
+
+                const learnLine = [
+                  user.learning_goal || null,
+                  user.communication_style || null,
+                ].filter(Boolean).join(' · ');
+
+                const activityParts = [];
+                if (user.level != null || user.xp != null) {
+                  activityParts.push(`Lv ${user.level ?? 1} · ${user.xp ?? 0} XP`);
+                }
+                if (activity?.gamesPlayed) {
+                  activityParts.push(`${activity.gamesPlayed} game${activity.gamesPlayed === 1 ? '' : 's'}`);
+                }
+                if (matchPct != null && sortDiscover !== 'best_match') {
+                  activityParts.push(`${matchPct}% match`);
+                }
+                const activityLine = activityParts.join(' · ');
+
+                const profileMerged = [langLine, aboutLine].filter(Boolean).join(' · ');
+                const hasLearningBlock = Boolean(
+                  showLearningStyle && (learnLine || hasCommitment)
+                );
+                const hasBodyContent = Boolean(
+                  profileMerged
+                  || hasLearningBlock
+                  || (showActivity && activityLine)
+                  || showBadges
+                );
+
                 return (
-                  <div key={i} className="fs-profile-card fs-discover-card">
-                    <div className="vp-hero fs-discover-vp-hero">
-                      <div className="vp-avatar-wrap fs-discover-avatar-wrap">
-                        <Avatar src={user.profileImage} name={user.firstName} size={72} />
+                  <div key={i} className="fs-profile-card fs-discover-card--minimal">
+                    <div className="fs-discover-hero">
+                      <div className="fs-discover-avatar-wrap">
+                        <Avatar src={user.profileImage} name={user.firstName} size={64} />
                       </div>
-                      <div className="vp-hero-info">
-                        <h2 className="vp-name fs-discover-name">
-                          {user.firstName} {user.lastName}
-                        </h2>
-                        {subLine ? (
-                          <p className="vp-email fs-discover-email">{subLine}</p>
+                      <div className="fs-discover-hero-body">
+                        <h2 className="fs-discover-name">{user.firstName} {user.lastName}</h2>
+                        {subLine ? <p className="fs-discover-meta">{subLine}</p> : null}
+                        {showMatchHighlight ? (
+                          <p
+                            className="fs-discover-match-note"
+                            title="Based on learning goal, communication style, and commitment vs your profile (not MBTI, interests, or schedule)."
+                          >
+                            Profile match {matchPct}%
+                          </p>
                         ) : null}
                       </div>
-                      {showMatchHighlight ? (
-                        <div
-                          className="fs-discover-match-highlight"
-                          title="Based on learning goal, communication style, and commitment vs your profile (not MBTI, interests, or schedule)."
-                        >
-                          <span className="fs-discover-match-label">Profile match</span>
-                          <span className="fs-discover-match-value">
-                            {matchPct}
-                            <span className="fs-discover-match-unit">%</span>
-                          </span>
-                        </div>
-                      ) : null}
                       <div className="fs-discover-hero-cta">
                         {(() => {
                           const reqStatus = getRequestStatusForUser(user.id);
@@ -956,90 +970,47 @@ const FriendSearch = ({ embedded = false }) => {
                       </div>
                     </div>
 
-                    {showLanguages ? (
-                      <section className="vp-section">
-                        <h2 className="vp-section-title">Languages</h2>
-                        <div className="vp-grid">
-                          <DiscoverInfoCard label="Native Language" value={nativeL} />
-                          <DiscoverInfoCard label="Target Language" value={targetL} />
-                          <DiscoverInfoCard label="Proficiency Level" value={prof} />
-                        </div>
-                      </section>
-                    ) : null}
-
-                    {showAbout ? (
-                      <section className="vp-section">
-                        <h2 className="vp-section-title">About</h2>
-                        <div className="vp-grid">
-                          <DiscoverInfoCard label="Age" value={user.age != null && user.age !== '' ? user.age : null} />
-                          <DiscoverInfoCard label="Gender" value={user.gender} />
-                          <DiscoverInfoCard label="Profession" value={user.profession} />
-                          <DiscoverInfoCard label="MBTI" value={user.mbti} />
-                          <DiscoverInfoCard label="Zodiac" value={user.zodiac} />
-                        </div>
-                      </section>
-                    ) : null}
-
-                    {showLearningStyle ? (
-                      <section className="vp-section">
-                        <h2 className="vp-section-title">Learning Style</h2>
-                        <div className="vp-grid">
-                          <DiscoverInfoCard label="Learning Goal" value={user.learning_goal} />
-                          <DiscoverInfoCard label="Communication Style" value={user.communication_style} />
-                        </div>
-                        {hasCommitment ? (
-                          <div className="vp-commitment">
-                            <span className="vp-field-label">Commitment Level</span>
-                            <div className="vp-stars">
-                              {[1, 2, 3, 4, 5].map((n) => (
-                                <span
-                                  key={n}
-                                  className={`up-star ${n <= commitmentNum ? 'up-star-active' : 'up-star-inactive'}`}
-                                >
-                                  &#9733;
-                                </span>
-                              ))}
-                              <span className="vp-commitment-hint">{commitmentHintText(commitmentNum)}</span>
-                            </div>
-                          </div>
+                    {hasBodyContent ? (
+                      <div className="fs-discover-body">
+                        {profileMerged ? (
+                          <p className="fs-discover-line">{profileMerged}</p>
                         ) : null}
-                      </section>
-                    ) : null}
-
-                    {showActivity ? (
-                      <section className="vp-section">
-                        <h2 className="vp-section-title">Activity</h2>
-                        <div className="vp-grid">
-                          {(user.level != null || user.xp != null) ? (
-                            <DiscoverInfoCard
-                              label="Level & XP"
-                              value={`Lv ${user.level ?? 1} · ${user.xp ?? 0} XP`}
-                            />
-                          ) : null}
-                          {activity?.gamesPlayed ? (
-                            <DiscoverInfoCard label="Games played" value={String(activity.gamesPlayed)} />
-                          ) : null}
-                          {matchPct != null && sortDiscover !== 'best_match' ? (
-                            <DiscoverInfoCard label="Profile match" value={`${matchPct}%`} />
-                          ) : null}
-                        </div>
-                      </section>
-                    ) : null}
-
-                    {showBadges ? (
-                      <section className="vp-section">
-                        <h2 className="vp-section-title">Badges</h2>
-                        <div className="fs-discover-badges-row">
-                          <div className="vp-tags fs-discover-badge-tags">
+                        {hasLearningBlock ? (
+                          <>
+                            {learnLine ? <p className="fs-discover-line">{learnLine}</p> : null}
+                            {hasCommitment ? (
+                              <p className="fs-discover-commit">
+                                <span className="fs-discover-stars" aria-label={`Commitment ${commitmentNum} of 5`}>
+                                  {[1, 2, 3, 4, 5].map((n) => (
+                                    <span
+                                      key={n}
+                                      className={n <= commitmentNum ? 'fs-disc-star fs-disc-star-on' : 'fs-disc-star'}
+                                    >
+                                      &#9733;
+                                    </span>
+                                  ))}
+                                </span>
+                                <span className="fs-discover-commit-hint">{commitmentHintText(commitmentNum)}</span>
+                              </p>
+                            ) : null}
+                          </>
+                        ) : null}
+                        {showActivity && activityLine ? (
+                          <p className="fs-discover-line">{activityLine}</p>
+                        ) : null}
+                        {showBadges ? (
+                          <p className="fs-discover-badges-line">
                             {badgeIcons.map((icon, j) => (
                               <span key={j} className="fs-badge-emoji" title="Badge">{icon}</span>
                             ))}
-                          </div>
-                          {badgeCount > 0 ? (
-                            <span className="fs-discover-badge-count">{badgeCount} earned</span>
-                          ) : null}
-                        </div>
-                      </section>
+                            {badgeCount > 0 ? (
+                              <span className="fs-discover-badge-suffix">
+                                {badgeIcons.length ? ' · ' : ''}{badgeCount} earned
+                              </span>
+                            ) : null}
+                          </p>
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
                 );

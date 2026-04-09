@@ -447,234 +447,183 @@
   gap: 10px;
 }
 
-/* Discover result cards — align with View Profile (vp-*) layout, compact */
-.fs-profile-card.fs-discover-card {
+/* Discover cards — minimal: text lines, no stat grid boxes */
+.fs-profile-card.fs-discover-card--minimal {
   display: flex;
   flex-direction: column;
-  gap: 0;
   width: 100%;
-  max-width: 520px;
+  max-width: 480px;
   margin: 0 auto;
-  padding: 14px 16px 16px;
+  padding: 16px 18px;
   box-sizing: border-box;
   text-align: left;
   background: #fff;
-  border: 1px solid #ede9fe;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.fs-profile-card.fs-discover-card:hover {
-  border-color: #c4b5fd;
-  box-shadow: 0 4px 14px rgba(99, 68, 166, 0.1);
-}
-
-.fs-discover-card .fs-discover-name.vp-name {
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-.fs-discover-card .fs-discover-email.vp-email {
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.fs-discover-card .vp-section {
-  margin-top: 14px;
-}
-
-.fs-discover-card .vp-section:first-of-type {
-  margin-top: 12px;
-}
-
-.fs-discover-card .vp-section-title {
-  font-size: 10px;
-  margin-bottom: 8px;
-  letter-spacing: 0.07em;
-}
-
-.fs-discover-card .vp-grid {
-  gap: 8px;
-  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
-}
-
-.fs-discover-card .vp-info-card {
-  padding: 8px 10px;
-  border-radius: 8px;
-  gap: 2px;
-}
-
-.fs-discover-card .vp-field-label {
-  font-size: 9px;
-}
-
-.fs-discover-card .vp-field-value {
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.fs-discover-card .vp-commitment {
-  margin-top: 10px;
-}
-
-.fs-discover-card .up-star {
-  font-size: 18px;
-  line-height: 1;
-}
-
-.fs-discover-card .vp-commitment-hint {
-  font-size: 12px;
-}
-
-.fs-discover-avatar-wrap.vp-avatar-wrap {
-  width: 72px;
-  height: 72px;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* Profile match — hero highlight (best match sort) */
-.fs-discover-match-highlight {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-width: 72px;
-  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
-  background: linear-gradient(155deg, #ede9fe 0%, #f5f3ff 45%, #eef2ff 100%);
-  border: 1px solid rgba(99, 68, 166, 0.28);
-  box-shadow:
-    0 2px 10px rgba(99, 68, 166, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 
-.fs-discover-match-label {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #6344a6;
-  font-family: var(--dl-font);
+.fs-profile-card.fs-discover-card--minimal:hover {
+  border-color: #d4d4d8;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
-.fs-discover-match-value {
-  font-size: 26px;
-  font-weight: 800;
-  line-height: 1;
-  color: #4c1d95;
-  font-variant-numeric: tabular-nums;
-  font-family: var(--dl-font);
-}
-
-.fs-discover-match-unit {
-  font-size: 0.5em;
-  font-weight: 700;
-  opacity: 0.9;
-  margin-left: 1px;
-}
-
-.fs-discover-vp-hero.vp-hero {
+.fs-discover-hero {
+  display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 14px;
   padding-bottom: 14px;
+  border-bottom: 1px solid #f1f5f9;
   margin-bottom: 0;
 }
 
-.fs-discover-hero-cta {
+.fs-discover-avatar-wrap {
   flex-shrink: 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding-top: 2px;
-  margin-left: auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #e4e4e7;
 }
 
-@media (max-width: 540px) {
-  .fs-discover-vp-hero.vp-hero {
-    flex-wrap: wrap;
-  }
-
-  .fs-discover-match-highlight {
-    flex: 1 1 100%;
-    flex-direction: row;
-    justify-content: center;
-    gap: 10px;
-    padding: 10px 14px;
-    order: 2;
-  }
-
-  .fs-discover-hero-cta {
-    width: 100%;
-    margin-left: 0;
-    justify-content: flex-start;
-    padding-top: 0;
-    order: 3;
-  }
-
-  .fs-discover-vp-hero .vp-avatar-wrap {
-    order: 0;
-  }
-
-  .fs-discover-vp-hero .vp-hero-info {
-    order: 1;
-    flex: 1 1 160px;
-    min-width: 0;
-  }
-}
-
-.fs-discover-card .vp-avatar-wrap .fs-avatar {
+.fs-discover-avatar-wrap .fs-avatar {
   width: 100%;
   height: 100%;
   border-radius: 50%;
   overflow: hidden;
-  background: transparent;
 }
 
-.fs-discover-card .vp-avatar-wrap .fs-avatar img {
+.fs-discover-avatar-wrap .fs-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
 
-.fs-discover-card .vp-avatar-wrap .fs-avatar span {
+.fs-discover-avatar-wrap .fs-avatar span {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 100%;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: #fff;
   background: linear-gradient(135deg, #364659 0%, #5a7fa8 100%);
   font-family: var(--dl-font);
 }
 
-.fs-discover-badges-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
+.fs-discover-hero-body {
+  flex: 1;
+  min-width: 0;
 }
 
-.fs-discover-badge-tags {
-  align-items: center;
-}
-
-.fs-discover-badge-count {
-  font-size: 12px;
-  font-weight: 500;
-  color: #71717a;
+.fs-discover-name {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.25;
   font-family: var(--dl-font);
 }
 
-.fs-badge-emoji {
-  font-size: 18px;
+.fs-discover-meta {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.fs-discover-match-note {
+  margin: 6px 0 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6d28d9;
+}
+
+.fs-discover-hero-cta {
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+@media (max-width: 540px) {
+  .fs-discover-hero {
+    flex-wrap: wrap;
+  }
+
+  .fs-discover-hero-cta {
+    width: 100%;
+    margin-left: 0;
+    padding-top: 8px;
+  }
+}
+
+.fs-discover-body {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.fs-discover-body > .fs-discover-line + .fs-discover-line,
+.fs-discover-body > .fs-discover-line + .fs-discover-commit,
+.fs-discover-body > .fs-discover-commit + .fs-discover-line,
+.fs-discover-body > .fs-discover-commit + .fs-discover-badges-line,
+.fs-discover-body > .fs-discover-line + .fs-discover-badges-line {
+  margin-top: 0.5rem;
+}
+
+.fs-discover-line {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #334155;
+  font-family: var(--dl-font);
+}
+
+.fs-discover-commit {
+  margin: 8px 0 0 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fs-discover-stars {
+  display: inline-flex;
+  gap: 2px;
   line-height: 1;
+}
+
+.fs-disc-star {
+  font-size: 16px;
+  color: #e5e7eb;
+}
+
+.fs-disc-star-on {
+  color: #f59e0b;
+}
+
+.fs-discover-commit-hint {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.fs-discover-badges-line {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #334155;
+}
+
+.fs-discover-badge-suffix {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.fs-badge-emoji {
+  font-size: 17px;
+  line-height: 1;
+  margin-right: 4px;
 }
 
 .fs-user-row {

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import React from "react";
 import './Dashboard.css';
 import './UpdateProfile.css';
-import './ViewProfile.css';
 import { createSearchParams, useSearchParams, useNavigate } from "react-router-dom";
 import { handleUserDashBoardApi } from '../Services/dashboardService';
 import { handleGetTrueFriendsList, handleGetMeetings } from '../Services/userService';
@@ -234,20 +233,12 @@ useEffect(() => {
 
       {id && progressLoaded && userStats && challengeStats && (
         <div className="dashboard-progress-wrap">
-          <div className="dashboard-progress-card dash-progress-vp">
-            <header className="dash-progress-card-header">
-              <div className="dash-progress-card-header-text">
-                <h2 className="dash-progress-main-title">Points, games, and challenges</h2>
-                <p className="dash-progress-subtitle">Track XP, 1v1 record, practice games, and badges in one place.</p>
-              </div>
-            </header>
+          <div className="dashboard-progress-card dash-progress-vp dash-progress-vp--quiet">
+            <h2 className="dash-progress-main-title">Points, games, and challenges</h2>
 
             <div className="dash-progress-xp-shell">
               <div className="dash-progress-level-row">
-                <span className="dash-progress-level-pill">
-                  <span className="dash-progress-level-star" aria-hidden="true">★</span>
-                  Level {userStats.level ?? 1}
-                </span>
+                <span className="dash-progress-level-text">Level {userStats.level ?? 1}</span>
                 <span className="dash-progress-xp-caption">
                   {userStats.xp ?? 0} / {userStats.xpToNext ?? XP_PER_LEVEL} XP this level
                 </span>
@@ -266,33 +257,19 @@ useEffect(() => {
             </div>
 
             <div className="dash-progress-split">
-              <section className="vp-section dash-progress-section dash-progress-section--flush">
-                <h3 className="vp-section-title dash-section-title">
-                  <span className="dash-section-icon dash-section-icon--challenge" aria-hidden="true" />
-                  Challenge record
-                </h3>
-                <div className="vp-grid dash-challenge-stat-grid">
-                  <div className="vp-info-card">
-                    <span className="vp-field-label">Wins</span>
-                    <span className="vp-field-value">{challengeStats.wins ?? 0}</span>
-                  </div>
-                  <div className="vp-info-card">
-                    <span className="vp-field-label">Losses</span>
-                    <span className="vp-field-value">{challengeStats.losses ?? 0}</span>
-                  </div>
-                  <div className="vp-info-card">
-                    <span className="vp-field-label">Draws</span>
-                    <span className="vp-field-value">{challengeStats.draws ?? 0}</span>
-                  </div>
-                  <div className="vp-info-card">
-                    <span className="vp-field-label">Win rate</span>
-                    <span className="vp-field-value">{challengeStats.winRate ?? 0}%</span>
-                  </div>
-                  <div className="vp-info-card">
-                    <span className="vp-field-label">Finished</span>
-                    <span className="vp-field-value">{challengeStats.totalChallenges ?? 0}</span>
-                  </div>
-                </div>
+              <section className="dash-quiet-block">
+                <h3 className="dash-quiet-heading">Challenge record</h3>
+                <p className="dash-quiet-stats" aria-label="Challenge statistics">
+                  <span>Wins <strong>{challengeStats.wins ?? 0}</strong></span>
+                  <span className="dash-quiet-dot" aria-hidden="true">·</span>
+                  <span>Losses <strong>{challengeStats.losses ?? 0}</strong></span>
+                  <span className="dash-quiet-dot" aria-hidden="true">·</span>
+                  <span>Draws <strong>{challengeStats.draws ?? 0}</strong></span>
+                  <span className="dash-quiet-dot" aria-hidden="true">·</span>
+                  <span>Win rate <strong>{challengeStats.winRate ?? 0}%</strong></span>
+                  <span className="dash-quiet-dot" aria-hidden="true">·</span>
+                  <span>Finished <strong>{challengeStats.totalChallenges ?? 0}</strong></span>
+                </p>
                 {((challengeStats.completedGameSessions ?? 0) > 0 || (challengeStats.xpFromSessions ?? 0) > 0) && (
                   <p className="dash-progress-footnote">
                     {challengeStats.completedGameSessions ?? 0} practice sessions completed
@@ -304,50 +281,34 @@ useEffect(() => {
               </section>
 
               {userStats.gameActivity && (
-                <section className="vp-section dash-progress-section dash-progress-section--flush">
-                  <h3 className="vp-section-title dash-section-title">
-                    <span className="dash-section-icon dash-section-icon--games" aria-hidden="true" />
-                    Game activity
-                  </h3>
-                  <div className="vp-grid dash-activity-stat-grid">
-                    <div className="vp-info-card">
-                      <span className="vp-field-label">Term matching</span>
-                      <span className="vp-field-value">{userStats.gameActivity.termMatching}</span>
-                    </div>
-                    <div className="vp-info-card">
-                      <span className="vp-field-label">Grammar</span>
-                      <span className="vp-field-value">{userStats.gameActivity.grammarQuiz}</span>
-                    </div>
-                    <div className="vp-info-card">
-                      <span className="vp-field-label">Pronunciation</span>
-                      <span className="vp-field-value">{userStats.gameActivity.pronunciation}</span>
-                    </div>
-                    <div className="vp-info-card">
-                      <span className="vp-field-label">Perfect rounds</span>
-                      <span className="vp-field-value">{userStats.gameActivity.perfectRounds}</span>
-                    </div>
-                    <div className="vp-info-card dash-activity-total-card">
-                      <span className="vp-field-label">Total games</span>
-                      <span className="vp-field-value">{userStats.gameActivity.gamesPlayed}</span>
-                    </div>
-                  </div>
+                <section className="dash-quiet-block">
+                  <h3 className="dash-quiet-heading">Game activity</h3>
+                  <p className="dash-quiet-stats" aria-label="Game activity counts">
+                    <span>Term matching <strong>{userStats.gameActivity.termMatching}</strong></span>
+                    <span className="dash-quiet-dot" aria-hidden="true">·</span>
+                    <span>Grammar <strong>{userStats.gameActivity.grammarQuiz}</strong></span>
+                    <span className="dash-quiet-dot" aria-hidden="true">·</span>
+                    <span>Pronunciation <strong>{userStats.gameActivity.pronunciation}</strong></span>
+                    <span className="dash-quiet-dot" aria-hidden="true">·</span>
+                    <span>Perfect rounds <strong>{userStats.gameActivity.perfectRounds}</strong></span>
+                    <span className="dash-quiet-dot" aria-hidden="true">·</span>
+                    <span>Total games <strong>{userStats.gameActivity.gamesPlayed}</strong></span>
+                  </p>
                 </section>
               )}
             </div>
 
             {badges.length > 0 && (
-              <section className="vp-section dash-progress-section dash-progress-section--badges">
-                <h3 className="vp-section-title dash-section-title">
-                  <span className="dash-section-icon dash-section-icon--badges" aria-hidden="true" />
-                  Badges ({badges.length})
-                </h3>
-                <div className="vp-tags dash-progress-badge-tags">
+              <section className="dash-quiet-block dash-quiet-block--badges">
+                <h3 className="dash-quiet-heading">Badges ({badges.length})</h3>
+                <p className="dash-quiet-badges">
                   {badges.map((b) => (
-                    <span key={b.id} className="vp-tag dash-progress-badge-tag" title={b.description}>
-                      {b.icon ? `${b.icon} ` : ''}{b.name}
+                    <span key={b.id} className="dash-quiet-badge-item" title={b.description}>
+                      {b.icon ? `${b.icon} ` : ''}
+                      {b.name}
                     </span>
                   ))}
-                </div>
+                </p>
               </section>
             )}
           </div>

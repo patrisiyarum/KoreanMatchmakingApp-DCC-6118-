@@ -38,6 +38,19 @@ function Avatar({ src, name, size = 44 }) {
   );
 }
 
+/** Collapsible filter panel on embedded Discover (matches reference app UX). */
+function DiscoverFiltersCardWrapper({ embedded, summaryLabel, children }) {
+  if (embedded) {
+    return (
+      <details className="lm-embed-filters">
+        <summary className="lm-embed-filters-summary">{summaryLabel}</summary>
+        {children}
+      </details>
+    );
+  }
+  return children;
+}
+
 function commitmentHintText(level) {
   const n = Number(level);
   if (!Number.isFinite(n)) return '';
@@ -202,6 +215,11 @@ const FriendSearch = ({ embedded = false }) => {
 
   /** Skip the first match-filter effect run after mount / id change (initial load handles fetch). */
   const skipMatchFilterRefetch = useRef(true);
+  const discoverListLenRef = useRef(0);
+
+  /** Embedded Friends → Discover: one card at a time (Language Exchange Matchmaker App / Discover.tsx). */
+  const [discoverSwipeIndex, setDiscoverSwipeIndex] = useState(0);
+  const [sessionLikesCount, setSessionLikesCount] = useState(0);
 
   const clearPersonalityInterestSelections = () => {
     setSelectedMbti([]);
@@ -350,10 +368,25 @@ const FriendSearch = ({ embedded = false }) => {
     return { status: 'none', requestId: null };
   };
 
-  const handleSendRequest = async (user) => {
+  const bumpDiscoverSwipeIndex = () => {
+    window.setTimeout(() => {
+      setDiscoverSwipeIndex((i) => {
+        const len = discoverListLenRef.current;
+        if (len <= 1) return 0;
+        return i >= len - 1 ? 0 : i + 1;
+      });
+    }, 300);
+  };
+
+  const handleSendRequest = async (user, opts = {}) => {
+    const { fromSwipe = false } = opts;
     try {
       await handleAddTrueFriend(Number(id), Number(user.id));
       flash(`Friend request sent to ${user.firstName} ${user.lastName}`);
+      if (embedded && fromSwipe) {
+        setSessionLikesCount((c) => c + 1);
+        bumpDiscoverSwipeIndex();
+      }
       await refreshRequests();
     } catch (err) {
       const msg = err?.response?.data?.error || err.message || 'Could not send request';
@@ -496,6 +529,16 @@ const FriendSearch = ({ embedded = false }) => {
     sortDiscover,
   ]);
 
+  discoverListLenRef.current = displayedUsers.length;
+
+  useEffect(() => {
+    if (!embedded) return;
+    setDiscoverSwipeIndex((i) => {
+      if (displayedUsers.length === 0) return 0;
+      return i >= displayedUsers.length ? 0 : i;
+    });
+  }, [embedded, displayedUsers.length]);
+
   const applySortDiscover = (nextSort) => {
     setSortDiscover(nextSort);
   };
@@ -534,6 +577,246 @@ const FriendSearch = ({ embedded = false }) => {
     return null;
   };
 
+  const swipeUser =
+    embedded && displayedUsers.length > 0
+      ? displayedUsers[Math.min(discoverSwipeIndex, displayedUsers.length - 1)]
+      : null;
+
+  const renderEmbeddedSwipeDeck = () => {
+    const user = swipeUser;
+    if (!user) return null;
+    const nativeL = getField(user, ['nativeLanguage', 'native_language']);
+    const targetL = getField(user, ['targetLanguage', 'target_language']);
+    const prof = getField(user, ['targetLanguageProficiency', 'target_language_proficiency']);
+    const emailLine = typeof user.email === 'string' && user.email.trim()
+      ? user.email.trim()
+      : '';
+    const subLine = emailLine
+      || [user.profession, user.age != null && user.age !== '' ? String(user.age) : null]
+        .filter(Boolean)
+        .join(' · ')
+      || null;
+
+    const commitmentRaw = user.commitment_level;
+    const commitmentNum = commitmentRaw === '' || commitmentRaw == null
+      ? null
+      : Number(commitmentRaw);
+    const hasCommitment = commitmentNum != null && !Number.isNaN(commitmentNum);
+
+    const showLearningStyle = Boolean(
+      user.learning_goal
+      || user.communication_style
+      || hasCommitment
+    );
+    const matchPct = user.matchScore != null && !Number.isNaN(Number(user.matchScore))
+      ? Math.round(Number(user.matchScore))
+      : null;
+    const showMatchHighlight = sortDiscover === 'best_match' && matchPct != null;
+
+    const langLine = [
+      nativeL ? `Native ${nativeL}` : null,
+      targetL ? `Target ${targetL}` : null,
+      prof || null,
+    ].filter(Boolean).join(' · ');
+
+    const aboutLine = [
+      user.age != null && user.age !== '' ? String(user.age) : null,
+      user.gender || null,
+      user.profession || null,
+      user.mbti || null,
+      user.zodiac || null,
+    ].filter(Boolean).join(' · ');
+
+    const learnLine = [
+      user.learning_goal || null,
+      user.communication_style || null,
+    ].filter(Boolean).join(' · ');
+
+    const profileMerged = [langLine, aboutLine].filter(Boolean).join(' · ');
+    const hasLearningBlock = Boolean(
+      showLearningStyle && (learnLine || hasCommitment)
+    );
+    const badgeCount = user.badgeCount != null ? Number(user.badgeCount) : 0;
+    const badgeIcons = typeof user.badgeIcons === 'string' && user.badgeIcons.trim()
+      ? user.badgeIcons.trim().split(/\s+/).filter(Boolean)
+      : [];
+    const showBadges = badgeCount > 0 || badgeIcons.length > 0;
+    const userInterestNames = (Array.isArray(user.Interests) ? user.Interests : [])
+      .map((it) => (it?.interest_name ?? it?.name ?? it)?.toString())
+      .filter(Boolean);
+    const viewerInterestLc = new Set(selectedInterests.map((s) => String(s).toLowerCase()));
+    const sharedInterestCount = userInterestNames.filter((n) =>
+      viewerInterestLc.has(String(n).toLowerCase())
+    ).length;
+
+    const hasBodyContent = Boolean(
+      profileMerged
+      || hasLearningBlock
+      || showBadges
+      || user.target_language_proficiency
+      || userInterestNames.length > 0
+      || user.learning_goal
+      || sharedInterestCount > 0
+      || getRequestStatusForUser(user.id).status !== 'none'
+    );
+
+    const reqStatus = getRequestStatusForUser(user.id);
+    const requesterName = `${user.firstName} ${user.lastName || ''}`.trim();
+
+    const onHeart = () => {
+      if (reqStatus.status === 'pending_sent') {
+        bumpDiscoverSwipeIndex();
+        return;
+      }
+      if (reqStatus.status === 'pending_received') return;
+      handleSendRequest(user, { fromSwipe: true });
+    };
+
+    return (
+      <div className="lm-discover-swipe-wrap">
+        <div className="fs-profile-card fs-discover-card--minimal lm-discover-card--swipe">
+          <div className="fs-discover-hero">
+            <div className="fs-discover-avatar-wrap lm-discover-avatar-hero">
+              <Avatar src={user.profileImage} name={user.firstName} size={88} />
+            </div>
+            <div className="fs-discover-hero-body">
+              <h2 className="fs-discover-name">{user.firstName} {user.lastName}</h2>
+              {(nativeL || targetL) ? (
+                <p className="fs-discover-meta lm-discover-lang-pair" lang="en">
+                  <span>{nativeL || '—'}</span>
+                  <span className="lm-discover-lang-arrow" aria-hidden>↔</span>
+                  <span>{targetL || '—'}</span>
+                </p>
+              ) : subLine ? <p className="fs-discover-meta">{subLine}</p> : null}
+              {showMatchHighlight ? (
+                <p
+                  className="fs-discover-match-note"
+                  title="Match score from your profiles and shared interests."
+                >
+                  <span className="fs-discover-match-label">Match</span>{' '}
+                  <span lang="ko" className="fs-discover-match-ko">매칭</span> {matchPct}%
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          {hasBodyContent ? (
+            <div className="fs-discover-body">
+              {reqStatus.status === 'pending_received' && reqStatus.requestId ? (
+                <div className="lm-discover-request-bar">
+                  <p className="lm-discover-request-label">They invited you to connect</p>
+                  <div className="fs-request-actions">
+                    <button type="button" className="fs-btn-accept" onClick={() => handleAccept(reqStatus.requestId, requesterName)}>Accept</button>
+                    <button type="button" className="fs-btn-decline" onClick={() => handleDecline(reqStatus.requestId, requesterName)}>Decline</button>
+                  </div>
+                </div>
+              ) : null}
+              {reqStatus.status === 'pending_sent' ? (
+                <p className="lm-discover-pending-note">Request sent — tap ✕ to see the next person.</p>
+              ) : null}
+              {user.target_language_proficiency ? (
+                <div className="lm-discover-section">
+                  <div className="lm-discover-label">Level</div>
+                  <div className="lm-discover-value">{user.target_language_proficiency}</div>
+                </div>
+              ) : null}
+              {userInterestNames.length > 0 ? (
+                <div className="lm-discover-section">
+                  <div className="lm-discover-label">Interests</div>
+                  <div className="lm-interest-pills">
+                    {userInterestNames.slice(0, 10).map((name, j) => (
+                      <span
+                        key={j}
+                        className={`lm-interest-pill${
+                          viewerInterestLc.has(String(name).toLowerCase())
+                            ? ' lm-interest-pill--hot'
+                            : ''
+                        }`}
+                      >
+                        {name}
+                        {viewerInterestLc.has(String(name).toLowerCase()) ? ' ✨' : ''}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {user.learning_goal ? (
+                <div className="lm-discover-section">
+                  <div className="lm-discover-label">Bio</div>
+                  <div className="lm-discover-value lm-discover-bio">{user.learning_goal}</div>
+                </div>
+              ) : null}
+              {sharedInterestCount > 0 ? (
+                <div className="lm-shared-banner lm-shared-banner--target" role="status">
+                  🎯 You have {sharedInterestCount} shared interest
+                  {sharedInterestCount !== 1 ? 's' : ''}!
+                </div>
+              ) : null}
+              {profileMerged &&
+              !user.target_language_proficiency &&
+              userInterestNames.length === 0 &&
+              !user.learning_goal ? (
+                <p className="fs-discover-line">{profileMerged}</p>
+              ) : null}
+              {hasLearningBlock ? (
+                <>
+                  {learnLine ? <p className="fs-discover-line">{learnLine}</p> : null}
+                  {hasCommitment ? (
+                    <p className="fs-discover-commit">
+                      <span className="fs-discover-stars" aria-label={`Commitment ${commitmentNum} of 5`}>
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <span
+                            key={n}
+                            className={n <= commitmentNum ? 'fs-disc-star fs-disc-star-on' : 'fs-disc-star'}
+                          >
+                            &#9733;
+                          </span>
+                        ))}
+                      </span>
+                      <span className="fs-discover-commit-hint">{commitmentHintText(commitmentNum)}</span>
+                    </p>
+                  ) : null}
+                </>
+              ) : null}
+              {showBadges ? (
+                <p className="fs-discover-badges-line">
+                  {badgeIcons.map((icon, j) => (
+                    <span key={j} className="fs-badge-emoji" title="Badge">{icon}</span>
+                  ))}
+                  {badgeCount > 0 ? (
+                    <span className="fs-discover-badge-suffix">
+                      {badgeIcons.length ? ' · ' : ''}{badgeCount} earned
+                    </span>
+                  ) : null}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="lm-discover-swipe-actions">
+          <button
+            type="button"
+            className="lm-swipe-btn lm-swipe-btn--pass"
+            onClick={bumpDiscoverSwipeIndex}
+            aria-label="Pass"
+          >
+            <span className="lm-swipe-btn-x" aria-hidden>✕</span>
+          </button>
+          <button
+            type="button"
+            className="lm-swipe-btn lm-swipe-btn--like"
+            onClick={onHeart}
+            aria-label="Send friend request"
+            disabled={reqStatus.status === 'pending_received'}
+          >
+            <span className="lm-swipe-btn-heart" aria-hidden>♥</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className={`fs-page${embedded ? ' fs-page-embedded' : ''}`}>
@@ -570,14 +853,15 @@ const FriendSearch = ({ embedded = false }) => {
     <div className={`fs-page${embedded ? ' fs-page-embedded' : ''}`}>
       {!embedded && <Navbar id={id} />}
 
-      <div className={`fs-center fs-center--discover${embedded ? ' fs-center--discover-embedded' : ''}`}>
+      <div className={`fs-center fs-center--discover${embedded ? ' fs-center--discover-embedded lm-discover-embed-column' : ''}`}>
         <div className={`fs-discover-layout${embedded ? ' fs-discover-layout--embedded' : ''}`}>
-          <div className="fs-discover-sidebar">
+          <div className={`fs-discover-sidebar${embedded ? ' fs-discover-sidebar--embed' : ''}`}>
+        <DiscoverFiltersCardWrapper embedded={embedded} summaryLabel="Search & filters">
         <div className="fs-card fs-card--discover-filters">
           {!embedded && (
             <button className="back-to-dashboard" onClick={() => navigate({ pathname: '/Dashboard', search: createSearchParams({ id }).toString() })}>Dashboard</button>
           )}
-          <h1 className="fs-card-title">{embedded ? 'Discover' : 'Find Friends'}</h1>
+          {!embedded ? <h1 className="fs-card-title">Find Friends</h1> : null}
 
           {/* Search bar — Instagram-style */}
           <div className="fs-search-wrap">
@@ -774,9 +1058,17 @@ const FriendSearch = ({ embedded = false }) => {
             ))}
           </div>
         </div>
+        </DiscoverFiltersCardWrapper>
           </div>
 
-          <div className="fs-discover-main">
+          <div className={`fs-discover-main${embedded ? ' fs-discover-main--embed' : ''}`}>
+        {embedded ? (
+          <p className="lm-discover-sparkle" aria-live="polite">
+            <span aria-hidden>✨</span>{' '}
+            {sessionLikesCount} match{sessionLikesCount !== 1 ? 'es' : ''} today
+            <span className="lm-discover-sparkle-ko" lang="ko">· 오늘의 매치</span>
+          </p>
+        ) : null}
         {/* Incoming requests card */}
         {friendRequests.incoming.length > 0 && (
           <div className="fs-card">
@@ -810,7 +1102,8 @@ const FriendSearch = ({ embedded = false }) => {
         )}
 
         {/* Results card */}
-        <div id="fs-discover-results" className="fs-card fs-results-card fs-results-card--discover">
+        <div id="fs-discover-results" className={`fs-card fs-results-card fs-results-card--discover${embedded ? ' fs-results-card--embed' : ''}`}>
+            {!embedded ? (
             <div className={`fs-results-header${displayedUsers.length === 0 ? ' fs-results-header--empty' : ''}`}>
             {displayedUsers.length > 0 ? (
               <span className="fs-results-count">
@@ -840,7 +1133,30 @@ const FriendSearch = ({ embedded = false }) => {
               </div>
             </div>
           </div>
-          {displayedUsers.length > 0 ? (
+            ) : null}
+          {embedded && displayedUsers.length > 0 ? (
+            <div className="lm-discover-embed-sort-wrap">
+              <div className="fs-sort-toggle" role="group" aria-label="Sort discovery results">
+                <button
+                  type="button"
+                  className={`fs-btn-sort${sortDiscover === 'best_match' ? ' fs-btn-sort-active' : ''}`}
+                  onClick={() => applySortDiscover('best_match')}
+                  title="Sort by match score or A–Z"
+                >
+                  Best match
+                </button>
+                <button
+                  type="button"
+                  className={`fs-btn-sort${sortDiscover === 'name' ? ' fs-btn-sort-active' : ''}`}
+                  onClick={() => applySortDiscover('name')}
+                  title="Alphabetical by first name"
+                >
+                  Name A–Z
+                </button>
+              </div>
+            </div>
+          ) : null}
+          {!embedded && displayedUsers.length > 0 ? (
             <p className="fs-results-sort-hint">
               {sortDiscover === 'best_match' ? (
                 <>
@@ -853,8 +1169,8 @@ const FriendSearch = ({ embedded = false }) => {
           ) : null}
 
           {displayedUsers.length === 0 ? (
-            <div className="fs-empty-block fs-empty-block--minimal">
-              <p className="fs-empty">No matches yet</p>
+            <div className={`fs-empty-block fs-empty-block--minimal${embedded ? ' fs-empty-block--embed-discover' : ''}`}>
+              <p className="fs-empty">{embedded ? 'No more partners to show right now!' : 'No matches yet'}</p>
               {normalizeSelectedAvailabilitySlots(
                 selectedAvailability,
                 currentUser?.default_time_zone || getUserData()?.default_time_zone || 'UTC'
@@ -870,9 +1186,11 @@ const FriendSearch = ({ embedded = false }) => {
                   </button>
                 </>
               ) : (
-                <p className="fs-empty-hint">Adjust filters or search to see people here.</p>
+                <p className="fs-empty-hint">{embedded ? 'Open Search & filters above to widen your search.' : 'Adjust filters or search to see people here.'}</p>
               )}
             </div>
+          ) : embedded ? (
+            renderEmbeddedSwipeDeck()
           ) : (
             <div className="fs-results-list fs-results-cards">
               {displayedUsers.map((user, i) => {
@@ -932,10 +1250,22 @@ const FriendSearch = ({ embedded = false }) => {
                   ? user.badgeIcons.trim().split(/\s+/).filter(Boolean)
                   : [];
                 const showBadges = badgeCount > 0 || badgeIcons.length > 0;
+                const userInterestNames = (Array.isArray(user.Interests) ? user.Interests : [])
+                  .map((it) => (it?.interest_name ?? it?.name ?? it)?.toString())
+                  .filter(Boolean);
+                const viewerInterestLc = new Set(selectedInterests.map((s) => String(s).toLowerCase()));
+                const sharedInterestCount = userInterestNames.filter((n) =>
+                  viewerInterestLc.has(String(n).toLowerCase())
+                ).length;
+
                 const hasBodyContent = Boolean(
                   profileMerged
                   || hasLearningBlock
                   || showBadges
+                  || user.target_language_proficiency
+                  || userInterestNames.length > 0
+                  || user.learning_goal
+                  || sharedInterestCount > 0
                 );
 
                 return (
@@ -987,7 +1317,47 @@ const FriendSearch = ({ embedded = false }) => {
 
                     {hasBodyContent ? (
                       <div className="fs-discover-body">
-                        {profileMerged ? (
+                        {user.target_language_proficiency ? (
+                          <div className="lm-discover-section">
+                            <div className="lm-discover-label">Level</div>
+                            <div className="lm-discover-value">{user.target_language_proficiency}</div>
+                          </div>
+                        ) : null}
+                        {userInterestNames.length > 0 ? (
+                          <div className="lm-discover-section">
+                            <div className="lm-discover-label">Interests</div>
+                            <div className="lm-interest-pills">
+                              {userInterestNames.slice(0, 10).map((name, j) => (
+                                <span
+                                  key={j}
+                                  className={`lm-interest-pill${
+                                    viewerInterestLc.has(String(name).toLowerCase())
+                                      ? ' lm-interest-pill--hot'
+                                      : ''
+                                  }`}
+                                >
+                                  {name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                        {user.learning_goal ? (
+                          <div className="lm-discover-section">
+                            <div className="lm-discover-label">Bio</div>
+                            <div className="lm-discover-value lm-discover-bio">{user.learning_goal}</div>
+                          </div>
+                        ) : null}
+                        {sharedInterestCount > 0 ? (
+                          <div className="lm-shared-banner lm-shared-banner--target" role="status">
+                            🎯 You have {sharedInterestCount} shared interest
+                            {sharedInterestCount !== 1 ? 's' : ''}!
+                          </div>
+                        ) : null}
+                        {profileMerged &&
+                        !user.target_language_proficiency &&
+                        userInterestNames.length === 0 &&
+                        !user.learning_goal ? (
                           <p className="fs-discover-line">{profileMerged}</p>
                         ) : null}
                         {hasLearningBlock ? (

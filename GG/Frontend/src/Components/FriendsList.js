@@ -11,6 +11,15 @@ import {
 import { getImageUrl } from '../Services/uploadImageService';
 import Navbar from './NavBar';
 
+function CalendarGlyph() {
+  return (
+    <svg className="lm-mp-cal-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+  );
+}
+
 function Avatar({ src, name, size = 44 }) {
   const initial = name ? name.charAt(0).toUpperCase() : '?';
   return (
@@ -88,14 +97,30 @@ const FriendsList = ({ embedded = false }) => {
     navigate({ pathname: "/Dashboard", search: createSearchParams({ id }).toString() });
   };
 
+  const goDiscover = () => {
+    navigate({
+      pathname: '/Friends',
+      search: createSearchParams({ id, friendsSub: 'discover' }).toString(),
+    });
+  };
+
   return (
-    <div className={`fl-page${embedded ? ' fl-page-embedded' : ''}`}>
+    <div className={`fl-page${embedded ? ' fl-page-embedded lm-mp-page' : ''}`}>
       {!embedded && <Navbar id={id} />}
-      <div className="fl-center">
-        <div className="fl-card">
+      <div className={`fl-center${embedded ? ' lm-mp-center' : ''}`}>
+        <div className={`fl-card${embedded ? ' fl-card--embed-mp' : ''}`}>
+          {!embedded ? (
           <div className="fl-header">
             <h2 className="fl-title">Friends</h2>
           </div>
+          ) : (
+            <header className="lm-mp-header">
+              <h2 className="lm-mp-title">My Study Partners</h2>
+              <p className="lm-mp-sub">
+                {friends.length} active match{friends.length !== 1 ? 'es' : ''}
+              </p>
+            </header>
+          )}
 
           {/* Incoming Requests */}
           {incomingRequests.length > 0 && (
@@ -159,25 +184,101 @@ const FriendsList = ({ embedded = false }) => {
           {/* Friends */}
           <div className="fl-section">
             {friends.length === 0 && incomingRequests.length === 0 && outgoingRequests.length === 0 ? (
-              <p className="fl-empty">No friends yet. Find people to connect with!</p>
+              embedded ? (
+                <div className="lm-mp-empty">
+                  <div className="lm-mp-empty-emoji" aria-hidden>👥</div>
+                  <h3 className="lm-mp-empty-title">No partners yet</h3>
+                  <p className="lm-mp-empty-text">Start swiping to find your perfect study buddy!</p>
+                  <button type="button" className="lm-mp-empty-cta" onClick={goDiscover}>
+                    Find partners
+                  </button>
+                </div>
+              ) : (
+                <p className="fl-empty">No friends yet. Find people to connect with!</p>
+              )
             ) : friends.length === 0 ? (
-              <p className="fl-empty">No friends added yet.</p>
+              embedded ? (
+                <div className="lm-mp-empty">
+                  <div className="lm-mp-empty-emoji" aria-hidden>👥</div>
+                  <h3 className="lm-mp-empty-title">No partners yet</h3>
+                  <p className="lm-mp-empty-text">Accept requests above or discover new people.</p>
+                  <button type="button" className="lm-mp-empty-cta" onClick={goDiscover}>
+                    Find partners
+                  </button>
+                </div>
+              ) : (
+                <p className="fl-empty">No friends added yet.</p>
+              )
             ) : (
-              <div className="fl-list">
-                {friends.map(friend => (
-                  <div key={friend.id} className="fl-row">
-                    <Avatar
-                      src={friend.profileImage}
-                      name={friend.firstName}
-                    />
-                    <div className="fl-info">
-                      <span className="fl-name">{friend.firstName} {friend.lastName}</span>
+              <div className={`fl-list fl-list--partners${embedded ? ' lm-mp-list' : ''}`}>
+                {friends.map((friend) => (
+                  <div key={friend.id} className={`lm-partner-card${embedded ? ' lm-mp-card' : ''}`}>
+                    <div className={`lm-partner-card-head${embedded ? ' lm-mp-card-head' : ''}`}>
+                      <div className="lm-mp-card-top">
+                        <Avatar src={friend.profileImage} name={friend.firstName} size={embedded ? 52 : 56} />
+                        <div className="lm-mp-card-text">
+                          <div className="lm-partner-name lm-mp-name">
+                            {friend.firstName} {friend.lastName || ''}
+                          </div>
+                          {embedded ? (
+                            <div className="lm-mp-lang-line">
+                              <span className="lm-mp-email-meta">{friend.email || 'Study partner'}</span>
+                            </div>
+                          ) : (
+                            <div className="lm-partner-meta">Language exchange partner · 언어 교환 파트너</div>
+                          )}
+                          {embedded ? (
+                            <div className="lm-mp-matched-row">
+                              <CalendarGlyph />
+                              <span>Connected</span>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                      {embedded ? (
+                        <div className="lm-mp-pct" title="Study partner">Partner</div>
+                      ) : (
+                        <span className="lm-partner-match" title="Study partner">
+                          Partner
+                        </span>
+                      )}
+                    </div>
+                    <div className={`lm-partner-actions${embedded ? ' lm-mp-actions' : ''}`}>
+                      <button
+                        type="button"
+                        className={`lm-partner-btn-chat${embedded ? ' lm-mp-btn-chat' : ''}`}
+                        onClick={() =>
+                          navigate({
+                            pathname: '/Chat',
+                            search: createSearchParams({ senderid: String(id) }).toString(),
+                          })
+                        }
+                      >
+                        {embedded ? 'Chat' : (
+                          <>💬 Chat <span className="lm-partner-btn-ko" lang="ko">채팅</span></>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        className={`lm-partner-btn-game${embedded ? ' lm-mp-btn-game' : ''}`}
+                        onClick={() =>
+                          navigate({
+                            pathname: '/GameSelection',
+                            search: createSearchParams({ id: String(id) }).toString(),
+                          })
+                        }
+                      >
+                        {embedded ? 'Play game' : (
+                          <>🎮 Game <span className="lm-partner-btn-ko" lang="ko">게임</span></>
+                        )}
+                      </button>
                     </div>
                     <button
-                      className="fl-btn-following"
+                      type="button"
+                      className={`fl-btn-unfollow-mockup${embedded ? ' lm-mp-remove' : ''}`}
                       onClick={() => onRemoveFriend(friend)}
                     >
-                      Following
+                      Remove from partners
                     </button>
                   </div>
                 ))}
@@ -185,7 +286,7 @@ const FriendsList = ({ embedded = false }) => {
             )}
           </div>
 
-          <button className="back-to-dashboard" onClick={handleBack}>Dashboard</button>
+          {!embedded ? <button className="back-to-dashboard" onClick={handleBack}>Dashboard</button> : null}
         </div>
       </div>
     </div>

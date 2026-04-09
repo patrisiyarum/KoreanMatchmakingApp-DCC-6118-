@@ -5,7 +5,7 @@ import {BrowserRouter as Router, Route, Routes, Navigate, useSearchParams} from 
 import Home from "../Components/Home";
 import Registration from "../Components/Registration";
 import Login from '../Components/Login';
-import React, { Component }  from 'react';
+import React, { useEffect } from 'react';
 import CreateProfile from '../Components/CreateProfile';
 import UpdateProfile from '../Components/UpdateProfile';
 import Dashboard from '../Components/Dashboard';
@@ -47,7 +47,10 @@ function RedirectToFriends({ discover }) {
 }
 
 const App = () => {
-
+  useEffect(() => {
+    document.body.classList.add('lm-mockup-ui');
+    return () => document.body.classList.remove('lm-mockup-ui');
+  }, []);
 
   return (
     <div className="App">

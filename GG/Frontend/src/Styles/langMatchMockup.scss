@@ -1,0 +1,745 @@
+/**
+ * LangMatch — visual system aligned to provided mockups (mobile column, gradient cards, pills).
+ * Scoped under body.lm-mockup-ui (set in App.js).
+ */
+
+body.lm-mockup-ui {
+  --lm-mockup-bg: #f4f7ff;
+  --lm-mockup-gradient: linear-gradient(135deg, #4a90e2 0%, #9b51e0 100%);
+  --lm-mockup-pink: #ff4b63;
+  --lm-mockup-text: #333333;
+  --lm-mockup-label: #828282;
+  --lm-mockup-card-radius: 24px;
+  --lm-mockup-column: 480px;
+}
+
+body.lm-mockup-ui .App {
+  background: var(--lm-mockup-bg);
+}
+
+/* Centered mobile column for main chrome */
+body.lm-mockup-ui .app-top-nav--lm {
+  max-width: var(--lm-mockup-column);
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 0 0 16px 16px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+body.lm-mockup-ui .app-top-nav-tagline {
+  display: block;
+  max-width: none;
+  color: var(--lm-mockup-label);
+  font-size: 11px;
+}
+
+@media (min-width: 520px) {
+  body.lm-mockup-ui .app-top-nav-tagline {
+    font-size: 12px;
+  }
+}
+
+/* Dashboard / friends / games pages — single column */
+body.lm-mockup-ui .dashboard-page,
+body.lm-mockup-ui .friends-page,
+body.lm-mockup-ui .game-selection-page,
+body.lm-mockup-ui .fs-page,
+body.lm-mockup-ui .fl-page {
+  background: var(--lm-mockup-bg) !important;
+}
+
+body.lm-mockup-ui .dashboard-welcome,
+body.lm-mockup-ui .friends-page-inner,
+body.lm-mockup-ui .gs-content,
+body.lm-mockup-ui .fs-center {
+  max-width: var(--lm-mockup-column);
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+body.lm-mockup-ui .fs-center.fs-center--discover {
+  max-width: var(--lm-mockup-column);
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* Discover: one column; filters stack above card (mockup is mobile-first) */
+body.lm-mockup-ui .fs-discover-layout:not(.fs-discover-layout--embedded) {
+  grid-template-columns: 1fr;
+}
+
+body.lm-mockup-ui .fs-discover-layout:not(.fs-discover-layout--embedded) .fs-discover-sidebar {
+  position: static;
+}
+
+/* —— Discover profile card (Tinder-style) —— */
+body.lm-mockup-ui .fs-profile-card.fs-discover-card--minimal {
+  max-width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: none;
+  border-radius: var(--lm-mockup-card-radius);
+  box-shadow: 0 16px 48px rgba(74, 144, 226, 0.18);
+  background: #fff;
+}
+
+body.lm-mockup-ui .fs-profile-card.fs-discover-card--minimal:hover {
+  box-shadow: 0 20px 56px rgba(74, 144, 226, 0.22);
+}
+
+body.lm-mockup-ui .fs-discover-hero {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 28px 20px 22px;
+  margin: 0;
+  border: none;
+  background: var(--lm-mockup-gradient);
+  border-bottom: none;
+}
+
+body.lm-mockup-ui .fs-discover-avatar-wrap {
+  width: 96px;
+  height: 96px;
+  border: 4px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+body.lm-mockup-ui .fs-discover-hero-body {
+  width: 100%;
+}
+
+body.lm-mockup-ui .fs-discover-name {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+body.lm-mockup-ui .fs-discover-meta {
+  color: rgba(255, 255, 255, 0.92) !important;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+body.lm-mockup-ui .fs-discover-match-note {
+  color: #fff !important;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+body.lm-mockup-ui .fs-discover-match-ko {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+body.lm-mockup-ui .fs-discover-hero-cta {
+  width: 100%;
+  padding-top: 8px;
+}
+
+body.lm-mockup-ui .fs-discover-hero-cta .fs-btn-follow {
+  background: #fff !important;
+  color: #4a90e2 !important;
+  border-radius: 999px;
+  font-weight: 800;
+  padding: 12px 28px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border: none;
+  width: 100%;
+  max-width: 220px;
+}
+
+body.lm-mockup-ui .fs-discover-hero-cta .fs-btn-follow:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+body.lm-mockup-ui .fs-discover-hero-cta .fs-btn-accept,
+body.lm-mockup-ui .fs-discover-hero-cta .fs-btn-decline {
+  border-radius: 999px;
+}
+
+body.lm-mockup-ui .fs-discover-body {
+  margin: 0;
+  padding: 20px 20px 16px;
+  border: none;
+  background: #fff;
+}
+
+body.lm-mockup-ui .lm-discover-bio {
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  line-height: 1.45;
+}
+
+body.lm-mockup-ui .lm-discover-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--lm-mockup-label);
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
+body.lm-mockup-ui .lm-discover-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--lm-mockup-text);
+  margin: 0 0 16px;
+}
+
+body.lm-mockup-ui .lm-discover-section:last-child .lm-discover-value {
+  margin-bottom: 0;
+}
+
+body.lm-mockup-ui .lm-interest-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+body.lm-mockup-ui .lm-interest-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+body.lm-mockup-ui .lm-interest-pill--hot {
+  background: rgba(74, 144, 226, 0.12);
+  border-color: rgba(74, 144, 226, 0.35);
+  color: #2563eb;
+}
+
+body.lm-mockup-ui .lm-shared-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(74, 144, 226, 0.1);
+  color: #1d4ed8;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+body.lm-mockup-ui .fs-discover-commit,
+body.lm-mockup-ui .fs-discover-badges-line {
+  margin-top: 12px;
+}
+
+/* Partner list cards (Friends) */
+body.lm-mockup-ui .fl-page .fl-card {
+  max-width: var(--lm-mockup-column);
+  margin: 0 auto;
+  border: none;
+  border-radius: var(--lm-mockup-card-radius);
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08);
+  padding: 20px;
+}
+
+body.lm-mockup-ui .lm-partner-card {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+}
+
+body.lm-mockup-ui .lm-partner-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+body.lm-mockup-ui .lm-partner-card .fl-avatar {
+  width: 56px !important;
+  height: 56px !important;
+}
+
+body.lm-mockup-ui .lm-partner-name {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--lm-mockup-text);
+}
+
+body.lm-mockup-ui .lm-partner-meta {
+  font-size: 13px;
+  color: var(--lm-mockup-label);
+  margin-top: 4px;
+}
+
+body.lm-mockup-ui .lm-partner-match {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2563eb;
+  white-space: nowrap;
+}
+
+body.lm-mockup-ui .lm-partner-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+body.lm-mockup-ui .lm-partner-btn-chat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: none;
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #4a90e2, #3b7ddd) !important;
+  color: #fff !important;
+  box-shadow: none;
+}
+
+body.lm-mockup-ui .lm-partner-btn-game {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: none;
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #9b51e0, #7c3aed) !important;
+  color: #fff !important;
+  box-shadow: none;
+}
+
+body.lm-mockup-ui .lm-partner-btn-chat:hover,
+body.lm-mockup-ui .lm-partner-btn-game:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+body.lm-mockup-ui .lm-partner-btn-ko {
+  font-family: var(--dl-font-ko);
+  font-weight: 700;
+  font-size: 0.9em;
+  opacity: 0.95;
+}
+
+/* Friends page title */
+body.lm-mockup-ui .lm-friends-page-title {
+  text-align: center;
+  margin: 8px 0 4px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #2563eb;
+}
+
+body.lm-mockup-ui .lm-friends-page-title-ko {
+  display: block;
+  font-family: var(--dl-font-ko);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #7c3aed;
+  margin-top: 4px;
+}
+
+body.lm-mockup-ui .lm-friends-page-sub {
+  text-align: center;
+  font-size: 14px;
+  color: var(--lm-mockup-label);
+  margin: 0 0 16px;
+}
+
+/* Discover sparkle line */
+body.lm-mockup-ui .lm-discover-sparkle {
+  text-align: center;
+  font-size: 14px;
+  color: #475569;
+  margin: 8px 0 16px;
+  font-weight: 600;
+}
+
+body.lm-mockup-ui .lm-discover-sparkle-ko {
+  font-family: var(--dl-font-ko);
+  font-weight: 600;
+  color: #64748b;
+  margin-left: 6px;
+}
+
+body.lm-mockup-ui .fl-btn-unfollow-mockup {
+  display: block;
+  margin: 12px auto 0;
+  padding: 8px;
+  width: 100%;
+  background: transparent !important;
+  border: none !important;
+  color: #94a3b8 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  text-decoration: underline;
+  box-shadow: none !important;
+}
+
+body.lm-mockup-ui .fl-btn-unfollow-mockup:hover {
+  color: #64748b !important;
+  transform: none !important;
+}
+
+body.lm-mockup-ui .friends-page-tab span[lang='ko'] {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+/* —— Discover.tsx (reference): page gradient + swipe deck —— */
+body.lm-mockup-ui .lm-discover-embed-column {
+  background: linear-gradient(180deg, #eff6ff 0%, #fafafa 100%);
+  border-radius: 0;
+  padding-bottom: 24px;
+  max-width: 28rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+body.lm-mockup-ui .lm-embed-filters {
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  padding: 0 12px;
+}
+
+body.lm-mockup-ui .lm-embed-filters-summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  color: #171717;
+  padding: 12px 4px;
+  list-style: none;
+}
+
+body.lm-mockup-ui .lm-embed-filters summary::-webkit-details-marker {
+  display: none;
+}
+
+body.lm-mockup-ui .fs-results-card--embed {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+body.lm-mockup-ui .lm-discover-embed-sort-wrap {
+  margin-bottom: 12px;
+}
+
+body.lm-mockup-ui .lm-discover-embed-sort-wrap .fs-sort-toggle {
+  justify-content: center;
+}
+
+body.lm-mockup-ui .lm-discover-lang-pair {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+body.lm-mockup-ui .lm-discover-lang-arrow {
+  opacity: 0.95;
+}
+
+body.lm-mockup-ui .lm-discover-card--swipe .fs-discover-hero {
+  padding: 48px 32px 40px;
+}
+
+body.lm-mockup-ui .lm-discover-avatar-hero .fs-avatar {
+  width: 88px !important;
+  height: 88px !important;
+  font-size: 2rem;
+}
+
+body.lm-mockup-ui .lm-discover-swipe-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+body.lm-mockup-ui .lm-discover-swipe-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 28px;
+}
+
+body.lm-mockup-ui .lm-swipe-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+body.lm-mockup-ui .lm-swipe-btn:hover:not(:disabled) {
+  transform: scale(1.06);
+}
+
+body.lm-mockup-ui .lm-swipe-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+body.lm-mockup-ui .lm-swipe-btn--pass {
+  background: #fff;
+  border: 2px solid #d4d4d4;
+}
+
+body.lm-mockup-ui .lm-swipe-btn--pass:hover:not(:disabled) {
+  border-color: #f87171;
+}
+
+body.lm-mockup-ui .lm-swipe-btn-x {
+  font-size: 22px;
+  font-weight: 700;
+  color: #525252;
+  line-height: 1;
+}
+
+body.lm-mockup-ui .lm-swipe-btn--like {
+  background: linear-gradient(135deg, #ec4899 0%, #ef4444 100%);
+}
+
+body.lm-mockup-ui .lm-swipe-btn-heart {
+  font-size: 26px;
+  color: #fff;
+  line-height: 1;
+}
+
+body.lm-mockup-ui .lm-discover-request-bar {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+body.lm-mockup-ui .lm-discover-request-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #404040;
+  margin: 0 0 8px;
+}
+
+body.lm-mockup-ui .lm-discover-pending-note {
+  font-size: 13px;
+  color: #737373;
+  margin: 0 0 12px;
+}
+
+body.lm-mockup-ui .lm-interest-pill--hot {
+  background: #dbeafe;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+body.lm-mockup-ui .lm-shared-banner--target {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+body.lm-mockup-ui .fs-empty-block--embed-discover {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+body.lm-mockup-ui .fs-empty-block--embed-discover .fs-empty {
+  color: #525252;
+}
+
+/* —— MyPartners.tsx (reference) —— */
+body.lm-mockup-ui .lm-mp-page .fl-card--embed-mp {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0 16px 24px;
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+body.lm-mockup-ui .lm-mp-header {
+  margin-bottom: 20px;
+}
+
+body.lm-mockup-ui .lm-mp-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #171717;
+  margin: 0 0 4px;
+}
+
+body.lm-mockup-ui .lm-mp-sub {
+  font-size: 14px;
+  color: #525252;
+  margin: 0;
+}
+
+body.lm-mockup-ui .lm-mp-empty {
+  text-align: center;
+  padding: 40px 16px 32px;
+  max-width: 20rem;
+  margin: 0 auto;
+}
+
+body.lm-mockup-ui .lm-mp-empty-emoji {
+  font-size: 3.5rem;
+  line-height: 1;
+  margin-bottom: 16px;
+}
+
+body.lm-mockup-ui .lm-mp-empty-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #171717;
+  margin: 0 0 8px;
+}
+
+body.lm-mockup-ui .lm-mp-empty-text {
+  font-size: 14px;
+  color: #525252;
+  margin: 0 0 20px;
+}
+
+body.lm-mockup-ui .lm-mp-empty-cta {
+  display: inline-block;
+  background: #2563eb;
+  color: #fff !important;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 22px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+body.lm-mockup-ui .lm-mp-empty-cta:hover {
+  background: #1d4ed8;
+}
+
+body.lm-mockup-ui .lm-mp-card {
+  border-radius: 16px;
+  border: 1px solid #e5e5e5;
+  padding: 24px;
+  box-shadow: none;
+  transition: box-shadow 0.2s ease;
+}
+
+body.lm-mockup-ui .lm-mp-card:hover {
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+}
+
+body.lm-mockup-ui .lm-mp-card-head.lm-mp-card-head {
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+body.lm-mockup-ui .lm-mp-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+body.lm-mockup-ui .lm-mp-card-text {
+  flex: 1;
+  min-width: 0;
+}
+
+body.lm-mockup-ui .lm-mp-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #171717;
+}
+
+body.lm-mockup-ui .lm-mp-lang-line {
+  font-size: 14px;
+  color: #525252;
+  margin-top: 4px;
+}
+
+body.lm-mockup-ui .lm-mp-email-meta {
+  word-break: break-word;
+}
+
+body.lm-mockup-ui .lm-mp-matched-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #737373;
+  margin-top: 6px;
+}
+
+body.lm-mockup-ui .lm-mp-cal-icon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+body.lm-mockup-ui .lm-mp-pct {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2563eb;
+  white-space: nowrap;
+  margin-left: 8px;
+}
+
+body.lm-mockup-ui .lm-mp-actions .lm-mp-btn-chat {
+  flex: 1;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 15px;
+  background: #2563eb !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+body.lm-mockup-ui .lm-mp-actions .lm-mp-btn-game {
+  flex: 1;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 15px;
+  background: #9333ea !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+body.lm-mockup-ui .lm-mp-remove {
+  text-decoration: none;
+  margin-top: 8px;
+}

@@ -137,6 +137,19 @@
   background: rgba(99, 68, 166, 0.08);
 }
 
+body.mc-slot-painting {
+  user-select: none;
+}
+
+body.mc-slot-painting .meeting-calendar-cell-clickable {
+  cursor: crosshair;
+}
+
+.meeting-calendar-cell--slot-paint {
+  background: rgba(99, 68, 166, 0.2) !important;
+  outline: 1px solid rgba(99, 68, 166, 0.45);
+}
+
 .meeting-calendar-cell--drop-hover {
   background: rgba(99, 68, 166, 0.14) !important;
   outline: 2px dashed #6344A6;

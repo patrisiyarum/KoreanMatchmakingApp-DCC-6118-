@@ -11,6 +11,7 @@ import {
   handleReplaceUserInterests,
   handleReplaceUserAvailability
 } from '../Services/userService';
+import WeeklyAvailabilityGrid from './WeeklyAvailabilityGrid';
 
 import { createSearchParams, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -35,8 +36,7 @@ function CreateProfile() {
   const [allInterests, setAllInterests] = useState([]);
   const [selectedInterests, setSelectedInterests] = useState([]);
 
-  // Availability
-  const [availability, setAvailability] = useState([]);
+  const [availabilitySlots, setAvailabilitySlots] = useState([]);
 
   // UI state
   const [errMsg, setErrMsg] = useState('');
@@ -152,32 +152,6 @@ function CreateProfile() {
     { value: "Structured/Formal", label: "Structured/Formal" },
   ];
 
-  // Availability options builder
-  const generateHourlySlots = (day) => {
-    const slots = [];
-    for (let hour = 8; hour < 21; hour++) {
-      const start = String(hour).padStart(2, '0') + ':00';
-      const end = String(hour + 1).padStart(2, '0') + ':00';
-
-      const formatHour = (h) => {
-        const suffix = h >= 12 ? 'pm' : 'am';
-        const display = ((h + 11) % 12 + 1);
-        return `${display}${suffix}`;
-      };
-
-      const label = `${day} ${formatHour(hour)}-${formatHour(hour + 1)}`;
-
-      slots.push({
-        value: { day_of_week: day, start_time: start, end_time: end },
-        label,
-      });
-    }
-    return slots;
-  };
-
-  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const availabilityOptions = days.flatMap(generateHourlySlots);
-
   const pickSingle = (options, value) => options.find(o => o.value === value) || null;
 
   const selectStyles = {
@@ -215,7 +189,6 @@ function CreateProfile() {
   const handleMBTI = (selectedOption) => setMBTI(selectedOption?.value ?? '');
   const handleInterestsChange = (selectedOptions) => setSelectedInterests(selectedOptions || []);
   const handleDefaultTimeZone = (selectedOption) => setDefaultTimeZone(selectedOption?.value ?? '');
-  const handleAvailability = (selectedOptions) => setAvailability(selectedOptions || []);
   const handleVisibility = (selectedOption) => setVisibility(selectedOption?.value ?? '');
 
   const STEPS = [
@@ -299,8 +272,7 @@ function CreateProfile() {
       const interestIds = selectedInterests.map(i => i.value);
       await handleReplaceUserInterests(id, interestIds);
 
-      const slots = availability.map(a => a.value);
-      await handleReplaceUserAvailability(id, slots);
+      await handleReplaceUserAvailability(id, availabilitySlots);
 
       navigate({
         pathname: "/Dashboard",
@@ -432,7 +404,12 @@ function CreateProfile() {
                   </div>
                   <div className="up-group" style={{ gridColumn: '1 / -1' }}>
                     <label className="up-label">Availability</label>
-                    <Select styles={selectStyles} isMulti options={availabilityOptions} value={availability} onChange={handleAvailability} placeholder="Pick a few times you're usually free..." />
+                    <WeeklyAvailabilityGrid
+                      className="weekly-availability-grid--compact"
+                      slots={availabilitySlots}
+                      onSlotsChange={setAvailabilitySlots}
+                      enableDrag
+                    />
                   </div>
                 </div>
               </div>

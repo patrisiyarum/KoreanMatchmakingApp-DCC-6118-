@@ -212,7 +212,7 @@ const Scheduler = () => {
         <div className="sched-card sched-card-calendar">
           <h2 className="sched-card-title">Scheduled Meetings</h2>
           {meetings.length === 0 && !selectedSlotData && (
-            <p className="sched-subtitle">Click an empty time slot — controls stay at the bottom of the screen</p>
+            <p className="sched-subtitle">Click or drag on empty hours to pick a time — booking controls stay at the bottom</p>
           )}
 
           <MeetingCalendar

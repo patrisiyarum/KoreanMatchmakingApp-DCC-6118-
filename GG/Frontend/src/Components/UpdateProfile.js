@@ -13,6 +13,8 @@ import {
   handleGetUserAvailability,
   handleReplaceUserAvailability
 } from '../Services/userService';
+import WeeklyAvailabilityGrid from './WeeklyAvailabilityGrid';
+import { normalizeTimeKey } from './weeklyAvailabilityUtils';
 
 import { handleGetUserProfileApi } from '../Services/findFriendsService';
 import { handleGetUserStatsApi } from '../Services/gameSelectionService';
@@ -40,7 +42,7 @@ function UpdateProfile() {
   const [profileImage, setProfileImage] = useState(null);
   const [allInterests, setAllInterests] = useState([]);
   const [selectedInterests, setSelectedInterests] = useState([]);
-  const [availability, setAvailability] = useState([]);
+  const [availabilitySlots, setAvailabilitySlots] = useState([]);
   const [errMsg, setErrMsg] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState(false);
@@ -108,18 +110,6 @@ function UpdateProfile() {
     { value: "Structured/Formal", label: "Structured/Formal" },
   ];
 
-  const generateHourlySlots = (day) => {
-    const slots = [];
-    for (let hour = 8; hour < 21; hour++) {
-      const start = String(hour).padStart(2, '0') + ':00';
-      const end   = String(hour + 1).padStart(2, '0') + ':00';
-      const fmt   = (h) => `${((h + 11) % 12 + 1)}${h >= 12 ? 'pm' : 'am'}`;
-      slots.push({ value: { day_of_week: day, start_time: start, end_time: end }, label: `${day} ${fmt(hour)}-${fmt(hour + 1)}` });
-    }
-    return slots;
-  };
-  const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-  const availabilityOptions = days.flatMap(generateHourlySlots);
   const pickSingle = (options, value) => options.find(o => o.value === value) || null;
 
   useEffect(() => {
@@ -176,17 +166,13 @@ function UpdateProfile() {
         if (availabilityRes.status === 'fulfilled') {
           const raw = availabilityRes.value;
           const slots = Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [];
-          setAvailability(slots.map(s => {
-            const match = availabilityOptions.find(o =>
-              o.value.day_of_week === s.day_of_week &&
-              o.value.start_time === s.start_time &&
-              o.value.end_time === s.end_time
-            );
-            return match || {
-              value: { day_of_week: s.day_of_week, start_time: s.start_time, end_time: s.end_time },
-              label: `${s.day_of_week} ${s.start_time}-${s.end_time}`
-            };
-          }));
+          setAvailabilitySlots(
+            slots.map((s) => ({
+              day_of_week: s.day_of_week,
+              start_time: normalizeTimeKey(s.start_time),
+              end_time: normalizeTimeKey(s.end_time),
+            }))
+          );
         }
       } catch (err) {
         console.error('Unexpected error loading profile data:', err);
@@ -204,7 +190,7 @@ function UpdateProfile() {
     try {
       await handleProfileUpdateAPI(id, nativeLanguage, targetLanguage, targetLanguageProficiency, age, gender, profession, mbti, zodiac, defaultTimeZone, visibility, learningGoal, communicationStyle, commitmentLevel);
       await handleReplaceUserInterests(id, selectedInterests.map(i => i.value));
-      await handleReplaceUserAvailability(id, availability.map(a => a.value));
+      await handleReplaceUserAvailability(id, availabilitySlots);
       navigate({ pathname: "/Dashboard", search: createSearchParams({ id }).toString() });
     } catch (err) {
       const data = err?.response?.data;
@@ -365,7 +351,12 @@ function UpdateProfile() {
                   </div>
                   <div className="up-group" style={{ gridColumn: '1 / -1' }}>
                     <label className="up-label">Availability</label>
-                    <Select styles={selectStyles} isMulti options={availabilityOptions} value={availability} onChange={s => setAvailability(s || [])} placeholder="Pick a few times you're usually free..." />
+                    <WeeklyAvailabilityGrid
+                      className="weekly-availability-grid--compact"
+                      slots={availabilitySlots}
+                      onSlotsChange={setAvailabilitySlots}
+                      enableDrag
+                    />
                   </div>
                 </div>
               </div>

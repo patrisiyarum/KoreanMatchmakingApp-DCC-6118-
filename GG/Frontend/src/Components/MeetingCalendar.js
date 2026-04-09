@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { DateTime } from 'luxon';
 import './MeetingCalendar.css';
 
@@ -65,6 +65,8 @@ function MeetingCalendar({
   const [dragOverKey, setDragOverKey] = useState(null);
   const [draggingId, setDraggingId] = useState(null);
   const suppressSlotClickRef = useRef(false);
+  const slotPaintRef = useRef(null);
+  const [slotPaintRange, setSlotPaintRange] = useState(null);
 
   const weekDates = Array.from({ length: 7 }, (_, i) =>
     weekStart.plus({ days: i })
@@ -107,6 +109,12 @@ function MeetingCalendar({
   const goNextWeek = () => setWeekStart((d) => d.plus({ weeks: 1 }));
   const goToday = () => setWeekStart(DateTime.local().startOf('week'));
 
+  useEffect(() => {
+    return () => {
+      document.body.classList.remove('mc-slot-painting');
+    };
+  }, []);
+
   const weekLabel = `${weekDates[0].toFormat('MMM d')} – ${weekDates[6].toFormat('MMM d, yyyy')}`;
 
   const cellKey = (dayIdx, hour) => `${dayIdx}-${hour}`;
@@ -123,6 +131,48 @@ function MeetingCalendar({
     const related = e.relatedTarget;
     if (related && e.currentTarget.contains(related)) return;
     setDragOverKey((k) => (k === cellKey(dayIdx, hour) ? null : k));
+  };
+
+  const handleEmptySlotPaintStart = (e, dayIdx, hour) => {
+    if (!onSlotClick) return;
+    if (e.button !== 0) return;
+    e.preventDefault();
+    slotPaintRef.current = { dayIdx, anchorHour: hour, endHour: hour };
+    setSlotPaintRange({ dayIdx, lo: hour, hi: hour });
+    document.body.classList.add('mc-slot-painting');
+
+    const finish = () => {
+      window.removeEventListener('pointerup', finish);
+      window.removeEventListener('pointercancel', finish);
+      document.body.classList.remove('mc-slot-painting');
+      const d = slotPaintRef.current;
+      slotPaintRef.current = null;
+      setSlotPaintRange(null);
+      if (!d || !onSlotClick) return;
+      const lo = Math.min(d.anchorHour, d.endHour);
+      const hi = Math.max(d.anchorHour, d.endHour);
+      const dayOfWeek = DAY_ORDER[d.dayIdx];
+      suppressSlotClickRef.current = true;
+      window.setTimeout(() => {
+        suppressSlotClickRef.current = false;
+      }, 400);
+      onSlotClick({
+        dayOfWeek,
+        startTime: toTimeStr(lo),
+        endTime: toTimeStr(hi + 1),
+      });
+    };
+    window.addEventListener('pointerup', finish);
+    window.addEventListener('pointercancel', finish);
+  };
+
+  const handleEmptySlotPaintEnter = (dayIdx, hour, isEmptyCell) => {
+    const d = slotPaintRef.current;
+    if (!d || !isEmptyCell || d.dayIdx !== dayIdx) return;
+    d.endHour = hour;
+    const lo = Math.min(d.anchorHour, d.endHour);
+    const hi = Math.max(d.anchorHour, d.endHour);
+    setSlotPaintRange({ dayIdx, lo, hi });
   };
 
   const handleDropOnCell = (e, dayIdx, hour) => {
@@ -229,27 +279,28 @@ function MeetingCalendar({
                 (m) => parseHour(m.start_time) === hour
               );
 
-              const hasMeeting = isFirstHour && slotMeetings.length > 0;
-              const isEmpty = !hasMeeting && onSlotClick;
+              const hasMeetingInCell = slotMeetings.length > 0;
+              const isEmpty = !hasMeetingInCell && onSlotClick;
               const dropActive = onMeetingMove && draggingId;
               const isDropHover = dropActive && dragOverKey === cellKey(dayIdx, hour);
+              const inPaintRange =
+                slotPaintRange &&
+                slotPaintRange.dayIdx === dayIdx &&
+                hour >= slotPaintRange.lo &&
+                hour <= slotPaintRange.hi &&
+                isEmpty;
 
               return (
                 <div
                   key={dayIdx}
-                  className={`meeting-calendar-cell ${isToday ? 'today' : ''} ${isEmpty ? 'meeting-calendar-cell-clickable' : ''}${isDropHover ? ' meeting-calendar-cell--drop-hover' : ''}`}
+                  className={`meeting-calendar-cell ${isToday ? 'today' : ''} ${isEmpty ? 'meeting-calendar-cell-clickable' : ''}${isDropHover ? ' meeting-calendar-cell--drop-hover' : ''}${inPaintRange ? ' meeting-calendar-cell--slot-paint' : ''}`}
                   onDragOver={(e) => handleDragOverCell(e, dayIdx, hour)}
                   onDragLeave={(e) => handleDragLeaveCell(e, dayIdx, hour)}
                   onDrop={(e) => handleDropOnCell(e, dayIdx, hour)}
-                  onClick={
+                  onPointerEnter={() => handleEmptySlotPaintEnter(dayIdx, hour, isEmpty)}
+                  onPointerDown={
                     isEmpty
-                      ? () => {
-                          if (suppressSlotClickRef.current) return;
-                          const dayOfWeek = DAY_ORDER[dayIdx];
-                          const startTime = toTimeStr(hour);
-                          const endTime = toTimeStr(hour + 1);
-                          onSlotClick({ dayOfWeek, startTime, endTime });
-                        }
+                      ? (e) => handleEmptySlotPaintStart(e, dayIdx, hour)
                       : undefined
                   }
                   role={isEmpty ? 'button' : undefined}
@@ -259,6 +310,7 @@ function MeetingCalendar({
                       ? (e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
+                            if (suppressSlotClickRef.current) return;
                             const dayOfWeek = DAY_ORDER[dayIdx];
                             const startTime = toTimeStr(hour);
                             const endTime = toTimeStr(hour + 1);
@@ -328,11 +380,14 @@ function MeetingCalendar({
         ))}
       </div>
 
-      {meetings.length > 0 && (
+      {(onSlotClick || meetings.length > 0) && (
         <p className="meeting-calendar-hint">
-          {onMeetingMove
-            ? 'Drag a meeting to another day or time, or click to cancel it'
-            : 'Click a meeting to cancel it'}
+          {onSlotClick &&
+            'Drag across empty hours to select a range, or click a single hour. '}
+          {meetings.length > 0 &&
+            (onMeetingMove
+              ? 'Drag a meeting block to reschedule, or click it to cancel.'
+              : 'Click a meeting to cancel.')}
         </p>
       )}
     </div>

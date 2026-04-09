@@ -842,11 +842,13 @@ const FriendSearch = ({ embedded = false }) => {
                 return (
                   <div key={i} className="fs-profile-card">
                     <div className="fs-profile-card-top">
-                      <Avatar src={user.profileImage} name={user.firstName} size={52} />
-                      <div className="fs-profile-card-head">
-                        <div className="fs-user-name">{user.firstName} {user.lastName}</div>
-                        <div className="fs-profile-card-sub">
-                          {[user.profession, user.age ? `${user.age}` : null].filter(Boolean).join(' · ') || ' '}
+                      <div className="fs-profile-card-identity">
+                        <Avatar src={user.profileImage} name={user.firstName} size={52} />
+                        <div className="fs-profile-card-head">
+                          <div className="fs-user-name">{user.firstName} {user.lastName}</div>
+                          <div className="fs-profile-card-sub">
+                            {[user.profession, user.age ? `${user.age}` : null].filter(Boolean).join(' · ') || ' '}
+                          </div>
                         </div>
                       </div>
                       <div className="fs-profile-card-cta">

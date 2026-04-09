@@ -1,6 +1,6 @@
 .dashboard-page {
   min-height: 100vh;
-  background: #f3f2f7;
+  background: var(--dl-page-bg);
   font-family: var(--dl-font);
 }
 
@@ -142,6 +142,18 @@
   flex-wrap: wrap;
 }
 
+.dash-games-card-inner--stack {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+}
+
+.dash-games-card-inner--stack .dash-games-copy {
+  width: 100%;
+  text-align: center;
+}
+
 .dash-games-title {
   margin: 0 0 4px 0;
   font-size: 17px;
@@ -163,6 +175,11 @@
   flex-wrap: wrap;
   gap: 10px;
   flex-shrink: 0;
+}
+
+.dash-games-actions--centered {
+  justify-content: center;
+  width: 100%;
 }
 
 .dash-games-btn {
@@ -221,24 +238,8 @@
   background: #0d9488;
 }
 
-.dash-challenge-banner-btn {
-  background: #fff;
-  color: #6344A6;
-  border: none;
-  padding: 8px 18px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-  font-family: var(--dl-font);
-}
-
-.dash-challenge-banner-turn .dash-challenge-banner-btn {
-  color: #059669;
-}
-
-.dash-challenge-banner-btn:hover {
-  opacity: 0.9;
+.dash-challenge-banner .dash-games-btn {
+  flex-shrink: 0;
 }
 
 .dashboard-grid {
@@ -367,8 +368,20 @@
   color: var(--dl-gray-dark);
 }
 
-.profile-edit-btn,
-.small-btn,
+.profile-card-actions-games {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.profile-card-actions-games .dash-games-btn {
+  flex: 1 1 auto;
+  min-width: 132px;
+}
+
 .quick-action-btn,
 .dash-logout-btn {
   border-radius: 8px;
@@ -376,17 +389,6 @@
   font-family: var(--dl-font);
   font-weight: 700;
   transition: all 0.17s ease;
-}
-
-.profile-edit-btn {
-  background: var(--dl-white);
-  border: 1px solid var(--dl-primary);
-  color: var(--dl-primary);
-  padding: 6px 12px;
-}
-
-.profile-edit-btn:hover {
-  background: rgba(99,68,166,0.08);
 }
 
 .schedule-card .panel-header,
@@ -397,22 +399,16 @@
   gap: 10px;
 }
 
+.friends-card .panel-header .dash-games-btn,
+.schedule-card .panel-header .dash-games-btn {
+  flex-shrink: 0;
+}
+
 .schedule-card h3,
 .friends-card h3,
 .shortcuts-card h3 {
   margin: 0;
   font-size: 18px;
-}
-
-.small-btn {
-  background: var(--dl-white);
-  border: 1px solid var(--dl-primary);
-  color: var(--dl-primary);
-  padding: 6px 12px;
-}
-
-.small-btn:hover {
-  background: rgba(99,68,166,0.08);
 }
 
 .schedule-item,
@@ -425,6 +421,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.schedule-item > div {
+  width: 100%;
+  text-align: left;
 }
 
 .profile-avatar img.profile-avatar-img {
@@ -468,6 +469,7 @@
   margin-top: 12px;
   color: var(--dl-gray-dark);
   font-size: 14px;
+  text-align: left;
 }
 
 .friends-list {
@@ -478,11 +480,13 @@
 
 .friend-item {
   cursor: pointer;
+  justify-content: space-between;
 }
 
 .friend-name {
   font-weight: 800;
   color: var(--dl-dark);
+  text-align: left;
 }
 
 .friend-status {

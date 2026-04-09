@@ -13,6 +13,31 @@ import { getImageUrl } from '../Services/uploadImageService';
 import { XP_PER_LEVEL } from '../config/gameRuntime.js';
 import Navbar from './NavBar';
 
+/**
+ * GET /api/v1/meetings returns rows with user1_id / user2_id but no partner name.
+ * Match the other participant to the friends list so we show a real name instead of a generic label.
+ */
+function getSchedulePartnerDisplayName(meeting, currentUserId, friendsList) {
+  const uid = Number(currentUserId);
+  const u1 = meeting.user1_id != null ? Number(meeting.user1_id) : null;
+  const u2 = meeting.user2_id != null ? Number(meeting.user2_id) : null;
+  const otherId = u1 === uid ? u2 : u1;
+  if (otherId != null && Number.isFinite(otherId)) {
+    const friend = friendsList.find((f) => Number(f.id) === otherId);
+    if (friend) {
+      const name = `${friend.firstName || ''} ${friend.lastName || ''}`.trim();
+      if (name) return name;
+    }
+  }
+  return (
+    meeting.friendName ||
+    meeting.partnerName ||
+    meeting.displayName ||
+    meeting.user2_name ||
+    meeting.user_name ||
+    'Partner'
+  );
+}
 
 function Dashboard() {
   const [search] = useSearchParams();
@@ -178,13 +203,25 @@ useEffect(() => {
           {pendingChallenges > 0 && (
             <div className="dash-challenge-banner dash-challenge-banner-pending">
               <span>You have {pendingChallenges} pending challenge{pendingChallenges !== 1 ? 's' : ''} waiting for your response.</span>
-              <button className="dash-challenge-banner-btn" onClick={() => goTo('/Challenges')}>View Challenges</button>
+              <button
+                type="button"
+                className="dash-games-btn dash-games-btn-secondary"
+                onClick={() => goTo('/Challenges')}
+              >
+                View Challenges
+              </button>
             </div>
           )}
           {yourTurnChallenges > 0 && pendingChallenges === 0 && (
             <div className="dash-challenge-banner dash-challenge-banner-turn">
               <span>It&apos;s your turn to play in {yourTurnChallenges} challenge{yourTurnChallenges !== 1 ? 's' : ''}!</span>
-              <button className="dash-challenge-banner-btn" onClick={() => goTo('/Challenges')}>Play Now</button>
+              <button
+                type="button"
+                className="dash-games-btn dash-games-btn-secondary"
+                onClick={() => goTo('/Challenges')}
+              >
+                Play Now
+              </button>
             </div>
           )}
         </div>
@@ -286,14 +323,14 @@ useEffect(() => {
       {id && (
         <div className="dashboard-home-tiles">
           <section className="dashboard-card dashboard-tile dash-tile-games dash-games-card">
-            <div className="dash-games-card-inner dash-tile-fill">
+            <div className="dash-games-card-inner dash-games-card-inner--stack dash-tile-fill">
               <div className="dash-games-copy">
-                <h3 className="dash-games-title">Games</h3>
+                <h3 className="dash-games-title">Games & teams</h3>
                 <p className="dash-games-desc">
-                  Practice vocabulary, grammar, and pronunciation, or challenge a friend to a 1v1 match.
+                  Practice vocabulary, grammar, and pronunciation, challenge a friend to 1v1, or join your team lobby.
                 </p>
               </div>
-              <div className="dash-games-actions">
+              <div className="dash-games-actions dash-games-actions--centered">
                 <button
                   type="button"
                   className="dash-games-btn dash-games-btn-primary"
@@ -307,6 +344,13 @@ useEffect(() => {
                   onClick={() => goTo('/Challenges')}
                 >
                   1v1 challenges
+                </button>
+                <button
+                  type="button"
+                  className="dash-games-btn dash-games-btn-secondary"
+                  onClick={() => goTo('/TeamLobby')}
+                >
+                  Teams
                 </button>
               </div>
             </div>
@@ -329,8 +373,22 @@ useEffect(() => {
               <div className="profile-details">
                 <h2>{firstName} {lastName}</h2>
                 {email ? <p className="profile-email">{email}</p> : null}
-                <button type="button" className="profile-edit-btn" onClick={() => goTo('/ViewProfile')}>View Profile</button>
-                <button type="button" className="profile-edit-btn" onClick={() => goTo('/UpdateProfile')}>Edit Profile</button>
+                <div className="profile-card-actions-games">
+                  <button
+                    type="button"
+                    className="dash-games-btn dash-games-btn-primary"
+                    onClick={() => goTo('/ViewProfile')}
+                  >
+                    View Profile
+                  </button>
+                  <button
+                    type="button"
+                    className="dash-games-btn dash-games-btn-secondary"
+                    onClick={() => goTo('/UpdateProfile')}
+                  >
+                    Edit Profile
+                  </button>
+                </div>
               </div>
             </div>
           </section>
@@ -338,7 +396,9 @@ useEffect(() => {
           <section className="dashboard-card dashboard-tile dash-tile-friends friends-card">
             <div className="panel-header">
               <h3>Friends</h3>
-              <button type="button" className="small-btn" onClick={() => goTo('/Friends')}>View All</button>
+              <button type="button" className="dash-games-btn dash-games-btn-secondary" onClick={() => goTo('/Friends')}>
+                View All
+              </button>
             </div>
             <ul className="friends-list">
               {friendsList.slice(0, 5).map((friend) => (
@@ -354,12 +414,14 @@ useEffect(() => {
           <section className="dashboard-card dashboard-tile dash-tile-schedule schedule-card">
             <div className="panel-header">
               <h3>Today’s Schedule</h3>
-              <button type="button" className="small-btn" onClick={() => goTo('/Scheduler')}>View All</button>
+              <button type="button" className="dash-games-btn dash-games-btn-secondary" onClick={() => goTo('/Scheduler')}>
+                View All
+              </button>
             </div>
             {meetings.length > 0 ? (
               <div className="schedule-list">
                 {meetings.map((meeting, idx) => {
-                  const displayName = meeting.friendName || meeting.user2_name || meeting.user_name || 'Friend';
+                  const displayName = getSchedulePartnerDisplayName(meeting, id, friendsList);
                   const dayText = meeting.day_of_week || meeting.date || 'Today';
                   const start = meeting.start_time || meeting.startTime || meeting.start || 'TBD';
                   const end = meeting.end_time || meeting.endTime || meeting.end || 'TBD';

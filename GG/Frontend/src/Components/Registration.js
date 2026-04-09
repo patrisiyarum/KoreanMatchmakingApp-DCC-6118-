@@ -132,11 +132,13 @@ function Registration() {
           <div className="auth-actions">
             <button className="auth-primary" type="submit">Create an account</button>
           </div>
-          <div className="auth-actions auth-actions--stacked">
-            <p className="auth-prompt">Already have an account?</p>
-            <button className="auth-secondary" type="button" onClick={handleBack}>
-              Log in
-            </button>
+          <div className="auth-actions auth-actions--stacked auth-actions--footer-link-row">
+            <p className="auth-prompt">
+              Already have an account?{' '}
+              <button type="button" className="auth-text-link" onClick={handleBack}>
+                Log in
+              </button>
+            </p>
           </div>
         </form>
       </div>

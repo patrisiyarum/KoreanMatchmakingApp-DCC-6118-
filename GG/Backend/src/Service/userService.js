@@ -162,7 +162,7 @@ let handleProfileCreation = (id, native_language, target_language, target_langua
     })
 }
 
-let handleProfileUpdate = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, learning_goal, communication_style, commitment_level, bio) => {
+let handleProfileUpdate = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, learning_goal, communication_style, commitment_level, bio, first_name, last_name) => {
     return new Promise(async (resolve, reject) => {
         try {
             let userData = {};
@@ -215,6 +215,24 @@ let handleProfileUpdate = (id, native_language, target_language, target_language
                           ? null
                           : String(bio).trim().slice(0, 2000),
             });
+
+            if (first_name !== undefined || last_name !== undefined) {
+                const account = await db.UserAccount.findByPk(id);
+                if (account) {
+                    const nextFirst =
+                        first_name !== undefined
+                            ? String(first_name).trim().slice(0, 120)
+                            : account.firstName;
+                    const nextLast =
+                        last_name !== undefined
+                            ? String(last_name).trim().slice(0, 120)
+                            : account.lastName;
+                    await account.update({
+                        firstName: nextFirst || account.firstName,
+                        lastName: nextLast || account.lastName,
+                    });
+                }
+            }
  
             userData.errCode = 0;
             userData.errMessage = 'Profile successfully updated!';

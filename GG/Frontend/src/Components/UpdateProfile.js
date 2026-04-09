@@ -12,6 +12,7 @@ import {
   handleReplaceUserInterests,
   handleGetUserAvailability,
   handleReplaceUserAvailability,
+  handleGetUser,
 } from '../Services/userService';
 import WeeklyAvailabilityGrid from './WeeklyAvailabilityGrid';
 import { normalizeTimeKey } from './weeklyAvailabilityUtils';
@@ -23,11 +24,13 @@ import { createSearchParams, useNavigate, useSearchParams } from 'react-router-d
 const selectStyles = {
   control: (base) => ({
     ...base,
-    borderRadius: 10,
-    borderColor: '#d4d4d8',
+    borderRadius: 12,
+    borderColor: '#e5e7eb',
     minHeight: 48,
     fontSize: 15,
     fontFamily: 'var(--dl-font)',
+    background: '#fff',
+    boxShadow: 'none',
   }),
   option: (base) => ({ ...base, fontSize: 14, fontFamily: 'var(--dl-font)' }),
 };
@@ -47,13 +50,12 @@ function UpdateProfile() {
   const [communicationStyle, setCommunicationStyle] = useState('');
   const [commitmentLevel, setCommitmentLevel] = useState(3);
   const [bio, setBio] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [profileImage, setProfileImage] = useState(null);
   const [allInterests, setAllInterests] = useState([]);
   const [selectedInterests, setSelectedInterests] = useState([]);
   const [availabilitySlots, setAvailabilitySlots] = useState([]);
   const [errMsg, setErrMsg] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
 
   const [search] = useSearchParams();
@@ -62,18 +64,18 @@ function UpdateProfile() {
 
   const NativeLanguage = [
     { value: 'English', label: 'English' },
-    { value: 'Korean', label: 'Korean' },
+    { value: 'Korean', label: 'Korean 한국어' },
   ];
   const TargetLanguage = [
     { value: 'English', label: 'English' },
-    { value: 'Korean', label: 'Korean' },
+    { value: 'Korean', label: 'Korean 한국어' },
   ];
   const TargetLanguageProficiency = [
-    { value: 'Beginner', label: 'Beginner' },
-    { value: 'Elementary', label: 'Elementary' },
-    { value: 'Intermediate', label: 'Intermediate' },
-    { value: 'Proficient', label: 'Proficient' },
-    { value: 'Fluent', label: 'Fluent' },
+    { value: 'Beginner', label: 'Beginner 초급' },
+    { value: 'Elementary', label: 'Elementary 초중급' },
+    { value: 'Intermediate', label: 'Intermediate 중급' },
+    { value: 'Proficient', label: 'Proficient 상급' },
+    { value: 'Fluent', label: 'Fluent 유창' },
   ];
   const Gender = [
     { value: 'Male', label: 'Male' },
@@ -160,13 +162,14 @@ function UpdateProfile() {
 
     const loadAllData = async () => {
       try {
-        const [profileRes, userStatsRes, interestsAllRes, interestsUserRes, availabilityRes] =
+        const [profileRes, userStatsRes, interestsAllRes, interestsUserRes, availabilityRes, accountRes] =
           await Promise.allSettled([
             handleGetUserProfileApi(id),
             handleGetUserStatsApi(id),
             handleGetAllInterests(),
             handleGetUserInterests(id),
             handleGetUserAvailability(id),
+            handleGetUser(id),
           ]);
 
         if (profileRes.status === 'fulfilled') {
@@ -196,6 +199,13 @@ function UpdateProfile() {
 
         if (userStatsRes.status === 'fulfilled' && userStatsRes.value?.profileImage) {
           setProfileImage(userStatsRes.value.profileImage);
+        }
+
+        if (accountRes.status === 'fulfilled') {
+          const u = accountRes.value;
+          if (u && !Array.isArray(u) && (u.firstName != null || u.lastName != null)) {
+            setDisplayName(`${u.firstName || ''} ${u.lastName || ''}`.trim());
+          }
         }
 
         if (interestsAllRes.status === 'fulfilled') {
@@ -241,7 +251,15 @@ function UpdateProfile() {
 
   const handleSubmit = async () => {
     setErrMsg('');
-    setSubmitted(true);
+    const nameTrim = displayName.trim();
+    if (!nameTrim) {
+      setErrMsg('Please enter your name (이름).');
+      return;
+    }
+    if (selectedInterests.length < 1) {
+      setErrMsg('Select at least one interest (관심사).');
+      return;
+    }
     if (
       !nativeLanguage ||
       !targetLanguage ||
@@ -249,10 +267,12 @@ function UpdateProfile() {
       !age ||
       !profession
     ) {
-      setError(true);
+      setErrMsg('Please fill in languages, level, age, and profession.');
       return;
     }
-    setError(false);
+    const nameParts = nameTrim.split(/\s+/).filter(Boolean);
+    const first_name = nameParts[0] || '';
+    const last_name = nameParts.slice(1).join(' ') || '';
     try {
       await handleProfileUpdateAPI(
         id,
@@ -269,7 +289,9 @@ function UpdateProfile() {
         learningGoal,
         communicationStyle,
         commitmentLevel,
-        bio.trim()
+        bio.trim(),
+        first_name,
+        last_name
       );
       await handleReplaceUserInterests(
         id,
@@ -300,19 +322,11 @@ function UpdateProfile() {
 
   if (!dataLoaded) {
     return (
-      <div className="up-page">
+      <div className="up-page up-page--welcome">
         <Navbar id={id} />
-        <div className="up-center">
-          <div className="up-card" style={{ textAlign: 'center', padding: 60 }}>
-            <p
-              style={{
-                color: '#364659',
-                fontFamily: 'var(--dl-font)',
-                fontSize: 18,
-              }}
-            >
-              Loading your profile...
-            </p>
+        <div className="up-welcome-center">
+          <div className="up-card up-card--welcome up-card--welcome-loading">
+            <p className="up-welcome-loading-text">Loading your profile…</p>
           </div>
         </div>
       </div>
@@ -320,57 +334,69 @@ function UpdateProfile() {
   }
 
   return (
-    <div className="up-page up-page--ref">
+    <div className="up-page up-page--welcome">
       <Navbar id={id} />
-      <div className="up-center up-center--ref">
-        <div className="up-card up-card--ref">
-          <header className="up-ref-hero">
-            <h1 className="up-title up-ref-title">Make your profile</h1>
-            <p className="up-subtitle up-ref-sub">
-              Add a photo and bio so partners know you. Languages and interests power Discover.
-            </p>
-            <p className="up-ref-sub-ko" lang="ko">
-              사진과 소개를 추가해 주세요
-            </p>
-          </header>
+      <div className="up-welcome-center">
+        <header className="up-welcome-hero">
+          <div className="up-welcome-flags" aria-hidden>
+            <span className="up-welcome-flag">🇰🇷</span>
+            <span className="up-welcome-flag">🇺🇸</span>
+          </div>
+          <h1 className="up-welcome-title">Welcome to LangMatch</h1>
+          <p className="up-welcome-ko" lang="ko">
+            환영합니다
+          </p>
+          <p className="up-welcome-tagline">Connect with language partners worldwide</p>
+        </header>
 
-          <div className="up-messages">
-            {error && (
-              <div className="up-error">
-                Please fill in native language, target language, level, age, and profession.
-              </div>
-            )}
-            {errMsg && <div className="up-error">{errMsg}</div>}
+        <div className="up-card up-card--welcome">
+          <div className="up-messages up-messages--welcome">
+            {errMsg ? <div className="up-error">{errMsg}</div> : null}
           </div>
 
-          <form className="up-form up-form--ref" onSubmit={(e) => e.preventDefault()}>
-            <div className="up-ref-photo">
+          <form className="up-form up-form--welcome" onSubmit={(e) => e.preventDefault()}>
+            <div className="up-welcome-photo">
               <ProfileImageSection
                 id={id}
                 currentImage={profileImage}
                 onImageChange={(path) => setProfileImage(path)}
               />
-              <p className="up-ref-photo-hint">Tap to upload or change your photo</p>
+              <p className="up-welcome-photo-hint">Photo · 프로필 사진</p>
             </div>
 
             <div className="up-group">
-              <label className="up-label up-ref-label" htmlFor="profile-bio">
-                Bio
+              <label className="up-label up-label--welcome" htmlFor="profile-display-name">
+                Your Name (이름)
+              </label>
+              <input
+                id="profile-display-name"
+                className="up-input up-input--welcome"
+                type="text"
+                autoComplete="name"
+                placeholder="Enter your name · 이름을 입력하세요"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+              />
+            </div>
+
+            <div className="up-group">
+              <label className="up-label up-label--welcome" htmlFor="profile-bio">
+                Bio (소개)
               </label>
               <textarea
                 id="profile-bio"
-                className="up-ref-textarea"
+                className="up-textarea-welcome"
                 rows={4}
                 maxLength={2000}
-                placeholder="Tell partners about yourself — why you’re learning, what you like to talk about…"
+                placeholder="Tell partners about yourself · 자기소개를 입력하세요"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
               />
             </div>
 
-            <div className="up-ref-grid2">
+            <div className="up-welcome-grid2">
               <div className="up-group">
-                <label className="up-label up-ref-label">I speak</label>
+                <label className="up-label up-label--welcome">I speak (모국어)</label>
                 <Select
                   styles={selectStyles}
                   options={NativeLanguage}
@@ -380,7 +406,7 @@ function UpdateProfile() {
                 />
               </div>
               <div className="up-group">
-                <label className="up-label up-ref-label">I&apos;m learning</label>
+                <label className="up-label up-label--welcome">I&apos;m learning (배우는 언어)</label>
                 <Select
                   styles={selectStyles}
                   options={TargetLanguage}
@@ -392,7 +418,7 @@ function UpdateProfile() {
             </div>
 
             <div className="up-group">
-              <label className="up-label up-ref-label">My level (target language)</label>
+              <label className="up-label up-label--welcome">My level (레벨)</label>
               <Select
                 styles={selectStyles}
                 options={TargetLanguageProficiency}
@@ -403,15 +429,17 @@ function UpdateProfile() {
             </div>
 
             <div className="up-group">
-              <label className="up-label up-ref-label">Interests (tap to select)</label>
-              <div className="up-ref-pills" role="group" aria-label="Interests">
+              <label className="up-label up-label--welcome">
+                Interests (관심사) — select at least one
+              </label>
+              <div className="up-welcome-pills" role="group" aria-label="Interests">
                 {allInterests.map((opt) => {
                   const on = selectedInterests.some((p) => p.value === opt.value);
                   return (
                     <button
                       key={opt.value}
                       type="button"
-                      className={`up-ref-pill${on ? ' up-ref-pill--on' : ''}`}
+                      className={`up-welcome-pill${on ? ' up-welcome-pill--on' : ''}`}
                       onClick={() => toggleInterest(opt)}
                     >
                       {opt.label}
@@ -421,14 +449,14 @@ function UpdateProfile() {
               </div>
             </div>
 
-            <div className="up-ref-grid2">
+            <div className="up-welcome-grid2">
               <div className="up-group">
-                <label className="up-label up-ref-label" htmlFor="profile-age">
-                  Age
+                <label className="up-label up-label--welcome" htmlFor="profile-age">
+                  Age (나이)
                 </label>
                 <input
                   id="profile-age"
-                  className="up-input up-ref-input"
+                  className="up-input up-input--welcome"
                   type="text"
                   inputMode="numeric"
                   placeholder="Age"
@@ -437,7 +465,7 @@ function UpdateProfile() {
                 />
               </div>
               <div className="up-group">
-                <label className="up-label up-ref-label">Profession</label>
+                <label className="up-label up-label--welcome">Profession (직업)</label>
                 <Select
                   styles={selectStyles}
                   options={Profession}
@@ -448,11 +476,11 @@ function UpdateProfile() {
               </div>
             </div>
 
-            <details className="up-ref-details">
-              <summary className="up-ref-summary">Schedule &amp; visibility</summary>
-              <div className="up-ref-details-body">
+            <details className="up-welcome-details">
+              <summary className="up-welcome-summary">Schedule &amp; visibility · 일정</summary>
+              <div className="up-welcome-details-body">
                 <div className="up-group">
-                  <label className="up-label up-ref-label">Time zone</label>
+                  <label className="up-label up-label--welcome">Time zone</label>
                   <Select
                     styles={selectStyles}
                     options={TimeZones}
@@ -461,7 +489,7 @@ function UpdateProfile() {
                   />
                 </div>
                 <div className="up-group">
-                  <label className="up-label up-ref-label">Profile visibility</label>
+                  <label className="up-label up-label--welcome">Profile visibility</label>
                   <Select
                     styles={selectStyles}
                     options={VisibilityOptions}
@@ -470,7 +498,7 @@ function UpdateProfile() {
                   />
                 </div>
                 <div className="up-group">
-                  <label className="up-label up-ref-label">Weekly availability</label>
+                  <label className="up-label up-label--welcome">Weekly availability</label>
                   <WeeklyAvailabilityGrid
                     className="weekly-availability-grid--compact"
                     slots={availabilitySlots}
@@ -481,11 +509,11 @@ function UpdateProfile() {
               </div>
             </details>
 
-            <details className="up-ref-details">
-              <summary className="up-ref-summary">Learning preferences &amp; personality</summary>
-              <div className="up-ref-details-body">
+            <details className="up-welcome-details">
+              <summary className="up-welcome-summary">Learning preferences · 학습 성향</summary>
+              <div className="up-welcome-details-body">
                 <div className="up-group">
-                  <label className="up-label up-ref-label">Learning focus (for matching)</label>
+                  <label className="up-label up-label--welcome">Learning focus</label>
                   <Select
                     styles={selectStyles}
                     options={LearningGoalOptions}
@@ -495,7 +523,7 @@ function UpdateProfile() {
                   />
                 </div>
                 <div className="up-group">
-                  <label className="up-label up-ref-label">Communication style</label>
+                  <label className="up-label up-label--welcome">Communication style</label>
                   <Select
                     styles={selectStyles}
                     options={CommunicationStyleOptions}
@@ -505,7 +533,7 @@ function UpdateProfile() {
                   />
                 </div>
                 <div className="up-group">
-                  <label className="up-label up-ref-label">Commitment</label>
+                  <label className="up-label up-label--welcome">Commitment</label>
                   <div className="up-stars">
                     {[1, 2, 3, 4, 5].map((n) => (
                       <button
@@ -520,9 +548,9 @@ function UpdateProfile() {
                     ))}
                   </div>
                 </div>
-                <div className="up-ref-grid2">
+                <div className="up-welcome-grid2">
                   <div className="up-group">
-                    <label className="up-label up-ref-label">Gender</label>
+                    <label className="up-label up-label--welcome">Gender</label>
                     <Select
                       styles={selectStyles}
                       options={Gender}
@@ -532,7 +560,7 @@ function UpdateProfile() {
                     />
                   </div>
                   <div className="up-group">
-                    <label className="up-label up-ref-label">MBTI</label>
+                    <label className="up-label up-label--welcome">MBTI</label>
                     <Select
                       styles={selectStyles}
                       options={MBTI}
@@ -543,7 +571,7 @@ function UpdateProfile() {
                   </div>
                 </div>
                 <div className="up-group">
-                  <label className="up-label up-ref-label">Zodiac</label>
+                  <label className="up-label up-label--welcome">Zodiac</label>
                   <Select
                     styles={selectStyles}
                     options={Zodiac}
@@ -555,14 +583,12 @@ function UpdateProfile() {
               </div>
             </details>
 
-            <div className="up-wizard-footer up-ref-footer">
-              <button type="button" className="back-to-dashboard" onClick={handleBack}>
-                Back
-              </button>
-              <button type="button" className="up-btn-primary up-ref-save" onClick={handleSubmit}>
-                Save profile
-              </button>
-            </div>
+            <button type="button" className="up-welcome-cta" onClick={handleSubmit}>
+              Start Matching · 시작하기 <span className="up-welcome-cta-chev" aria-hidden>›</span>
+            </button>
+            <button type="button" className="up-welcome-back" onClick={handleBack}>
+              Back to dashboard
+            </button>
           </form>
         </div>
       </div>

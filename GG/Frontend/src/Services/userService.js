@@ -36,7 +36,7 @@ const handleProfileCreationAPI = (id, native_language, target_language, target_l
     });
 };
 
-const handleProfileUpdateAPI = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, learning_goal, communication_style, commitment_level, bio) => {
+const handleProfileUpdateAPI = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, learning_goal, communication_style, commitment_level, bio, first_name, last_name) => {
     return axios.put('/api/v1/update-profile', {
         id,
         native_language,
@@ -53,6 +53,8 @@ const handleProfileUpdateAPI = (id, native_language, target_language, target_lan
         communication_style,
         commitment_level,
         bio,
+        first_name,
+        last_name,
     });
 };
 

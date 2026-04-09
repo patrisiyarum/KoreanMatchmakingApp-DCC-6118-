@@ -157,6 +157,8 @@ let handleProfileUpdate = async (req, res) => {
         let communication_style = req.body.communication_style;
         let commitment_level = req.body.commitment_level;
         let bio = req.body.bio;
+        let first_name = req.body.first_name;
+        let last_name = req.body.last_name;
         let id = req.body.id;
         if (bio != null && String(bio).length > 2000) {
             return res.status(400).json({
@@ -188,7 +190,9 @@ let handleProfileUpdate = async (req, res) => {
             learning_goal,
             communication_style,
             commitment_level,
-            bio
+            bio,
+            first_name,
+            last_name
         );
         return res.status(200).json({
             errorCode: userData.errCode,

@@ -20,6 +20,7 @@ import questRoutes from './questRoutes.js';
 import badgeRoutes from './badgeRoutes.js';
 import challengeRoutes from './challengeRoutes.js';
 import uploadRoutes from './uploadRoutes.js';
+import userController from '../controller/userController.js';
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -75,6 +76,8 @@ const memoryUpload = multer({
 const initAPIRoute = (app) => { 
     router.get("/meetings/:userId", getMeetingsForUser);
     router.get('/users', APIController.getAllUsers);
+    /** Same behavior as POST /Register (web.js); use this path when the host only proxies /api (e.g. Plesk). */
+    router.post('/register', userController.handleRegister);
     router.post('/create-user', APIController.createNewUser);
     router.put('/update-user', APIController.updateUser);
     router.delete('/delete-user/:id', APIController.deleteUser);

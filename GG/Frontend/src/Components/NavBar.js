@@ -23,8 +23,8 @@ const NAV_SLOTS = [
   { type: 'games' },
   { type: 'simple', label: 'Friends', path: '/Friends' },
   { type: 'simple', label: 'Scheduler', path: '/Scheduler' },
-  { type: 'simple', label: 'Profile', path: '/ViewProfile' },
   { type: 'simple', label: 'Calls', path: '/Videocall' },
+  { type: 'simple', label: 'Profile', path: '/ViewProfile' },
 ];
 
 const PARENT_ROUTES = {

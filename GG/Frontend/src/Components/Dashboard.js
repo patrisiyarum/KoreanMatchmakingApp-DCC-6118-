@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import React from "react";
 import './Dashboard.css';
 import './UpdateProfile.css';
+import './ViewProfile.css';
 import { createSearchParams, useSearchParams, useNavigate } from "react-router-dom";
 import { handleUserDashBoardApi } from '../Services/dashboardService';
 import { handleGetTrueFriendsList, handleGetMeetings } from '../Services/userService';
@@ -233,18 +234,19 @@ useEffect(() => {
 
       {id && progressLoaded && userStats && challengeStats && (
         <div className="dashboard-progress-wrap">
-          <div className="up-integrated-summary dashboard-progress-card">
-            <h2 className="up-integrated-title">Points, games, and challenges</h2>
-            <div className="up-integrated-block">
-              <div className="up-integrated-row">
-                <span className="up-integrated-strong">Level {userStats.level ?? 1}</span>
-                <span className="up-integrated-muted">
+          <div className="dashboard-progress-card dash-progress-vp">
+            <h2 className="dash-progress-main-title">Points, games, and challenges</h2>
+
+            <div className="dash-progress-xp-shell">
+              <div className="dash-progress-level-row">
+                <span className="dash-progress-level-pill">Level {userStats.level ?? 1}</span>
+                <span className="dash-progress-xp-caption">
                   {userStats.xp ?? 0} / {userStats.xpToNext ?? XP_PER_LEVEL} XP this level
                 </span>
               </div>
-              <div className="up-xp-bar-track">
+              <div className="dash-progress-xp-track">
                 <div
-                  className="up-xp-bar-fill"
+                  className="dash-progress-xp-fill"
                   style={{
                     width: `${Math.min(
                       100,
@@ -255,66 +257,79 @@ useEffect(() => {
               </div>
             </div>
 
-            <div className="up-integrated-block">
-              <div className="up-integrated-section-label">Challenge record</div>
-              <div className="up-integrated-challenge-grid">
-                <div className="up-mini-stat">
-                  <span className="up-mini-val">{challengeStats.wins ?? 0}</span>
-                  <span className="up-mini-lbl">Wins</span>
+            <section className="vp-section dash-progress-section">
+              <h3 className="vp-section-title">Challenge record</h3>
+              <div className="vp-grid dash-challenge-stat-grid">
+                <div className="vp-info-card">
+                  <span className="vp-field-label">Wins</span>
+                  <span className="vp-field-value">{challengeStats.wins ?? 0}</span>
                 </div>
-                <div className="up-mini-stat">
-                  <span className="up-mini-val">{challengeStats.losses ?? 0}</span>
-                  <span className="up-mini-lbl">Losses</span>
+                <div className="vp-info-card">
+                  <span className="vp-field-label">Losses</span>
+                  <span className="vp-field-value">{challengeStats.losses ?? 0}</span>
                 </div>
-                <div className="up-mini-stat">
-                  <span className="up-mini-val">{challengeStats.draws ?? 0}</span>
-                  <span className="up-mini-lbl">Draws</span>
+                <div className="vp-info-card">
+                  <span className="vp-field-label">Draws</span>
+                  <span className="vp-field-value">{challengeStats.draws ?? 0}</span>
                 </div>
-                <div className="up-mini-stat">
-                  <span className="up-mini-val">{challengeStats.winRate ?? 0}%</span>
-                  <span className="up-mini-lbl">Win rate</span>
+                <div className="vp-info-card">
+                  <span className="vp-field-label">Win rate</span>
+                  <span className="vp-field-value">{challengeStats.winRate ?? 0}%</span>
                 </div>
-                <div className="up-mini-stat">
-                  <span className="up-mini-val">{challengeStats.totalChallenges ?? 0}</span>
-                  <span className="up-mini-lbl">Finished</span>
+                <div className="vp-info-card">
+                  <span className="vp-field-label">Finished</span>
+                  <span className="vp-field-value">{challengeStats.totalChallenges ?? 0}</span>
                 </div>
               </div>
               {((challengeStats.completedGameSessions ?? 0) > 0 || (challengeStats.xpFromSessions ?? 0) > 0) && (
-                <p className="up-integrated-muted up-integrated-tight">
+                <p className="dash-progress-footnote">
                   {challengeStats.completedGameSessions ?? 0} practice sessions completed
                   {(challengeStats.xpFromSessions ?? 0) > 0
                     ? ` · ${challengeStats.xpFromSessions} XP from games`
                     : ''}
                 </p>
               )}
-            </div>
+            </section>
 
             {userStats.gameActivity && (
-              <div className="up-integrated-block">
-                <div className="up-integrated-section-label">Game activity</div>
-                <div className="up-activity-grid">
-                  <span>Term matching: <strong>{userStats.gameActivity.termMatching}</strong></span>
-                  <span>Grammar: <strong>{userStats.gameActivity.grammarQuiz}</strong></span>
-                  <span>Pronunciation: <strong>{userStats.gameActivity.pronunciation}</strong></span>
-                  <span>Perfect rounds: <strong>{userStats.gameActivity.perfectRounds}</strong></span>
-                  <span className="up-activity-total">
-                    Total games: <strong>{userStats.gameActivity.gamesPlayed}</strong>
-                  </span>
+              <section className="vp-section dash-progress-section">
+                <h3 className="vp-section-title">Game activity</h3>
+                <div className="vp-grid dash-activity-stat-grid">
+                  <div className="vp-info-card">
+                    <span className="vp-field-label">Term matching</span>
+                    <span className="vp-field-value">{userStats.gameActivity.termMatching}</span>
+                  </div>
+                  <div className="vp-info-card">
+                    <span className="vp-field-label">Grammar</span>
+                    <span className="vp-field-value">{userStats.gameActivity.grammarQuiz}</span>
+                  </div>
+                  <div className="vp-info-card">
+                    <span className="vp-field-label">Pronunciation</span>
+                    <span className="vp-field-value">{userStats.gameActivity.pronunciation}</span>
+                  </div>
+                  <div className="vp-info-card">
+                    <span className="vp-field-label">Perfect rounds</span>
+                    <span className="vp-field-value">{userStats.gameActivity.perfectRounds}</span>
+                  </div>
+                  <div className="vp-info-card dash-activity-total-card">
+                    <span className="vp-field-label">Total games</span>
+                    <span className="vp-field-value">{userStats.gameActivity.gamesPlayed}</span>
+                  </div>
                 </div>
-              </div>
+              </section>
             )}
 
             {badges.length > 0 && (
-              <div className="up-integrated-block">
-                <div className="up-integrated-section-label">Badges ({badges.length})</div>
-                <div className="up-badge-list up-badge-list-integrated">
+              <section className="vp-section dash-progress-section">
+                <h3 className="vp-section-title">Badges ({badges.length})</h3>
+                <div className="vp-tags dash-progress-badge-tags">
                   {badges.map((b) => (
-                    <span key={b.id} className="up-badge-chip" title={b.description}>
+                    <span key={b.id} className="vp-tag dash-progress-badge-tag" title={b.description}>
                       {b.icon ? `${b.icon} ` : ''}{b.name}
                     </span>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
           </div>
         </div>

@@ -889,28 +889,45 @@ const FriendSearch = ({ embedded = false }) => {
                   || user.communication_style
                   || hasCommitment
                 );
+                const matchPct = user.matchScore != null && !Number.isNaN(Number(user.matchScore))
+                  ? Math.round(Number(user.matchScore))
+                  : null;
+                const showMatchHighlight = sortDiscover === 'best_match' && matchPct != null;
+
                 const showActivity = Boolean(
                   user.level != null
                   || user.xp != null
                   || activity?.gamesPlayed
-                  || (user.matchScore != null && sortDiscover === 'best_match')
+                  || (matchPct != null && sortDiscover !== 'best_match')
                 );
                 const showBadges = badgeCount > 0 || badgeIcons.length > 0;
 
                 return (
                   <div key={i} className="fs-profile-card fs-discover-card">
                     <div className="vp-hero fs-discover-vp-hero">
-                      <div className="vp-avatar-wrap">
-                        <Avatar src={user.profileImage} name={user.firstName} size={110} />
+                      <div className="vp-avatar-wrap fs-discover-avatar-wrap">
+                        <Avatar src={user.profileImage} name={user.firstName} size={72} />
                       </div>
                       <div className="vp-hero-info">
-                        <h2 className="vp-name">
+                        <h2 className="vp-name fs-discover-name">
                           {user.firstName} {user.lastName}
                         </h2>
                         {subLine ? (
-                          <p className="vp-email">{subLine}</p>
+                          <p className="vp-email fs-discover-email">{subLine}</p>
                         ) : null}
                       </div>
+                      {showMatchHighlight ? (
+                        <div
+                          className="fs-discover-match-highlight"
+                          title="Based on learning goal, communication style, and commitment vs your profile (not MBTI, interests, or schedule)."
+                        >
+                          <span className="fs-discover-match-label">Profile match</span>
+                          <span className="fs-discover-match-value">
+                            {matchPct}
+                            <span className="fs-discover-match-unit">%</span>
+                          </span>
+                        </div>
+                      ) : null}
                       <div className="fs-discover-hero-cta">
                         {(() => {
                           const reqStatus = getRequestStatusForUser(user.id);
@@ -1002,11 +1019,8 @@ const FriendSearch = ({ embedded = false }) => {
                           {activity?.gamesPlayed ? (
                             <DiscoverInfoCard label="Games played" value={String(activity.gamesPlayed)} />
                           ) : null}
-                          {user.matchScore != null && sortDiscover === 'best_match' ? (
-                            <DiscoverInfoCard
-                              label="Profile match"
-                              value={`${Math.round(Number(user.matchScore))}%`}
-                            />
+                          {matchPct != null && sortDiscover !== 'best_match' ? (
+                            <DiscoverInfoCard label="Profile match" value={`${matchPct}%`} />
                           ) : null}
                         </div>
                       </section>

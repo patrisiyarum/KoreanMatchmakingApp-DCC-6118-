@@ -33,74 +33,130 @@
   box-sizing: border-box;
 }
 
-/* Flatter progress card on dashboard (overrides UpdateProfile gradient on same block) */
-.dashboard-progress-wrap .dashboard-progress-card.up-integrated-summary {
+/* Points / games / challenges — ViewProfile-style sections */
+.dashboard-progress-wrap .dash-progress-vp {
   margin-top: 0;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
-  padding: 18px 20px;
-  gap: 16px;
-}
-
-.dashboard-progress-wrap .up-integrated-title {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   text-align: left;
-  font-size: 15px;
-  font-weight: 700;
-  color: #1e293b;
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+  padding: 20px 22px 22px;
+  box-sizing: border-box;
 }
 
-/* Richer challenge stats (5 tiles, no contributions) */
-.dashboard-progress-wrap .up-integrated-challenge-grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+.dashboard-progress-wrap .dash-progress-main-title {
+  margin: 0 0 14px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a2e;
+  font-family: var(--dl-font);
+  letter-spacing: -0.02em;
+}
+
+.dashboard-progress-wrap .dash-progress-xp-shell {
+  padding: 14px 16px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 2px;
+}
+
+.dashboard-progress-wrap .dash-progress-level-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.dashboard-progress-wrap .dash-progress-level-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #5b21b6;
+  background: #ede9fe;
+  border: 1px solid rgba(99, 68, 166, 0.2);
+  font-family: var(--dl-font);
+}
+
+.dashboard-progress-wrap .dash-progress-xp-caption {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-progress-wrap .dash-progress-xp-track {
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.dashboard-progress-wrap .dash-progress-xp-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6344a6 0%, #8b5cf6 100%);
+  transition: width 0.35s ease;
+}
+
+.dashboard-progress-wrap .dash-progress-vp .vp-section {
+  margin-top: 22px;
+}
+
+.dashboard-progress-wrap .dash-progress-vp .vp-section-title {
+  margin-bottom: 12px;
+}
+
+.dashboard-progress-wrap .dash-challenge-stat-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
 }
 
 @media (max-width: 720px) {
-  .dashboard-progress-wrap .up-integrated-challenge-grid {
+  .dashboard-progress-wrap .dash-challenge-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-.dashboard-progress-wrap .up-mini-stat {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  box-shadow: none;
-  padding: 12px 8px;
-  transition: none;
+.dashboard-progress-wrap .dash-activity-stat-grid {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
 }
 
-.dashboard-progress-wrap .up-mini-stat:hover {
-  transform: none;
-  box-shadow: none;
-  background: #f1f5f9;
+.dashboard-progress-wrap .dash-activity-total-card {
+  grid-column: 1 / -1;
 }
 
-.dashboard-progress-wrap .up-mini-val {
-  font-size: 17px;
-  font-weight: 700;
-  color: #475569;
+.dashboard-progress-wrap .dash-progress-vp .vp-info-card .vp-field-value {
+  font-variant-numeric: tabular-nums;
 }
 
-.dashboard-progress-wrap .up-mini-lbl {
+.dashboard-progress-wrap .dash-progress-footnote {
+  margin: 10px 0 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #64748b;
+  text-align: left;
+}
+
+.dashboard-progress-wrap .dash-progress-badge-tags {
+  margin-top: 0;
+}
+
+.dashboard-progress-wrap .dash-progress-badge-tag.vp-tag {
+  background: #f5f3ff;
+  color: #5b21b6;
+  border-color: #ddd6fe;
   font-weight: 600;
-  color: #94a3b8;
-}
-
-.dashboard-progress-wrap .up-integrated-strong {
-  color: #334155;
-  font-weight: 700;
-}
-
-.dashboard-progress-wrap .up-xp-bar-track {
-  height: 6px;
-  background: #e2e8f0;
-  border-radius: 999px;
-}
-
-.dashboard-progress-wrap .up-xp-bar-fill {
-  background: #6344a6;
 }
 
 /* Home: 2×2 tiles (Games, Profile, Friends, Schedule) below progress card */
@@ -566,26 +622,3 @@
   }
 }
 
-/* Quieter typography + badges inside dashboard progress card only */
-.dashboard-progress-wrap .up-integrated-section-label {
-  text-align: left;
-  color: #94a3b8;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-
-.dashboard-progress-wrap .up-activity-grid {
-  color: #475569;
-  font-size: 12px;
-}
-
-.dashboard-progress-wrap .up-activity-total {
-  border-top-color: #e2e8f0;
-}
-
-.dashboard-progress-wrap .up-badge-chip {
-  background: #f1f5f9;
-  color: #475569;
-  font-weight: 600;
-  border: 1px solid #e2e8f0;
-}

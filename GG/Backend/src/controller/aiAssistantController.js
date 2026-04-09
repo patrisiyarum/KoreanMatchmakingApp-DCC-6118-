@@ -11,13 +11,20 @@ if (!GEMINI_KEY || GEMINI_KEY === "your_gemini_api_key_here") {
   console.warn("[AI Assistant] GEMINI_API_KEY is missing or placeholder. Chat Assistant will not work. Add your key to GG/Backend/.env (see .env.example)");
 }
 
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 const genAI = new GoogleGenerativeAI(GEMINI_KEY || "placeholder");
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
 /** Google returns 403 if the key was exposed publicly and revoked. */
 function isGeminiKeyBlockedError(err) {
   const msg = String(err?.message || err || "");
   return /403|Forbidden|leaked|API key was reported/i.test(msg);
+}
+
+/** Free tier / rate limits: 429 and quota-related errors from the Generative Language API. */
+function isGeminiQuotaError(err) {
+  const msg = String(err?.message || err || "");
+  return /429|Too Many Requests|quota|free_tier|ResourceExhausted|exceeded your current quota/i.test(msg);
 }
 
 const conversationStore = new Map();
@@ -146,60 +153,55 @@ async function extractCriteria(userMessage) {
 }
 
 /**
- * Check if user wants to use partnerMatching tool
+ * Single Gemini call for schedule / summarize / partnerMatch intents (reduces free-tier usage vs 3 separate calls).
+ * @returns {{ schedule: boolean, summarize: boolean, partnerMatch: boolean, targetName: string|null, zodiac: string|null, mbti: string|null }}
  */
-async function shouldUsePartnerMatching(userMessage) {
-  const checkPrompt = `
-    Does the user want to find, search for, discover, or get recommendations for NEW practice partners (OTHER USERS that are NOT FRIENDS) or language exchange partners they haven't met yet?
-    
-    Answer "yes" ONLY if they are looking to find NEW people to connect with (browsing, searching, discovering).
-    Answer "no" if they are:
-    - Scheduling a meeting with a SPECIFIC person they already know (use scheduleMeeting instead)
-    - Mentioning a specific name or friend they want to meet with
-    - Asking to book, schedule, arrange, or set up a meeting with someone specific
-    - Asking for help with language learning activities, translation assistance, tips, or general conversation or questions
-    
-    Respond with ONLY "yes" or "no".
-    
-    User message: "${userMessage}"
-  `;
+async function classifyTextIntents(userMessage) {
+  const classifyPrompt = `You classify ONE user message for a language-exchange app assistant. Reply with ONLY valid JSON (no markdown, no explanation).
+
+Fields:
+- schedule: true only if they want to schedule/book/arrange/set up a meeting or practice session with a SPECIFIC person they name (friend). False for finding new random partners or general questions.
+- summarize: true only if they explicitly want a summary of a past practice session or conversation with another user.
+- partnerMatch: true only if they want to find/discover NEW practice or language-exchange partners (browse/search). False if scheduling with a named person or general tutoring questions.
+- targetName: if schedule is true, the person's name (first or full), else null.
+- zodiac, mbti: if partnerMatch and they mention zodiac/MBTI, extract; else null.
+
+If ambiguous, prefer false for all booleans. Priority: schedule with a named person over summarize over partnerMatch.
+
+Schema:
+{"schedule":false,"summarize":false,"partnerMatch":false,"targetName":null,"zodiac":null,"mbti":null}
+
+User message:
+${JSON.stringify(userMessage)}
+`;
+
+  const defaults = {
+    schedule: false,
+    summarize: false,
+    partnerMatch: false,
+    targetName: null,
+    zodiac: null,
+    mbti: null,
+  };
 
   try {
-    const response = await model.generateContent(checkPrompt);
-    const text = response.response.text().trim().toLowerCase();
-    return text.includes("yes");
+    const response = await model.generateContent(classifyPrompt);
+    let text = response.response.text().trim();
+    text = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return defaults;
+    const parsed = JSON.parse(match[0]);
+    return {
+      schedule: Boolean(parsed.schedule),
+      summarize: Boolean(parsed.summarize),
+      partnerMatch: Boolean(parsed.partnerMatch),
+      targetName: typeof parsed.targetName === "string" && parsed.targetName.trim() ? parsed.targetName.trim() : null,
+      zodiac: typeof parsed.zodiac === "string" && parsed.zodiac.trim() ? parsed.zodiac.trim() : null,
+      mbti: typeof parsed.mbti === "string" && parsed.mbti.trim() ? parsed.mbti.trim() : null,
+    };
   } catch (error) {
-    console.error("Error checking partner matching intent:", error);
-    return false;
-  }
-}
-
-/**
- * Check if user wants to summarize a practice session
- */
-async function shouldSummarizeSession(userMessage) {
-  const checkPrompt = `
-    Does the user want to summarize, review, or get a summary of a practice session or conversation they had with another user?
-    Answer "yes" ONLY if they are explicitly looking to get a summary of a practice session or conversation.
-    Answer "no" if they are asking for:
-    - Help with language learning activities (reading, writing, grammar, vocabulary)
-    - Translation assistance
-    - Learning tips or advice
-    - General conversation or questions
-    - Practice exercises or materials
-    
-    Respond with ONLY "yes" or "no".
-    
-    User message: "${userMessage}"
-  `;
-
-  try {
-    const response = await model.generateContent(checkPrompt);
-    const text = response.response.text().trim().toLowerCase();
-    return text.includes("yes");
-  } catch (error) {
-    console.error("Error checking summarize intent:", error);
-    return false;
+    console.error("Error classifying text intents:", error);
+    return defaults;
   }
 }
 
@@ -240,40 +242,6 @@ async function shouldCheckPronunciation(audioFile) {
 
   } catch (error) {
     console.error("Error checking pronunciation intent: ", error);
-    return false;
-  }
-}
-
-
-/**
- * Check if user wants to schedule a meeting
- */
-async function shouldScheduleMeeting(userMessage) {
-  const checkPrompt = `
-    Does the user want to schedule, book, arrange, set up, or plan a meeting, practice session, or call with a SPECIFIC person or friend they mentioned by name?
-    
-    Answer "yes" if they:
-    - Mention scheduling/booking/arranging a meeting with a specific person
-    - Mention a name or friend they want to meet with
-    - Use words like "schedule", "book", "arrange", "set up", "plan" along with a person's name
-    - Want to schedule a practice session with someone they know
-    
-    Answer "no" if they are:
-    - Looking to find NEW partners (use partnerMatching instead)
-    - Asking for help with language learning activities, translation, tips, or general questions
-    - Not mentioning a specific person to schedule with
-    
-    Respond with ONLY "yes" or "no".
-    
-    User message: "${userMessage}"
-  `;
-
-  try {
-    const response = await model.generateContent(checkPrompt);
-    const text = response.response.text().trim().toLowerCase();
-    return text.includes("yes");
-  } catch (error) {
-    console.error("Error checking schedule meeting intent:", error);
     return false;
   }
 }
@@ -404,9 +372,21 @@ export async function chatWithAssistant(req, res) {
     let toolUsed = null;
     let toolResult = null;
     
-    const wantsScheduleMeeting = message != null ? await shouldScheduleMeeting(userMessage) : false;
-    const wantsSummarize = message != null ? await shouldSummarizeSession(userMessage) : false;
-    const wantsPartnerMatching = message != null ? await shouldUsePartnerMatching(userMessage) : false;
+    let wantsScheduleMeeting = false;
+    let wantsSummarize = false;
+    let wantsPartnerMatching = false;
+    let intentTargetName = null;
+    let intentZodiac = null;
+    let intentMbti = null;
+    if (message != null) {
+      const ic = await classifyTextIntents(userMessage);
+      wantsScheduleMeeting = ic.schedule;
+      wantsSummarize = ic.summarize;
+      wantsPartnerMatching = ic.partnerMatch;
+      intentTargetName = ic.targetName;
+      intentZodiac = ic.zodiac;
+      intentMbti = ic.mbti;
+    }
     const wantsPronunciation = await shouldCheckPronunciation(audioFile);
 
     // Priority order: scheduleMeeting > summarize > partnerMatching
@@ -414,7 +394,7 @@ export async function chatWithAssistant(req, res) {
     const toolCalled = wantsScheduleMeeting || wantsSummarize || wantsPartnerMatching || wantsPronunciation;
     if (toolCalled) {
         if (wantsScheduleMeeting) {
-            const targetUserName = await extractTargetUserName(userMessage);
+            const targetUserName = intentTargetName || (await extractTargetUserName(userMessage));
             if (targetUserName) {
                 toolUsed = "scheduleMeeting";
                 console.log(`[AI Assistant] Calling scheduleMeeting for user ${numericUserId} with target: ${targetUserName}`);
@@ -449,7 +429,10 @@ export async function chatWithAssistant(req, res) {
             }
         } else if (wantsPartnerMatching) {
             toolUsed = "partnerMatching";
-            const criteria = await extractCriteria(userMessage);
+            const criteria =
+              intentZodiac || intentMbti
+                ? { zodiac: intentZodiac, mbti: intentMbti }
+                : await extractCriteria(userMessage);
             console.log(`[AI Assistant] Calling partnerMatching for user ${numericUserId} with criteria:`, criteria);
             toolResult = await callPartnerMatching(numericUserId, criteria);
             console.log(`[AI Assistant] partnerMatching result:`, toolResult);
@@ -520,6 +503,13 @@ When giving longer responses, use markdown formatting for clarity: use **bold** 
         code: "GEMINI_KEY_REVOKED",
         error:
           "The Gemini API key was rejected (invalid, revoked, or reported as leaked). Create a new key at https://aistudio.google.com/apikey , set GEMINI_API_KEY on the server, restart the backend, and never commit keys to git or expose them in the browser.",
+      });
+    }
+    if (isGeminiQuotaError(err)) {
+      return res.status(503).json({
+        code: "GEMINI_QUOTA",
+        error:
+          "Gemini API quota or rate limit was exceeded (free tier has low daily limits per model). Wait and retry, reduce chat assistant usage, set GEMINI_MODEL to another allowed model, or enable billing and higher quotas. See https://ai.google.dev/gemini-api/docs/rate-limits and https://ai.dev/rate-limit",
       });
     }
     res.status(500).json({ error: err.message });

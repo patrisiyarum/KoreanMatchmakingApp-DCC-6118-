@@ -4,6 +4,7 @@ import { useNavigate, createSearchParams, useLocation } from 'react-router-dom';
 import { getUserChallenges } from '../Services/challengeService';
 import { handleGetTeamInvitesApi } from '../Services/teamService';
 import { useTranslator } from '../context/TranslatorContext';
+import { useAssistant } from '../context/AssistantContext';
 import './NavBar.css';
 
 const GAMES_RELATED_PATHS = new Set([
@@ -22,10 +23,7 @@ const NAV_SLOTS = [
   { type: 'games' },
   { type: 'simple', label: 'Friends', path: '/Friends' },
   { type: 'simple', label: 'Calls', path: '/Videocall' },
-  { type: 'simple', label: 'Translator', path: '/Translator' },
   { type: 'simple', label: 'Scheduler', path: '/Scheduler' },
-  { type: 'simple', label: 'AI Chat', path: '/Assistant' },
-  { type: 'simple', label: 'Transcripts', path: '/TranscriptView' },
   { type: 'simple', label: 'Profile', path: '/UpdateProfile' },
 ];
 
@@ -37,6 +35,7 @@ function Navbar({ id }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { toggleTranslator } = useTranslator();
+  const { toggleAssistant } = useAssistant();
 
   const [pendingChallenges, setPendingChallenges] = useState(0);
   const [yourTurnChallenges, setYourTurnChallenges] = useState(0);
@@ -172,6 +171,9 @@ function Navbar({ id }) {
       </div>
 
       <div className="app-top-nav-right">
+        <button type="button" className="nav-assistant-btn" onClick={() => toggleAssistant(id)}>
+          Ask AI
+        </button>
         <button type="button" className="nav-translator-btn" onClick={toggleTranslator}>
           Translator
         </button>

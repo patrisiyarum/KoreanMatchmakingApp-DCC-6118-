@@ -169,6 +169,32 @@
   padding-right: 8px;
 }
 
+.app-top-nav .nav-assistant-btn {
+  background: linear-gradient(135deg, #6344A6 0%, #0d9488 60%, #06b6d4 100%);
+  color: #fff;
+  border: none;
+  border-radius: var(--dl-radius);
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 0 0 #0f766e;
+  transition: transform 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: auto;
+}
+
+.app-top-nav .nav-assistant-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 0 #0f766e;
+}
+
+.app-top-nav .nav-assistant-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 0 #0f766e;
+}
+
 .app-top-nav .nav-translator-btn {
   background: var(--dl-blue);
   color: var(--dl-white);

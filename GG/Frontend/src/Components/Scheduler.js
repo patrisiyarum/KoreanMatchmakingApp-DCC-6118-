@@ -294,7 +294,15 @@ const Scheduler = () => {
             friends={friends}
           />
 
-          <button className="back-to-dashboard" onClick={handleBack}>Dashboard</button>
+          <div className="sched-footer">
+            <button className="back-to-dashboard" onClick={handleBack}>Dashboard</button>
+            <button
+              className="sched-btn-secondary"
+              onClick={() => navigate({ pathname: '/AvailabilityPicker', search: createSearchParams({ id, returnTo: 'Scheduler' }).toString() })}
+            >
+              Set My Availability
+            </button>
+          </div>
         </div>
       </div>
     </div>

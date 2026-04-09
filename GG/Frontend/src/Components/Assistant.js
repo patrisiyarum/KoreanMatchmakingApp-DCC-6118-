@@ -48,7 +48,7 @@ export default function Assistant() {
   useEffect(() => {
     if (chatIdFromUrl) {
       setChatId(chatIdFromUrl);
-      setInput(`Please summarize my practice session.`);
+      setInput("Please summarize my practice session.");
     }
   }, [chatIdFromUrl]);
 
@@ -162,9 +162,7 @@ export default function Assistant() {
     } catch (err) {
       const errMsg = err?.response?.data?.error || err?.message;
       const isConfigError = err?.response?.status === 503;
-      const text = isConfigError
-        ? `Sorry! ${errMsg}`
-        : "Sorry! There was a backend error. Please try again.";
+      const text = isConfigError ? `Sorry! ${errMsg}` : "Sorry! There was a backend error. Please try again.";
       setMessages(m => [...m, { role: "assistant", text }]);
     } finally { setIsLoading(false); }
   };
@@ -258,13 +256,20 @@ export default function Assistant() {
 
         <div className="ast-card">
           <div className="ast-header">
-            <span className="ast-header-title">Chat Assistant</span>
-            <span className="ast-header-meta">{userId ? `User ID: ${userId}` : ""}</span>
+            <div className="ast-header-left">
+              <span className="ast-header-icon">&#10024;</span>
+              <span className="ast-header-title">AI Assistant</span>
+            </div>
+            <div className="ast-header-actions">
+              <button className="ast-header-btn ast-btn-save" onClick={handleSave}>Save</button>
+              <button className="ast-header-btn ast-btn-clear" onClick={handleClear}>Clear</button>
+              <button className="back-to-dashboard" onClick={() => navigate(`/Dashboard?id=${userId}`)}>Dashboard</button>
+            </div>
           </div>
 
           {error && <div className="ast-alert ast-alert-warning">{error}</div>}
-          {isRecording && <div className="ast-alert ast-alert-recording">Recording... Click again to stop.</div>}
-          {audioBlob && !isRecording && <div className="ast-alert ast-alert-audio">Audio recorded! Hit Send.</div>}
+          {isRecording && <div className="ast-alert ast-alert-recording">Recording — click Stop when done</div>}
+          {audioBlob && !isRecording && <div className="ast-alert ast-alert-audio">Audio ready — hit Send</div>}
 
           <div className="ast-body" ref={scrollRef}>
             {messages.map((m, i) => (
@@ -276,49 +281,43 @@ export default function Assistant() {
             ))}
             {isLoading && (
               <div className="ast-msg-row ast-bot">
-                <div className="ast-msg-bubble">Thinking...</div>
+                <div className="ast-msg-bubble ast-msg-bubble--loading">
+                  <span className="ast-dot" />
+                  <span className="ast-dot" />
+                  <span className="ast-dot" />
+                </div>
               </div>
             )}
           </div>
 
           <form className="ast-inputbar" onSubmit={sendMessage}>
+            <input
+              className="ast-input"
+              value={input}
+              onChange={(e) => { setInput(e.target.value); setAudioBlob(null); }}
+              placeholder="Message AI Assistant..."
+              disabled={isLoading || isRecording}
+            />
             <button
               type="button"
               className={`ast-mic-btn ${isRecording ? 'ast-recording' : ''}`}
               onClick={toggleRecording}
               disabled={isLoading}
+              title={isRecording ? 'Stop recording' : 'Record audio'}
             >
-              {isRecording ? "Stop" : "Record"}
+              {isRecording ? '\u23F9' : '\uD83C\uDFA4'}
             </button>
-            <input
-              className="ast-input"
-              value={input}
-              onChange={(e) => { setInput(e.target.value); setAudioBlob(null); }}
-              placeholder="Message Chat Assistant..."
-              disabled={isLoading || isRecording}
-            />
             <button
               type="submit"
               className="ast-send-btn"
               disabled={isLoading || (!input.trim() && !audioBlob)}
+              title="Send"
             >
-              {isLoading ? "Sending..." : "Send"}
+              &#8594;
             </button>
           </form>
-
-          <div className="ast-footer">
-            <button className="back-to-dashboard" onClick={() => navigate(`/Dashboard?id=${userId}`)}>Dashboard</button>
-            <button className="ast-footer-btn ast-btn-avail" onClick={() => navigate(`/AvailabilityPicker?id=${userId}&returnTo=Assistant`)}>
-              Select Availability
-            </button>
-            <button className="ast-footer-btn ast-btn-save" onClick={handleSave}>
-              Save to History
-            </button>
-            <button className="ast-footer-btn ast-btn-clear" onClick={handleClear}>
-              Clear
-            </button>
-          </div>
         </div>
+
       </div>
     </div>
   );

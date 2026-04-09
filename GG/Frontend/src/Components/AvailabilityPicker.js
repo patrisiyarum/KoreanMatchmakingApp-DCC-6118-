@@ -1,140 +1,129 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, createSearchParams } from 'react-router-dom';
 import './AvailabilityPicker.css';
 import axios from 'axios';
 
+// Generate hourly slots from 8:00 AM to 8:00 PM
+const generateTimeSlots = () => {
+  const slots = [];
+  for (let totalMin = 8 * 60; totalMin < 21 * 60; totalMin += 60) {
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    const endTotalMin = totalMin + 60;
+    const endH = Math.floor(endTotalMin / 60);
+    const endM = endTotalMin % 60;
+    const ampm = h < 12 ? 'am' : 'pm';
+    const displayH = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+    const label = `${displayH}:${String(m).padStart(2, '0')} ${ampm}`;
+    const start = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    const end = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+    slots.push({ label, start, end });
+  }
+  return slots;
+};
 
+const TIME_SLOTS = generateTimeSlots();
+const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const AvailabilityPicker = () => {
   const [search] = useSearchParams();
   const id = search.get('id');
   const navigate = useNavigate();
   const returnTo = search.get('returnTo') || 'Friends';
-  
-  const [selectedSlots, setSelectedSlots] = useState(new Set());
-  
-  const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const timeSlots = [
-    '8 am', '9 am', '10 am', '11 am', '12 pm', 
-    '1 pm', '2 pm', '3 pm', '4 pm', '5 pm', 
-    '6 pm', '7 pm', '8 pm'
-  ];
 
-  // Handle time slot selection
+  const [selectedSlots, setSelectedSlots] = useState(new Set());
+
+  useEffect(() => {
+    if (!id) return;
+    axios.get(`/api/v1/users/${id}/availability`)
+      .then(res => {
+        const existing = res?.data?.availability || res?.data || [];
+        if (!Array.isArray(existing) || existing.length === 0) return;
+        const preSelected = new Set();
+        existing.forEach(slot => {
+          const dayIndex = DAY_NAMES.indexOf(slot.day_of_week);
+          if (dayIndex === -1) return;
+          const startHHMM = (slot.start_time || '').slice(0, 5);
+          const timeIndex = TIME_SLOTS.findIndex(ts => ts.start === startHHMM);
+          if (timeIndex === -1) return;
+          preSelected.add(`${dayIndex}-${timeIndex}`);
+        });
+        setSelectedSlots(preSelected);
+      })
+      .catch(() => {});
+  }, [id]);
+
   const handleSlotClick = (dayIndex, timeIndex) => {
     const slotKey = `${dayIndex}-${timeIndex}`;
-    const newSelectedSlots = new Set(selectedSlots);
-    
-    if (newSelectedSlots.has(slotKey)) {
-      newSelectedSlots.delete(slotKey);
-    } else {
-      newSelectedSlots.add(slotKey);
-    }
-    
-    setSelectedSlots(newSelectedSlots);
+    const next = new Set(selectedSlots);
+    if (next.has(slotKey)) next.delete(slotKey);
+    else next.add(slotKey);
+    setSelectedSlots(next);
   };
-  
-  // Handle confirm button 
+
   const handleConfirm = async () => {
     if (!id) {
       alert("User ID is missing. Cannot save availability.");
       return;
     }
-    const availabilityData = Array.from(selectedSlots).map(slot => {
+
+    const backendPayload = Array.from(selectedSlots).map(slot => {
       const [dayIndex, timeIndex] = slot.split('-').map(Number);
+      const { start, end } = TIME_SLOTS[timeIndex];
       return {
-        day: dayNames[dayIndex],
-        time: timeSlots[timeIndex],
-        dayIndex,
-        timeIndex
+        day_of_week: DAY_NAMES[dayIndex],
+        start_time: start,
+        end_time: end,
       };
     });
-    const convertTo24Hour = (timeStr) => {
-      const [hour, modifier] = timeStr.split(' ');
-      let h = parseInt(hour);
-      if (modifier === 'pm' && h !== 12) h += 12;
-      if (modifier === 'am' && h === 12) h = 0;
-      return h.toString().padStart(2,'0') + ':00';
-    };
-    const backendPayload = availabilityData.map(slot => {
-      const time24 = convertTo24Hour(slot.time); // helper to convert '8 am' → '08:00'
-      return {
-        day_of_week: slot.day,
-        start_time: time24,
-        end_time: time24
-      };
-    });
-    console.log("Submitting availability for userId:", id, availabilityData);
+
     await axios.post(`/api/v1/users/${id}/availability`, { slots: backendPayload });
-    // Navigate back to Friends (Discover) with selected availability
-    //In the event that the user selects a meeting time in the AI chat, they return to the chat not Friend Search
-    const returnTo = search.get("returnTo");
-    if (returnTo === "Assistant") {
-      const slotDescriptions = availabilityData.map(slot => `${slot.day} ${slot.time}`).join(", ");
-      navigate(`/Assistant?id=${id}&slotsAdded=${encodeURIComponent(slotDescriptions)}`);
+
+    if (returnTo === 'Scheduler') {
+      navigate({ pathname: '/Scheduler', search: createSearchParams({ id }).toString() });
+    } else if (returnTo === 'Assistant') {
+      const descriptions = backendPayload.map(s => `${s.day_of_week} ${s.start_time}`).join(', ');
+      navigate(`/Assistant?id=${id}&slotsAdded=${encodeURIComponent(descriptions)}`);
     } else {
       const friendsSub = search.get('friendsSub') || 'discover';
       navigate({
         pathname: '/Friends',
-        search: createSearchParams({
-          id,
-          friendsSub,
-          availability: JSON.stringify(availabilityData),
-        }).toString(),
+        search: createSearchParams({ id, friendsSub, availability: JSON.stringify(backendPayload) }).toString(),
       });
     }
   };
 
-  // Handle back button (contextual)
   const handleBack = () => {
-    if (returnTo === 'Friends') {
-      const friendsSub = search.get('friendsSub') || 'discover';
-      navigate({
-        pathname: '/Friends',
-        search: createSearchParams({ id, friendsSub }).toString(),
-      });
-      return;
-    }
-    navigate({
-      pathname: `/${returnTo}`,
-      search: createSearchParams({ id }).toString(),
-    });
+    navigate({ pathname: `/${returnTo}`, search: createSearchParams({ id }).toString() });
   };
 
-  // Global back to dashboard
   const handleBackToDashboard = () => {
-    navigate({
-      pathname: '/Dashboard',
-      search: createSearchParams({ id }).toString(),
-    });
+    navigate({ pathname: '/Dashboard', search: createSearchParams({ id }).toString() });
   };
 
   return (
     <div className="availability-picker-container">
       <div className="availability-picker">
-        <h1 className="page-title">Find Partners</h1>
-        
+        <h1 className="page-title">Set Availability</h1>
+
         <div className="calendar-container">
-          {/* Days header */}
           <div className="days-header">
-            {days.map((day, index) => (
+            {DAYS.map((day, index) => (
               <div key={index} className="day-header">
                 <div className="day-label">{day}</div>
               </div>
             ))}
           </div>
-          
-          {/* Time slots and calendar grid */}
+
           <div className="calendar-grid">
-            {timeSlots.map((time, timeIndex) => (
+            {TIME_SLOTS.map((slot, timeIndex) => (
               <div key={timeIndex} className="time-row">
-                <div className="time-label">{time}</div>
+                <div className="time-label">{slot.label}</div>
                 <div className="time-slots">
-                  {days.map((day, dayIndex) => {
+                  {DAYS.map((day, dayIndex) => {
                     const slotKey = `${dayIndex}-${timeIndex}`;
                     const isSelected = selectedSlots.has(slotKey);
-                    
                     return (
                       <div
                         key={dayIndex}
@@ -148,15 +137,11 @@ const AvailabilityPicker = () => {
             ))}
           </div>
         </div>
-        
+
         <div className="button-container">
           <button className="back-to-dashboard" onClick={handleBackToDashboard}>Dashboard</button>
-          <button className="btn-back" onClick={handleBack}>
-            Back
-          </button>
-          <button className="btn-confirm" onClick={handleConfirm}>
-            Submit Availability
-          </button>
+          <button className="btn-back" onClick={handleBack}>Back</button>
+          <button className="btn-confirm" onClick={handleConfirm}>Submit Availability</button>
         </div>
       </div>
     </div>

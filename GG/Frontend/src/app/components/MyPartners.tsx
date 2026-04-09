@@ -40,7 +40,9 @@ export function MyPartners() {
             {t('My Study Partners', '내 파트너')}
           </h2>
           <p className="text-neutral-600">
-            {matches.length} {t('active match', '활성 매치')}{matches.length !== 1 && t('es', '')}
+            {matches.length === 1
+              ? t('1 active match', '활성 매치 1개')
+              : `${matches.length} ${t('active matches', '활성 매치')}`}
           </p>
         </div>
 
@@ -50,7 +52,7 @@ export function MyPartners() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="bg-white rounded-2xl border border-neutral-200 p-6 hover:shadow-lg transition-shadow"
+            className="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm hover:shadow-md transition-shadow"
           >
             <div className="flex items-start gap-4 mb-4">
               <div className="text-5xl">{match.user.avatar}</div>
@@ -93,14 +95,14 @@ export function MyPartners() {
             <div className="flex gap-3">
               <Link
                 to={`/chat/${match.user.id}`}
-                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2 transition-colors"
+                className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 flex items-center justify-center gap-2 transition-colors"
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>{t('Chat', '채팅')}</span>
               </Link>
               <Link
                 to="/games"
-                className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-medium hover:bg-purple-700 flex items-center justify-center gap-2 transition-colors"
+                className="flex-1 bg-violet-600 text-white py-3 rounded-xl font-medium hover:bg-violet-700 flex items-center justify-center gap-2 transition-colors"
               >
                 <Gamepad2 className="w-4 h-4" />
                 <span>{t('Game', '게임')}</span>

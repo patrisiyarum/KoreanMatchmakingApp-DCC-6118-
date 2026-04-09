@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, ArrowRight, RotateCcw, Swords, Users, Plus, Crown } from 'lucide-react';
+import { Trophy, ArrowRight, RotateCcw, Swords, Users, Plus, Crown, Gamepad2, BookOpen } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { initialMatches } from '../data/mockData';
 
@@ -120,46 +120,51 @@ export function Games() {
 
   if (view === 'menu') {
     return (
-      <div className="size-full flex items-center justify-center p-6 bg-gradient-to-b from-purple-50 to-neutral-50 overflow-y-auto">
+      <div className="size-full flex items-center justify-center p-6 bg-white overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-md"
         >
           <div className="text-center mb-8">
-            <div className="text-6xl mb-4">🎮</div>
+            <Gamepad2 className="w-9 h-9 text-neutral-400 mx-auto mb-3" strokeWidth={1.5} />
             <h2 className="text-3xl font-bold text-neutral-900 mb-2">
               {t('Language Games', '언어 게임')}
             </h2>
-            <p className="text-neutral-600">
+            <p className="text-neutral-600 text-sm">
               {t('Practice and improve your skills', '연습하고 실력을 향상시키세요')}
             </p>
           </div>
 
           <div className="space-y-4">
             <button
+              type="button"
               onClick={() => {
                 setView('solo');
                 setGameMode('vocab');
               }}
-              className="w-full bg-white rounded-2xl border border-neutral-200 p-6 hover:shadow-lg transition-shadow text-left group"
+              className="w-full bg-white rounded-2xl border border-neutral-200 p-5 sm:p-6 hover:shadow-md transition-shadow text-left group"
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xl font-semibold text-neutral-900 mb-1">
-                    {t('Solo Practice', '혼자 연습')} <span className="text-purple-600">{t('', '어휘 퀴즈')}</span>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
+                  <BookOpen className="w-6 h-6 text-neutral-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg sm:text-xl font-semibold text-neutral-900 mb-0.5">
+                    {t('Solo Practice', '혼자 연습')}
                   </h3>
                   <p className="text-sm text-neutral-600">
                     {t('Practice vocabulary at your own pace', '나만의 속도로 어휘 연습')}
                   </p>
                 </div>
-                <ArrowRight className="w-6 h-6 text-neutral-400 group-hover:text-purple-600 transition-colors" />
+                <ArrowRight className="w-5 h-5 text-neutral-400 group-hover:text-neutral-700 transition-colors shrink-0" />
               </div>
             </button>
 
             <button
+              type="button"
               onClick={() => setView('challenge')}
-              className="w-full bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-6 hover:shadow-lg transition-shadow text-left group"
+              className="w-full bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-5 sm:p-6 hover:shadow-lg transition-shadow text-left group"
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -178,8 +183,9 @@ export function Games() {
             </button>
 
             <button
+              type="button"
               onClick={() => setView('teams')}
-              className="w-full bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl p-6 hover:shadow-lg transition-shadow text-left group"
+              className="w-full bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl p-5 sm:p-6 hover:shadow-lg transition-shadow text-left group"
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -223,10 +229,11 @@ export function Games() {
           </div>
 
           <button
+            type="button"
             onClick={() => setShowChallengeModal(true)}
-            className="w-full bg-orange-600 text-white py-4 rounded-lg font-medium hover:bg-orange-700 flex items-center justify-center gap-2 mb-6"
+            className="w-full bg-orange-500 text-white py-4 rounded-xl font-semibold hover:bg-orange-600 flex items-center justify-center gap-2 mb-6 shadow-sm"
           >
-            <Swords className="w-5 h-5" />
+            <span aria-hidden>⚔️</span>
             {t('New Challenge', '새 대결')}
           </button>
 
@@ -538,7 +545,7 @@ export function Games() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl p-8 mb-6 text-center">
+        <div className="bg-gradient-to-r from-purple-600 to-pink-500 rounded-2xl p-8 mb-6 text-center shadow-md">
           <p className="text-white/80 text-sm mb-2">
             {t('Translate this word', '이 단어를 번역하세요')}
           </p>

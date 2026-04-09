@@ -1,7 +1,7 @@
 import { createBrowserRouter } from 'react-router';
 import { RootLayout } from './components/RootLayout';
 import { RequireAuthLayout } from './components/RequireAuthLayout';
-import { Layout } from './components/Layout';
+import { Layout, GuestShell } from './components/Layout';
 import { Home } from './components/Home';
 import { Discover } from './components/Discover';
 import { MyPartners } from './components/MyPartners';
@@ -19,7 +19,11 @@ export const router = createBrowserRouter([
     Component: RootLayout,
     children: [
       { index: true, Component: IndexRedirect },
-      { path: 'welcome', Component: Home },
+      {
+        path: 'welcome',
+        Component: GuestShell,
+        children: [{ index: true, Component: Home }],
+      },
       { path: 'login', Component: Login },
       { path: 'register', Component: Register },
       {

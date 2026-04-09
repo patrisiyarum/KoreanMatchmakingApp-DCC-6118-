@@ -25,6 +25,14 @@ const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Sat
 const daysOfWeekKo = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
 const timeSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
 
+function formatMeetingDate(isoDate: string, lang: 'en' | 'ko') {
+  const d = new Date(`${isoDate}T12:00:00`);
+  if (lang === 'ko') {
+    return d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric' });
+  }
+  return d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
+}
+
 export function Schedule() {
   const { t, language } = useLanguage();
   const [view, setView] = useState<'availability' | 'meetings'>('availability');
@@ -69,13 +77,14 @@ export function Schedule() {
           </p>
         </div>
 
-        <div className="flex gap-3 mb-6">
+        <div className="flex flex-wrap gap-3 mb-6">
           <button
+            type="button"
             onClick={() => setView('availability')}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+            className={`px-5 py-2.5 rounded-full text-sm font-medium transition-colors ${
               view === 'availability'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-neutral-700 border border-neutral-200'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-white text-neutral-800 border border-neutral-200 hover:bg-neutral-50'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -84,11 +93,12 @@ export function Schedule() {
             </div>
           </button>
           <button
+            type="button"
             onClick={() => setView('meetings')}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+            className={`px-5 py-2.5 rounded-full text-sm font-medium transition-colors ${
               view === 'meetings'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-neutral-700 border border-neutral-200'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-white text-neutral-800 border border-neutral-200 hover:bg-neutral-50'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -137,9 +147,9 @@ export function Schedule() {
                           <td key={`${day}-${time}`} className="p-1 border-b">
                             <button
                               onClick={() => toggleAvailability(day, time)}
-                              className={`w-full h-10 rounded transition-colors ${
+                              className={`w-full h-10 rounded-md transition-colors ${
                                 available
-                                  ? 'bg-green-500 hover:bg-green-600'
+                                  ? 'bg-emerald-500 hover:bg-emerald-600'
                                   : 'bg-neutral-100 hover:bg-neutral-200'
                               }`}
                             />
@@ -154,7 +164,7 @@ export function Schedule() {
 
             <div className="mt-4 flex items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-green-500 rounded" />
+                <div className="w-4 h-4 bg-emerald-500 rounded" />
                 <span className="text-neutral-600">{t('Available', '가능')}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -199,7 +209,7 @@ export function Schedule() {
                 <div className="flex items-center gap-4 text-sm text-neutral-600">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
-                    <span>{new Date(meeting.date).toLocaleDateString()}</span>
+                    <span>{formatMeetingDate(meeting.date, language)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4" />

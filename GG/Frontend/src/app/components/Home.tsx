@@ -14,7 +14,7 @@ export function Home() {
     nativeLanguage: 'English',
     learningLanguage: 'Korean',
     interests: [] as string[],
-    level: 'Intermediate',
+    level: 'Beginner',
   });
 
   const interestOptions = [

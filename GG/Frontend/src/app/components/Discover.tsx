@@ -6,7 +6,7 @@ import { User } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 
 export function Discover() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [partners, setPartners] = useState(potentialPartners);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [matches, setMatches] = useState<User[]>([]);
@@ -42,12 +42,16 @@ export function Discover() {
   );
 
   return (
-    <div className="size-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-blue-50 to-neutral-50">
-      <div className="w-full max-w-md mb-6">
-        <div className="flex items-center gap-2 text-sm text-neutral-600 mb-2">
-          <Sparkles className="w-4 h-4 text-blue-600" />
-          <span>{matches.length} {t('matches today', '오늘의 매치')}</span>
-        </div>
+    <div className="size-full flex flex-col items-center justify-center p-6 bg-white">
+      <div className="w-full max-w-md mb-4">
+        <p className="text-center text-sm text-neutral-600">
+          <span className="inline-flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-violet-500 shrink-0" />
+            <span>
+              {matches.length} {t('matches today', '오늘의 매치')}
+            </span>
+          </span>
+        </p>
       </div>
 
       <AnimatePresence mode="wait">
@@ -60,7 +64,7 @@ export function Discover() {
           className="w-full max-w-md"
         >
           <div className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-lg">
-            <div className="bg-gradient-to-br from-blue-500 to-purple-500 p-12 text-center">
+            <div className="bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 p-10 sm:p-12 text-center">
               <div className="text-6xl mb-4">{currentPartner.avatar}</div>
               <h3 className="text-2xl font-bold text-white mb-1">
                 {currentPartner.name}
@@ -103,9 +107,12 @@ export function Discover() {
               </div>
 
               {sharedInterests.length > 0 && (
-                <div className="bg-blue-50 rounded-lg p-3">
-                  <p className="text-xs text-blue-700">
-                    🎯 You have {sharedInterests.length} shared interest{sharedInterests.length > 1 ? 's' : ''}!
+                <div className="bg-sky-50 rounded-xl p-3 border border-sky-100">
+                  <p className="text-sm text-sky-900 text-center">
+                    ❤️{' '}
+                    {language === 'ko'
+                      ? `공통 관심사가 ${sharedInterests.length}개 있어요!`
+                      : `You have ${sharedInterests.length} shared interest${sharedInterests.length > 1 ? 's' : ''}!`}
                   </p>
                 </div>
               )}

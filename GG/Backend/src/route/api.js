@@ -78,6 +78,9 @@ const initAPIRoute = (app) => {
     router.get('/users', APIController.getAllUsers);
     /** Same behavior as POST /Register (web.js); use this path when the host only proxies /api (e.g. Plesk). */
     router.post('/register', userController.handleRegister);
+    /** Same as POST /CreateProfile and PUT /UpdateProfile (web.js). */
+    router.post('/create-profile', userController.handleProfileCreation);
+    router.put('/update-profile', userController.handleProfileUpdate);
     router.post('/create-user', APIController.createNewUser);
     router.put('/update-user', APIController.updateUser);
     router.delete('/delete-user/:id', APIController.deleteUser);

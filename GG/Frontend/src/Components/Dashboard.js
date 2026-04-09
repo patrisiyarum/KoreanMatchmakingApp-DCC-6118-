@@ -329,17 +329,8 @@ useEffect(() => {
               <div className="profile-details">
                 <h2>{firstName} {lastName}</h2>
                 {email ? <p className="profile-email">{email}</p> : null}
-                <div className="profile-card-actions" role="group" aria-label="Profile actions">
-                  <button type="button" className="profile-link-btn" onClick={() => goTo('/ViewProfile')}>
-                    View
-                  </button>
-                  <span className="profile-actions-sep" aria-hidden>
-                    ·
-                  </span>
-                  <button type="button" className="profile-link-btn" onClick={() => goTo('/UpdateProfile')}>
-                    Edit
-                  </button>
-                </div>
+                <button type="button" className="profile-edit-btn" onClick={() => goTo('/ViewProfile')}>View Profile</button>
+                <button type="button" className="profile-edit-btn" onClick={() => goTo('/UpdateProfile')}>Edit Profile</button>
               </div>
             </div>
           </section>

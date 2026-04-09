@@ -1,39 +1,39 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import "./Home.scss";
+import "./Login.scss"; // reuse auth styles
 import logo from "../Styles/logo.png";
 
 function Home() {
   const navigate = useNavigate();
 
   return (
-    <div className="home-utrecht">
-      <div className="home-utrecht__inner">
+    <div className="auth-page">
+      <div className="auth-card" style={{ maxWidth: 560 }}>
         <img
           src={logo}
-          alt="Language Exchange Matchmaker"
-          className="home-utrecht__logo"
+          alt="Language Exchange Matchmaker logo"
+          className="auth-logo"
         />
-        <p className="home-utrecht__eyebrow">Language exchange / 매칭</p>
-        <h1 className="home-utrecht__title">
-          Language Exchange Matchmaker
-          <span className="home-utrecht__title-sub">Korean · English · 실제 사람과 연습</span>
-        </h1>
-        <hr className="home-utrecht__rule" />
-        <p className="home-utrecht__intro">
-          A quiet space to practice with partners who fit your schedule and goals.
+        <h1 className="auth-title">Language Exchange Matchmaker</h1>
+        <p className="auth-subtitle">
+          A focused space to practice Korean and English with real people.
         </p>
-        <div className="home-utrecht__actions">
-          <button type="button" className="home-utrecht__link" onClick={() => navigate("/Login")}>
-            Log in
-          </button>
-          <span className="home-utrecht__sep" aria-hidden>
-            ·
-          </span>
-          <button type="button" className="home-utrecht__link" onClick={() => navigate("/Register")}>
-            Create an account
-          </button>
+
+        <div className="home-landing-actions">
+          <div className="home-landing-section">
+            <p className="auth-prompt">Already have an account?</p>
+            <button className="auth-primary" type="button" onClick={() => navigate('/Login')}>
+              Log In
+            </button>
+          </div>
+          <div className="home-landing-section home-landing-section--split">
+            <p className="auth-prompt">New here?</p>
+            <button className="auth-secondary" type="button" onClick={() => navigate('/Register')}>
+              Create an account
+            </button>
+          </div>
         </div>
+
       </div>
     </div>
   );

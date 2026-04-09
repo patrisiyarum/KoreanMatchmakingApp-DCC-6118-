@@ -145,7 +145,7 @@ const ZODIAC_OPTIONS = [
   'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'
 ].map(v => ({ value: v, label: v }));
 
-const FILTER_TABS = ['Start here', 'Personality', 'Interests', 'Schedule', 'Study match'];
+const FILTER_TABS = ['Guide', 'Personality', 'Interests', 'Schedule', 'Match filters'];
 
 const COMMITMENT_FLEX_OPTIONS = [
   { value: 0, label: 'Exact level' },
@@ -185,7 +185,8 @@ const FriendSearch = ({ embedded = false }) => {
   const [selectedInterests, setSelectedInterests] = useState([]);
   const [selectedMbti, setSelectedMbti] = useState([]);
   const [selectedZodiac, setSelectedZodiac] = useState([]);
-  const [activeFilter, setActiveFilter] = useState(0);
+  /** -1 = no filter panel open (avoid jumping to Guide after availability / reload) */
+  const [activeFilter, setActiveFilter] = useState(-1);
   const [friendRequests, setFriendRequests] = useState({ incoming: [], outgoing: [] });
   const [sortDiscover, setSortDiscover] = useState('best_match');
   const [filterMatchLearningGoal, setFilterMatchLearningGoal] = useState('');
@@ -304,7 +305,15 @@ const FriendSearch = ({ embedded = false }) => {
   useEffect(() => {
     const availabilityParam = search.get('availability');
     if (availabilityParam) {
-      try { setSelectedAvailability(JSON.parse(availabilityParam)); } catch {}
+      try {
+        const parsed = JSON.parse(availabilityParam);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSelectedAvailability(parsed);
+          setActiveFilter(3);
+        }
+      } catch {
+        /* ignore */
+      }
     }
   }, [search]);
 
@@ -415,6 +424,11 @@ const FriendSearch = ({ embedded = false }) => {
     if (slots.length) {
       base = base.filter((u) => userOverlapsSelectedSchedule(u, slots));
     }
+    if (sortDiscover === 'best_match') {
+      base = [...base].sort(
+        (a, b) => (Number(b.matchScore) || 0) - (Number(a.matchScore) || 0)
+      );
+    }
     return base;
   }, [
     allUserNames,
@@ -425,6 +439,7 @@ const FriendSearch = ({ embedded = false }) => {
     selectedInterests,
     selectedAvailability,
     currentUser?.default_time_zone,
+    sortDiscover,
   ]);
 
   const applyMatchFilters = async () => {
@@ -434,7 +449,6 @@ const FriendSearch = ({ embedded = false }) => {
     try {
       const visibleUsers = await fetchDiscoverAndEnrich(discoverRequestOpts(sortDiscover));
       setAllUserNames(visibleUsers);
-      setActiveFilter(-1);
     } catch (e) {
       setError(e);
     } finally {
@@ -581,7 +595,7 @@ const FriendSearch = ({ embedded = false }) => {
 
           {activeFilter === 0 && (
             <div className="fs-filter-panel fs-filter-panel-tip">
-              <p className="fs-help-lead">How this page works</p>
+              <p className="fs-help-lead">How Discover works</p>
               <ol className="fs-help-list">
                 <li><strong>Search</strong> finds people by name (tap Search or Enter).</li>
                 <li><strong>Personality and interests</strong> are optional. Tap <em>Apply</em> after choosing.</li>
@@ -590,7 +604,10 @@ const FriendSearch = ({ embedded = false }) => {
                   Choose when you are usually free. We list people who have at least one overlapping hour on the same day
                   (times can differ slightly; we match overlap, not exact copies).
                 </li>
-                <li><strong>Study match</strong> filters by learning goal and style. Use the sort buttons below for best fit or name order.</li>
+                <li>
+                  <strong>Match filters</strong> optionally limits the server list by goal, style, and commitment (same fields as your profile).
+                  <strong> Best profile match</strong> sorts everyone still shown by how closely their goal, style, and commitment match yours. Personality, interests, and schedule only narrow who appears; they are not part of the % score yet.
+                </li>
               </ol>
             </div>
           )}
@@ -760,7 +777,7 @@ const FriendSearch = ({ embedded = false }) => {
 
         {/* Results card */}
         <div className="fs-card fs-results-card">
-          <div className="fs-results-header">
+            <div className="fs-results-header">
             <span className="fs-results-count">
               {displayedUsers.length} {displayedUsers.length === 1 ? 'person' : 'people'}
             </span>
@@ -769,9 +786,9 @@ const FriendSearch = ({ embedded = false }) => {
                 type="button"
                 className={`fs-btn-sort${sortDiscover === 'best_match' ? ' fs-btn-sort-active' : ''}`}
                 onClick={() => applySortDiscover('best_match')}
-                title="Uses your learning goal, communication style, and commitment vs each profile"
+                title="Sort by profile alignment: compares each person’s learning goal, communication style, and commitment to yours. Search, Match filters, Personality, Interests, and Schedule only restrict who is listed—they do not change the percentage."
               >
-                Best study match
+                Best profile match
               </button>
               <button
                 type="button"
@@ -783,6 +800,16 @@ const FriendSearch = ({ embedded = false }) => {
               </button>
             </div>
           </div>
+          <p className="fs-results-sort-hint">
+            {sortDiscover === 'best_match' ? (
+              <>
+                Sorted by how well each person’s <strong>goal, style, and commitment</strong> match your profile.
+                Filters (search, personality, interests, schedule, match filters) only hide people who don’t fit—they don’t change the match %.
+              </>
+            ) : (
+              <>Sorted alphabetically by first name.</>
+            )}
+          </p>
 
           {displayedUsers.length === 0 ? (
             <div className="fs-empty-block">
@@ -874,8 +901,11 @@ const FriendSearch = ({ embedded = false }) => {
                         <span className="fs-profile-stat-pill">{activity.gamesPlayed} games</span>
                       ) : null}
                       {user.matchScore != null && sortDiscover === 'best_match' ? (
-                        <span className="fs-profile-stat-pill fs-profile-match" title="How well their learning goal, style, and commitment align with yours.">
-                          Profile fit {Math.round(Number(user.matchScore))}%
+                        <span
+                          className="fs-profile-stat-pill fs-profile-match"
+                          title="Based on learning goal, communication style, and commitment vs your profile (not MBTI, interests, or schedule)."
+                        >
+                          Profile match {Math.round(Number(user.matchScore))}%
                         </span>
                       ) : null}
                     </div>

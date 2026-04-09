@@ -19,18 +19,19 @@ function Home() {
           A focused space to practice Korean and English with real people.
         </p>
 
-        <div className="login-input">
-          <label className="button-header">Already have an account?</label>
-          <button className="auth-primary" type="button" onClick={() => navigate("/Login")}>
-            Log In
-          </button>
-        </div>
-
-        <div className="login-input">
-          <label className="button-header">New here?</label>
-          <button className="auth-secondary" type="button" onClick={() => navigate("/Register")}>
-            Create an account
-          </button>
+        <div className="home-landing-actions">
+          <div className="home-landing-section">
+            <p className="auth-prompt">Already have an account?</p>
+            <button className="auth-primary" type="button" onClick={() => navigate('/Login')}>
+              Log In
+            </button>
+          </div>
+          <div className="home-landing-section home-landing-section--split">
+            <p className="auth-prompt">New here?</p>
+            <button className="auth-secondary" type="button" onClick={() => navigate('/Register')}>
+              Create an account
+            </button>
+          </div>
         </div>
 
       </div>

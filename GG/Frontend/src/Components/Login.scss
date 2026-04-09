@@ -10,6 +10,28 @@ $error-color: #FF4B4B;
   font-family: var(--dl-font);
 }
 
+/* Landing page at `/` (Home.js) — same buttons as auth flows, not form field layout */
+.home-landing-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.home-landing-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.home-landing-section--split {
+  margin-top: 20px;
+  padding-top: 22px;
+  border-top: 1px solid #f4f4f5;
+}
+
 .auth-logo {
   width: 140px;
   height: 140px;

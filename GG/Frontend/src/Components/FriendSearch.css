@@ -328,6 +328,13 @@
   padding: 4px 8px;
 }
 
+.fs-results-sort-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(54, 70, 89, 0.72);
+}
+
 .fs-user-match-tags {
   display: flex;
   flex-wrap: wrap;

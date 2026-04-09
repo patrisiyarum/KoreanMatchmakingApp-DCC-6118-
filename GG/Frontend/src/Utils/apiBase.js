@@ -2,8 +2,8 @@
  * API origin: runtime config.js (server) > REACT_APP_* at build > dev default.
  *
  * public/config.js often sets API_BASE_URL to '' so production uses the same origin
- * as the SPA (Node serves both). CRA dev runs on :3000 with no /Register route, so
- * '' would POST to localhost:3000 and 404 — we use the backend (default :8080) then.
+ * as the SPA (Node serves both). In development, '' would POST to the CRA port and
+ * miss Express — so when config is empty we call the backend at :8080 (any dev port).
  */
 export function getApiBase() {
   if (
@@ -15,8 +15,7 @@ export function getApiBase() {
     if (
       fromConfig === "" &&
       process.env.NODE_ENV === "development" &&
-      typeof window.location !== "undefined" &&
-      window.location.port === "3000"
+      typeof window.location !== "undefined"
     ) {
       return "http://localhost:8080";
     }

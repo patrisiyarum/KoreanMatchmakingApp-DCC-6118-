@@ -27,12 +27,27 @@ const extraOrigins = (process.env.CORS_ORIGINS || "")
     .filter(Boolean);
 const allowedOrigins = [...new Set([...defaultOrigins, ...extraOrigins])];
 
+function isLocalhostDevOrigin(origin) {
+    try {
+        const u = new URL(origin);
+        return (
+            (u.hostname === "localhost" || u.hostname === "127.0.0.1") &&
+            (u.protocol === "http:" || u.protocol === "https:")
+        );
+    } catch {
+        return false;
+    }
+}
+
 app.use(
     cors({
         credentials: true,
         origin(origin, cb) {
             if (!origin) return cb(null, true);
             if (allowedOrigins.includes(origin)) return cb(null, true);
+            if (process.env.NODE_ENV !== "production" && isLocalhostDevOrigin(origin)) {
+                return cb(null, true);
+            }
             return cb(null, false);
         },
     })

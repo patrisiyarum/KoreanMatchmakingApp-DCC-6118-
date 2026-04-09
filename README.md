@@ -19,7 +19,7 @@
 * Moved 'Add to Friends' button on Find Friends page to be more visible; general UI enhancements
 ### Outstanding Issues
 * Cannot submit comments for other user after practice session
-* Free Agora plan only supports 1 video stream per application ID, and tokens are hardcoded in VideoRoom.js
+* Video calls use **Zoom** invite links (create a meeting in Zoom, then paste the link in Calls). The app cannot create Zoom meetings without Zoom API credentials.
 * Free Gemini plan has rate limits, token is also hardcoded.
 ## Version 3.0.0
 ### Features
@@ -137,8 +137,14 @@ The Chat Assistant uses Google's Gemini API. To enable it:
 
 Without a valid `GEMINI_API_KEY`, the Chat Assistant will return "Sorry! There was a backend error."
 
-# Agora Video Call
-To generate a token, visit https://console.agora.io, click configure the app, and generate a new temp token. This token is only valid for 24 hours.
+# Video calls (Zoom)
+1. Open [Zoom](https://zoom.us/start) (or the desktop app) and **create a meeting**.
+2. Copy the **invite link** (e.g. `https://zoom.us/j/…`).
+3. In the app, go to **Calls** (`/Videocall`), paste the link, and continue. The app opens Zoom in a new tab; video runs there, not inside the SPA.
+4. Optional **Record mic** in the app records only your microphone in the browser for transcripts (not the full Zoom mix).
+
+# Chat (messaging)
+The `/Chat` route provides a messaging UI. It expects a **Socket.io** server on port **8800** (`GG/socket/index.js`). Run it separately, e.g. `cd GG/socket && npm install && node index.js`, and ensure the client URL matches your environment (the client currently uses `ws://localhost:8800` in `Chat.js`).
 
 # Tutorial Resources: 
 * https://sequelize.org/docs/v6/other-topics/migrations/ 

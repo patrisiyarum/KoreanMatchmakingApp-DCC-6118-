@@ -7,18 +7,11 @@ import { useSearchParams, useNavigate, createSearchParams } from 'react-router-d
 import { updateChatPrivacy } from '../Services/privacyService';
 import Navbar from './NavBar';
 import axios from 'axios';
-
-// Generates a random channel name safe for Agora (alphanumeric + hyphens, no spaces)
-const generateRoomCode = () => {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  const rand = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  return `kr-${rand}`;
-};
+import { normalizeZoomUrl, zoomMeetingLabel } from '../Utils/zoomUtils';
 
 function Videocall() {
-  const [room, setRoom] = useState('');
-  const [roomTouched, setRoomTouched] = useState(false);
-  const [mode, setMode] = useState(null);
+  const [zoomUrl, setZoomUrl] = useState('');
+  const [urlTouched, setUrlTouched] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const [joined, setJoined] = useState(false);
@@ -31,14 +24,28 @@ function Videocall() {
   const [search] = useSearchParams();
   const userId = search.get('id') || '';
   const chatId = search.get('chatId') || '';
-  const roomFromQuery = search.get('room');
+  const zoomFromQuery = search.get('zoom');
 
   useEffect(() => {
-    if (roomFromQuery && roomFromQuery.trim()) {
-      setRoom(roomFromQuery.trim());
-      setMode('join');
+    if (zoomFromQuery && zoomFromQuery.trim()) {
+      try {
+        const decoded = decodeURIComponent(zoomFromQuery.trim());
+        if (normalizeZoomUrl(decoded)) {
+          setZoomUrl(decoded);
+        }
+      } catch {
+        /* ignore */
+      }
     }
-  }, [roomFromQuery]);
+  }, [zoomFromQuery]);
+
+  useEffect(() => {
+    if (zoomFromQuery && zoomFromQuery.trim()) return;
+    const stored = sessionStorage.getItem('zoomMeetingUrl');
+    if (stored && normalizeZoomUrl(stored)) {
+      setZoomUrl(stored);
+    }
+  }, [zoomFromQuery]);
 
   useEffect(() => {
     if (!userId) return;
@@ -50,30 +57,25 @@ function Videocall() {
       .catch(() => setTranscripts([]));
   }, [userId]);
 
-  const roomIsValid = room.trim().length > 0;
-  const roomHasError = roomTouched && !roomIsValid;
+  const normalizedZoom = normalizeZoomUrl(zoomUrl);
+  const urlIsValid = Boolean(normalizedZoom);
+  const urlHasError = urlTouched && !urlIsValid;
 
-  const handleGenerate = () => {
-    setRoom(generateRoomCode());
-    setMode('create');
-    setRoomTouched(false);
-    setCopied(false);
+  const handleUrlChange = (e) => {
+    setZoomUrl(e.target.value);
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(room);
+    if (!normalizedZoom) return;
+    navigator.clipboard.writeText(normalizedZoom);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleJoinInputChange = (e) => {
-    setRoom(e.target.value.replace(/\s/g, ''));
-    setMode('join');
-  };
-
   const handleJoinClick = () => {
-    setRoomTouched(true);
-    if (!roomIsValid) return;
+    setUrlTouched(true);
+    if (!urlIsValid) return;
+    sessionStorage.setItem('zoomMeetingUrl', normalizedZoom);
     setShowPrivacyModal(true);
   };
 
@@ -106,52 +108,51 @@ function Videocall() {
             <>
               <div className="vc-lobby">
                 <div className="join-card vc-join-card-centered">
-                  <h2 className="join-title">Ready to join?</h2>
-                  <p className="join-subtitle">Start an instant meeting or enter a code someone shared.</p>
+                  <h2 className="join-title">Video call (Zoom)</h2>
+                  <p className="join-subtitle">
+                    Create a meeting in the Zoom app or at{' '}
+                    <a href="https://zoom.us/start" target="_blank" rel="noopener noreferrer">
+                      zoom.us/start
+                    </a>
+                    , then paste the <strong>invite link</strong> below. Share the same link with your partner.
+                  </p>
 
-                  {/* Create path */}
                   <div className="join-section">
-                    <h3 className="join-section-title">Start a new meeting</h3>
-                    {mode === 'create' ? (
-                      <>
-                        <div className="join-code-display">
-                          <span className="join-code-text">{room}</span>
-                          <button type="button" className="join-copy-btn" onClick={handleCopy}>
-                            {copied ? '\u2713 Copied' : 'Copy'}
-                          </button>
-                        </div>
-                        <p className="join-code-hint">Share this code with others so they can join.</p>
-                        <button type="button" className="btn-cta" onClick={handleJoinClick}>Start meeting</button>
-                      </>
-                    ) : (
-                      <button type="button" className="btn-secondary" onClick={handleGenerate}>
-                        New meeting
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="join-divider"><span>or</span></div>
-
-                  {/* Join path */}
-                  <div className="join-section">
-                    <h3 className="join-section-title">Join with a code</h3>
+                    <h3 className="join-section-title">Zoom invite link</h3>
                     <div className="join-form">
-                      <label htmlFor="room-input" className="join-label">Meeting ID</label>
+                      <label htmlFor="zoom-url-input" className="join-label">
+                        Link or meeting ID
+                      </label>
                       <Form.Control
-                        id="room-input"
-                        placeholder="e.g. kr-a3f9xz"
-                        value={mode === 'join' ? room : ''}
-                        onChange={handleJoinInputChange}
-                        onBlur={() => setRoomTouched(true)}
+                        id="zoom-url-input"
+                        as="textarea"
+                        rows={3}
+                        placeholder="https://zoom.us/j/… or meeting ID (digits only)"
+                        value={zoomUrl}
+                        onChange={handleUrlChange}
+                        onBlur={() => setUrlTouched(true)}
                       />
-                      {roomHasError && mode === 'join' && (
-                        <div className="join-error">Enter a meeting ID to join.</div>
+                      {urlHasError && (
+                        <div className="join-error">
+                          Enter a valid Zoom link (https://zoom.us/…) or a numeric meeting ID.
+                        </div>
                       )}
                     </div>
-                    <button type="button" className="btn-cta" onClick={handleJoinClick}>Join</button>
+                    {urlIsValid && (
+                      <div className="join-code-display join-code-display--zoom">
+                        <button type="button" className="join-copy-btn" onClick={handleCopy}>
+                          {copied ? '\u2713 Copied' : 'Copy link'}
+                        </button>
+                      </div>
+                    )}
+                    <button type="button" className="btn-cta" onClick={handleJoinClick}>
+                      Continue
+                    </button>
                   </div>
 
-                  <button type="button" className="back-to-dashboard vc-lobby-back" onClick={goHome}>Back to dashboard</button>
+                  <button type="button" className="back-to-dashboard vc-lobby-back" onClick={goHome}>
+                    Back to dashboard
+                  </button>
                 </div>
 
                 <button
@@ -213,14 +214,14 @@ function Videocall() {
             </>
           ) : (
             <VideoRoom
-              room={room}
+              zoomUrl={normalizedZoom}
+              meetingLabel={zoomMeetingLabel(normalizedZoom)}
               initialAiAllowed={aiAllowed}
               chatId={chatId}
               currentUserId={userId}
             />
           )}
 
-          {/* Pre-join AI privacy modal */}
           <Modal show={showPrivacyModal} onHide={() => setShowPrivacyModal(false)} centered>
             <Modal.Header closeButton>
               <Modal.Title>AI access for this video call</Modal.Title>
@@ -237,7 +238,7 @@ function Videocall() {
               <small>Your choice applies only to this conversation. You can change it during the call.</small>
             </Modal.Body>
             <Modal.Footer>
-              <button className="btn-cta" onClick={confirmAndJoin} disabled={!roomIsValid}>
+              <button className="btn-cta" onClick={confirmAndJoin} disabled={!urlIsValid}>
                 Join
               </button>
             </Modal.Footer>

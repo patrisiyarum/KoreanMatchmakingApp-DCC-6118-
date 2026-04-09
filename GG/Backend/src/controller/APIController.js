@@ -245,10 +245,25 @@ const getDiscoverUsers = async (req, res) => {
       searchParams.push(pattern, pattern, pattern, pattern);
     }
 
+    /**
+     * Raw score (max PROFILE_MATCH_MAX_RAW): learning goal + comm. style (exact match),
+     * commitment (closer levels score higher), MBTI + zodiac when both set (case-insensitive),
+     * shared interests (UserInterest rows; 5 pts each, cap 25).
+     * Final matchScore = ROUND(100 * raw / PROFILE_MATCH_MAX_RAW), clamped 0–100.
+     */
+    const PROFILE_MATCH_MAX_RAW = 160;
     const matchExpr = `(
       (CASE WHEN up.learning_goal <=> rp.learning_goal AND rp.learning_goal IS NOT NULL AND TRIM(rp.learning_goal) <> '' THEN 40 ELSE 0 END) +
       (CASE WHEN up.communication_style <=> rp.communication_style AND rp.communication_style IS NOT NULL AND TRIM(rp.communication_style) <> '' THEN 40 ELSE 0 END) +
-      (CASE WHEN up.commitment_level IS NOT NULL AND rp.commitment_level IS NOT NULL THEN GREATEST(0, 25 - 5 * ABS(up.commitment_level - rp.commitment_level)) ELSE 0 END)
+      (CASE WHEN up.commitment_level IS NOT NULL AND rp.commitment_level IS NOT NULL THEN GREATEST(0, 25 - 5 * ABS(up.commitment_level - rp.commitment_level)) ELSE 0 END) +
+      (CASE WHEN up.mbti IS NOT NULL AND rp.mbti IS NOT NULL AND TRIM(up.mbti) <> '' AND TRIM(rp.mbti) <> '' AND UPPER(TRIM(up.mbti)) = UPPER(TRIM(rp.mbti)) THEN 15 ELSE 0 END) +
+      (CASE WHEN up.zodiac IS NOT NULL AND rp.zodiac IS NOT NULL AND TRIM(up.zodiac) <> '' AND TRIM(rp.zodiac) <> '' AND LOWER(TRIM(up.zodiac)) = LOWER(TRIM(rp.zodiac)) THEN 15 ELSE 0 END) +
+      LEAST(25, 5 * COALESCE((
+        SELECT COUNT(*)
+        FROM UserInterest ur
+        INNER JOIN UserInterest uo ON ur.interest_id = uo.interest_id AND uo.user_id = ua.id
+        WHERE ur.user_id = rp.id
+      ), 0))
     )`;
 
     const orderClause =
@@ -263,7 +278,7 @@ const getDiscoverUsers = async (req, res) => {
         up.default_time_zone, up.rating, up.learning_goal, up.communication_style, up.commitment_level,
         COALESCE(badge_counts.cnt, 0) AS badgeCount,
         badge_strip.icons AS badgeIcons,
-        LEAST(100, GREATEST(0, ROUND(100 * (${matchExpr}) / 105))) AS matchScore
+        LEAST(100, GREATEST(0, ROUND(100 * (${matchExpr}) / ${PROFILE_MATCH_MAX_RAW}))) AS matchScore
       FROM useraccount ua
       INNER JOIN UserProfile up ON up.id = ua.id
       INNER JOIN UserProfile rp ON rp.id = ?

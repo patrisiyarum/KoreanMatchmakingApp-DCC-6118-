@@ -641,7 +641,7 @@ const FriendSearch = ({ embedded = false }) => {
                           </li>
                           <li>
                             <strong>Match profile</strong> optionally limits the server list by goal, style, and commitment (same fields as your profile).
-                            <strong> Best profile match</strong> sorts everyone still shown by how closely their goal, style, and commitment match yours. Personality, interests, and schedule only narrow who appears; they are not part of the % score yet.
+                            <strong> Best profile match</strong> sorts by a match score: learning goal, communication style, commitment, MBTI and zodiac when both of you have them, and overlapping interests from your profiles (the Interests filter still only narrows who appears).
                           </li>
                         </ol>
                       </div>
@@ -845,7 +845,7 @@ const FriendSearch = ({ embedded = false }) => {
                   type="button"
                   className={`fs-btn-sort${sortDiscover === 'best_match' ? ' fs-btn-sort-active' : ''}`}
                   onClick={() => applySortDiscover('best_match')}
-                  title="Sort by profile alignment: compares each person’s learning goal, communication style, and commitment to yours. Search, Match profile, Personality & interests, and Schedule only restrict who is listed—they do not change the percentage."
+                  title="Sort by match score: goal, style, commitment, shared interests, and MBTI/zodiac when set. Search, Match profile, Personality & interests, and Schedule only restrict who is listed; the % reflects the score."
                 >
                   Best profile match
                 </button>
@@ -864,7 +864,7 @@ const FriendSearch = ({ embedded = false }) => {
             <p className="fs-results-sort-hint">
               {sortDiscover === 'best_match' ? (
                 <>
-                  Sorted by how well each person’s <strong>goal, style, and commitment</strong> match your profile.
+                  Sorted by match score: <strong>goal, style, commitment</strong>, <strong>shared interests</strong>, and when both of you set them, <strong>MBTI</strong> and <strong>zodiac</strong>.
                 </>
               ) : (
                 <>Sorted alphabetically by first name.</>
@@ -970,7 +970,7 @@ const FriendSearch = ({ embedded = false }) => {
                         {showMatchHighlight ? (
                           <p
                             className="fs-discover-match-note"
-                            title="Based on learning goal, communication style, and commitment vs your profile (not MBTI, interests, or schedule)."
+                            title="Match score vs your profile: goal, style, commitment, overlapping interests, MBTI/zodiac when both sides have them. Schedule filter does not change this number."
                           >
                             Profile match {matchPct}%
                           </p>

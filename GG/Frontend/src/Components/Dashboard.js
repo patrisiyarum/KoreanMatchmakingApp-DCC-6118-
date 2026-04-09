@@ -229,6 +229,9 @@ useEffect(() => {
 
       <div className="dashboard-welcome">
         <h1>Welcome back, {firstName} {lastName || ''}</h1>
+        <p className="dashboard-welcome-ko" lang="ko">
+          언어 교환 여정을 이어가요
+        </p>
       </div>
 
       {id && progressLoaded && userStats && challengeStats && (() => {

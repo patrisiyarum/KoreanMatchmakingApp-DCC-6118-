@@ -950,9 +950,10 @@ const FriendSearch = ({ embedded = false }) => {
                         {showMatchHighlight ? (
                           <p
                             className="fs-discover-match-note"
-                            title="Match score vs your profile: goal, style, commitment, overlapping interests, MBTI/zodiac when both sides have them. Schedule filter does not change this number."
+                            title="Language-exchange match: rewards a perfect tandem (you speak what they learn and vice versa), plus goals, style, commitment, shared interests, and MBTI/zodiac when both sides have them. Schedule filters do not change this score."
                           >
-                            Profile match {matchPct}%
+                            <span className="fs-discover-match-label">Match</span>{' '}
+                            <span lang="ko" className="fs-discover-match-ko">매칭</span> {matchPct}%
                           </p>
                         ) : null}
                       </div>

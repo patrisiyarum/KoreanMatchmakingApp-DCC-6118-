@@ -1,8 +1,12 @@
-// Import Google Fonts - Duolingo-style: Nunito (friendly, rounded)
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=DM+Serif+Display&family=HK+Sentiments&display=swap');
+// Import Google Fonts — Nunito + Noto Sans KR (Korean UI copy)
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&family=DM+Serif+Display&family=HK+Sentiments&display=swap');
 
-// Design tokens — aligned with LangMatch reference (Desktop prototype): neutral surfaces + blue primary
+// Design tokens — neutral surfaces + blue primary + Korean accent hints (obangsaek-inspired reds/blues)
 :root {
+  --dl-font-ko: 'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+  --dl-ko-red: #b91c1c;
+  --dl-ko-blue: #1e3a8a;
+  --dl-ko-paper: #faf8f5;
   --dl-primary: #2563eb;
   --dl-primary-dark: #1d4ed8;
   --dl-primary-light: #3b82f6;
@@ -33,12 +37,25 @@
 // Reset and Base Styles
 $dark-color: #171717;
 
+/* Subtle 한지-style lines + soft blue/red wash (fixed so cards stay readable) */
 body {
   margin: 0;
   font-family: var(--dl-font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: var(--dl-dark);
+  background-color: var(--dl-page-bg);
+  background-image:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(37, 99, 235, 0.06), transparent 50%),
+    radial-gradient(ellipse 80% 50% at 100% 50%, rgba(185, 28, 28, 0.04), transparent 45%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 24px,
+      rgba(0, 0, 0, 0.012) 24px,
+      rgba(0, 0, 0, 0.012) 25px
+    );
+  background-attachment: fixed;
 }
 
 code {
@@ -54,6 +71,11 @@ h1, h2, h3, h4, h5, h6 {
 
 p, span, form, label, input, button {
   font-family: var(--dl-font);
+}
+
+.ko,
+[lang='ko'] {
+  font-family: var(--dl-font-ko);
 }
 
 button {

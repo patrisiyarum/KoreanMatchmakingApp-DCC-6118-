@@ -142,8 +142,19 @@ function Navbar({ id }) {
   return (
     <nav className="app-top-nav">
       <div className="app-top-nav-brand">
-        <div className="app-top-nav-title">LangMatch</div>
-        <div className="app-top-nav-tagline">Find your perfect study partner</div>
+        <div className="app-top-nav-title">
+          LangMatch{' '}
+          <span className="app-top-nav-title-ko" lang="ko">
+            랭매치
+          </span>
+        </div>
+        <div className="app-top-nav-tagline">
+          Find your perfect study partner
+          <span className="app-top-nav-tagline-ko" lang="ko">
+            {' '}
+            · 완벽한 언어 교환 파트너
+          </span>
+        </div>
       </div>
       <div className="app-top-nav-links" role="navigation" aria-label="Main">
         {NAV_SLOTS.map((slot) => {

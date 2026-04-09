@@ -246,13 +246,38 @@ const getDiscoverUsers = async (req, res) => {
     }
 
     /**
-     * Raw score (max PROFILE_MATCH_MAX_RAW): learning goal + comm. style (exact match),
-     * commitment (closer levels score higher), MBTI + zodiac when both set (case-insensitive),
-     * shared interests (UserInterest rows; 5 pts each, cap 25).
+     * Language-exchange "dating app" style affinity (max raw PROFILE_MATCH_MAX_RAW):
+     * - Language tandem (highest): perfect swap (you speak what they learn & vice versa) = 50;
+     *   partial one-way fit = 25.
+     * - Learning goal + communication style (exact) = 40 each.
+     * - Commitment closeness = up to 25.
+     * - MBTI + zodiac when both set = 15 each.
+     * - Shared interests = 5 pts each, cap 25.
      * Final matchScore = ROUND(100 * raw / PROFILE_MATCH_MAX_RAW), clamped 0–100.
      */
-    const PROFILE_MATCH_MAX_RAW = 160;
+    const PROFILE_MATCH_MAX_RAW = 210;
+    const langTandemExpr = `(
+      CASE
+        WHEN TRIM(COALESCE(up.native_language, '')) <> ''
+         AND TRIM(COALESCE(rp.native_language, '')) <> ''
+         AND TRIM(COALESCE(up.target_language, '')) <> ''
+         AND TRIM(COALESCE(rp.target_language, '')) <> ''
+         AND LOWER(TRIM(up.native_language)) = LOWER(TRIM(rp.target_language))
+         AND LOWER(TRIM(up.target_language)) = LOWER(TRIM(rp.native_language))
+        THEN 50
+        WHEN (
+          LOWER(TRIM(COALESCE(up.native_language, ''))) = LOWER(TRIM(COALESCE(rp.target_language, '')))
+          AND TRIM(COALESCE(rp.target_language, '')) <> ''
+        ) OR (
+          LOWER(TRIM(COALESCE(up.target_language, ''))) = LOWER(TRIM(COALESCE(rp.native_language, '')))
+          AND TRIM(COALESCE(rp.native_language, '')) <> ''
+        )
+        THEN 25
+        ELSE 0
+      END
+    )`;
     const matchExpr = `(
+      ${langTandemExpr} +
       (CASE WHEN up.learning_goal <=> rp.learning_goal AND rp.learning_goal IS NOT NULL AND TRIM(rp.learning_goal) <> '' THEN 40 ELSE 0 END) +
       (CASE WHEN up.communication_style <=> rp.communication_style AND rp.communication_style IS NOT NULL AND TRIM(rp.communication_style) <> '' THEN 40 ELSE 0 END) +
       (CASE WHEN up.commitment_level IS NOT NULL AND rp.commitment_level IS NOT NULL THEN GREATEST(0, 25 - 5 * ABS(up.commitment_level - rp.commitment_level)) ELSE 0 END) +

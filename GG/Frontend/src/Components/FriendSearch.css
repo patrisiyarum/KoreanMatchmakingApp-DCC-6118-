@@ -691,7 +691,17 @@
   margin: 6px 0 0 0;
   font-size: 13px;
   font-weight: 600;
-  color: #6d28d9;
+  color: var(--dl-primary);
+}
+
+.fs-discover-match-ko {
+  font-family: var(--dl-font-ko);
+  font-weight: 600;
+  color: var(--dl-ko-blue);
+}
+
+.fs-discover-match-label {
+  font-weight: 700;
 }
 
 .fs-discover-hero-cta {

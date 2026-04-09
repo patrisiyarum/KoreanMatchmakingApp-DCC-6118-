@@ -375,6 +375,10 @@
   justify-content: flex-end;
 }
 
+.fs-filter-actions--shop.fs-filter-actions--single {
+  justify-content: stretch;
+}
+
 .fs-btn-shop {
   min-width: 96px;
 }

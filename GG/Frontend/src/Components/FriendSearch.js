@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { DateTime } from "luxon";
 import Select from "react-select";
 
@@ -200,6 +200,9 @@ const FriendSearch = ({ embedded = false }) => {
   const [filterCommitmentFlex, setFilterCommitmentFlex] = useState(0);
   const [matchFieldOptions, setMatchFieldOptions] = useState({ learningGoals: [], communicationStyles: [] });
 
+  /** Skip the first match-filter effect run after mount / id change (initial load handles fetch). */
+  const skipMatchFilterRefetch = useRef(true);
+
   const clearPersonalityInterestSelections = () => {
     setSelectedMbti([]);
     setSelectedZodiac([]);
@@ -246,6 +249,7 @@ const FriendSearch = ({ embedded = false }) => {
         return;
       }
       try {
+        skipMatchFilterRefetch.current = true;
         setFilterMatchLearningGoal('');
         setFilterMatchCommunicationStyle('');
         setFilterMatchCommitment('');
@@ -394,8 +398,33 @@ const FriendSearch = ({ embedded = false }) => {
     communicationStyle: filterMatchCommunicationStyle || undefined,
     commitmentLevel: filterMatchCommitment === '' ? undefined : Number(filterMatchCommitment),
     commitmentFlex: filterCommitmentFlex,
-    search: (filterInput || '').trim() || undefined,
   });
+
+  useEffect(() => {
+    skipMatchFilterRefetch.current = true;
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    if (skipMatchFilterRefetch.current) {
+      skipMatchFilterRefetch.current = false;
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const visibleUsers = await fetchDiscoverAndEnrich(discoverRequestOpts(sortDiscover));
+        if (!cancelled) setAllUserNames(visibleUsers);
+      } catch (e) {
+        if (!cancelled) setError(e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Intentionally omit sortDiscover: sorting is client-side only (no refetch on sort toggle).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, filterMatchLearningGoal, filterMatchCommunicationStyle, filterMatchCommitment, filterCommitmentFlex]);
 
   const applyClientOnlyFilters = (visibleUsers) => {
     let base = visibleUsers;
@@ -429,7 +458,7 @@ const FriendSearch = ({ embedded = false }) => {
   const displayedUsers = useMemo(() => {
     let base = allUserNames;
     const qNorm = (filterInput || '').trim().toLowerCase();
-    if (!id && qNorm) {
+    if (qNorm) {
       base = base.filter(
         (u) =>
           (u.firstName || '').toLowerCase().includes(qNorm) ||
@@ -447,6 +476,12 @@ const FriendSearch = ({ embedded = false }) => {
       base = [...base].sort(
         (a, b) => (Number(b.matchScore) || 0) - (Number(a.matchScore) || 0)
       );
+    } else {
+      base = [...base].sort((a, b) => {
+        const c = (a.firstName || '').localeCompare(b.firstName || '', undefined, { sensitivity: 'base' });
+        if (c !== 0) return c;
+        return (a.lastName || '').localeCompare(b.lastName || '', undefined, { sensitivity: 'base' });
+      });
     }
     return base;
   }, [
@@ -461,56 +496,12 @@ const FriendSearch = ({ embedded = false }) => {
     sortDiscover,
   ]);
 
-  const applyMatchFilters = async () => {
-    if (!id) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const visibleUsers = await fetchDiscoverAndEnrich(discoverRequestOpts(sortDiscover));
-      setAllUserNames(visibleUsers);
-    } catch (e) {
-      setError(e);
-    } finally {
-      setLoading(false);
-      scrollDiscoverResultsIntoView();
-    }
-  };
-
-  const applySortDiscover = async (nextSort) => {
-    if (!id) return;
+  const applySortDiscover = (nextSort) => {
     setSortDiscover(nextSort);
-    setLoading(true);
-    setError(null);
-    try {
-      const visibleUsers = await fetchDiscoverAndEnrich(discoverRequestOpts(nextSort));
-      setAllUserNames(visibleUsers);
-    } catch (e) {
-      setError(e);
-    } finally {
-      setLoading(false);
-      scrollDiscoverResultsIntoView();
-    }
-  };
-
-  const applyFilters = async () => {
-    if (!id) {
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const visibleUsers = await fetchDiscoverAndEnrich(discoverRequestOpts(sortDiscover));
-      setAllUserNames(visibleUsers);
-    } catch (e) {
-      setError(e);
-    } finally {
-      setLoading(false);
-      scrollDiscoverResultsIntoView();
-    }
   };
 
   const clearAll = async () => {
+    skipMatchFilterRefetch.current = true;
     setFilterInput('');
     setSelectedMbti([]);
     setSelectedZodiac([]);
@@ -524,7 +515,6 @@ const FriendSearch = ({ embedded = false }) => {
     if (!id) {
       return;
     }
-    setLoading(true);
     setError(null);
     try {
       const visibleUsers = await fetchDiscoverAndEnrich({
@@ -535,7 +525,6 @@ const FriendSearch = ({ embedded = false }) => {
     } catch {
       /* keep list */
     } finally {
-      setLoading(false);
       scrollDiscoverResultsIntoView();
     }
   };
@@ -598,11 +587,8 @@ const FriendSearch = ({ embedded = false }) => {
               placeholder="Search by first or last name"
               value={filterInput}
               onChange={(e) => setFilterInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+              title="Filters the list below as you type"
             />
-            <button type="button" className="fs-btn-follow" onClick={applyFilters} title="Runs search on the server (case-insensitive)">
-              Search
-            </button>
           </div>
 
           {/* Filters — shopping-style accordion */}
@@ -632,7 +618,7 @@ const FriendSearch = ({ embedded = false }) => {
                         <ol className="fs-help-list">
                           <li><strong>Search</strong> finds people by name (tap Search or Enter).</li>
                           <li>
-                            <strong>Personality &amp; interests</strong> are optional filters in one place. Tap <em>Apply</em> after choosing.
+                            <strong>Personality &amp; interests</strong> update the list as you choose; use <em>Clear</em> to reset.
                           </li>
                           <li>
                             <strong>Schedule.</strong>{' '}
@@ -688,16 +674,13 @@ const FriendSearch = ({ embedded = false }) => {
                             styles={selectStyles}
                           />
                         </div>
-                        <div className="fs-filter-actions fs-filter-actions--shop">
+                        <div className="fs-filter-actions fs-filter-actions--shop fs-filter-actions--single">
                           <button
                             type="button"
-                            className="fs-btn-secondary fs-btn-shop"
+                            className="fs-btn-secondary fs-btn-shop fs-btn-shop-block"
                             onClick={clearPersonalityInterestSelections}
                           >
                             Clear
-                          </button>
-                          <button type="button" className="fs-btn-primary fs-btn-shop" onClick={applyFilters}>
-                            Apply
                           </button>
                         </div>
                       </div>
@@ -778,12 +761,9 @@ const FriendSearch = ({ embedded = false }) => {
                           value={COMMITMENT_FLEX_OPTIONS.map((o) => ({ value: o.value, label: o.label })).find((o) => o.value === filterCommitmentFlex)}
                           onChange={(o) => setFilterCommitmentFlex(o?.value ?? 0)}
                         />
-                        <div className="fs-filter-actions fs-filter-actions--shop">
-                          <button type="button" className="fs-btn-secondary fs-btn-shop" onClick={clearAll}>
+                        <div className="fs-filter-actions fs-filter-actions--shop fs-filter-actions--single">
+                          <button type="button" className="fs-btn-secondary fs-btn-shop fs-btn-shop-block" onClick={clearAll}>
                             Clear all
-                          </button>
-                          <button type="button" className="fs-btn-primary fs-btn-shop" onClick={() => applyMatchFilters()}>
-                            Apply
                           </button>
                         </div>
                       </div>
@@ -845,7 +825,7 @@ const FriendSearch = ({ embedded = false }) => {
                   type="button"
                   className={`fs-btn-sort${sortDiscover === 'best_match' ? ' fs-btn-sort-active' : ''}`}
                   onClick={() => applySortDiscover('best_match')}
-                  title="Sort by match score: goal, style, commitment, shared interests, and MBTI/zodiac when set. Search, Match profile, Personality & interests, and Schedule only restrict who is listed; the % reflects the score."
+                  title="Sort by match score or A–Z (no reload). Match profile filters refetch in the background; other filters update the list instantly."
                 >
                   Best profile match
                 </button>

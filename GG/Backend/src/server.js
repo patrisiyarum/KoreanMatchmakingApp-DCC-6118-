@@ -30,10 +30,13 @@ const allowedOrigins = [...new Set([...defaultOrigins, ...extraOrigins])];
 function isLocalhostDevOrigin(origin) {
     try {
         const u = new URL(origin);
-        return (
-            (u.hostname === "localhost" || u.hostname === "127.0.0.1") &&
-            (u.protocol === "http:" || u.protocol === "https:")
-        );
+        const h = u.hostname;
+        const local =
+            h === "localhost" ||
+            h === "127.0.0.1" ||
+            h === "::1" ||
+            h === "[::1]";
+        return local && (u.protocol === "http:" || u.protocol === "https:");
     } catch {
         return false;
     }

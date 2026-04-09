@@ -17,7 +17,8 @@ export function getApiBase() {
       const isLocal =
         loc.hostname === "localhost" ||
         loc.hostname === "127.0.0.1" ||
-        loc.hostname === "[::1]";
+        loc.hostname === "[::1]" ||
+        loc.hostname === "::1";
       const portNum = loc.port
         ? parseInt(loc.port, 10)
         : loc.protocol === "https:"

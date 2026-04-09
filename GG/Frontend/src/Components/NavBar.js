@@ -141,6 +141,10 @@ function Navbar({ id }) {
 
   return (
     <nav className="app-top-nav">
+      <div className="app-top-nav-brand">
+        <div className="app-top-nav-title">LangMatch</div>
+        <div className="app-top-nav-tagline">Find your perfect study partner</div>
+      </div>
       <div className="app-top-nav-links" role="navigation" aria-label="Main">
         {NAV_SLOTS.map((slot) => {
           if (slot.type === 'simple') {

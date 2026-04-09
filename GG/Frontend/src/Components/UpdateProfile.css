@@ -67,7 +67,7 @@
 
 .up-progress-pct {
   font-weight: 800;
-  color: #6344A6;
+  color: var(--dl-primary);
   font-size: 13px;
 }
 
@@ -80,7 +80,7 @@
 
 .up-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #6344A6 0%, #8B5FBF 100%);
+  background: linear-gradient(90deg, var(--dl-primary) 0%, #8B5FBF 100%);
   transition: width 0.35s ease;
 }
 
@@ -125,7 +125,7 @@
 
 .up-integrated-strong {
   font-weight: 800;
-  color: #6344A6;
+  color: var(--dl-primary);
   font-size: 15px;
 }
 
@@ -155,7 +155,7 @@
 
 .up-xp-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #6344A6 0%, #8B5FBF 100%);
+  background: linear-gradient(90deg, var(--dl-primary) 0%, #8B5FBF 100%);
   border-radius: 999px;
   transition: width 0.35s ease;
 }
@@ -177,7 +177,7 @@
   display: block;
   font-size: 18px;
   font-weight: 800;
-  color: #6344A6;
+  color: var(--dl-primary);
   font-family: var(--dl-font);
 }
 
@@ -217,7 +217,7 @@
 .up-section-title {
   font-family: var(--dl-font);
   font-size: 18px;
-  color: #6344A6;
+  color: var(--dl-primary);
   margin: 8px 0 0 0;
   padding-top: 12px;
   border-top: 1px solid #ede9fe;
@@ -249,7 +249,7 @@
   width: 100%;
   background: #f3f0fa;
   border: 1px solid #ede9fe;
-  color: #6344A6;
+  color: var(--dl-primary);
   font-weight: 800;
   border-radius: 10px;
   padding: 10px 12px;
@@ -259,7 +259,7 @@
 }
 
 .up-accordion:hover {
-  box-shadow: 0 4px 12px rgba(99,68,166,0.12);
+  box-shadow: 0 4px 12px rgba(37, 99, 235,0.12);
 }
 
 .up-hint {
@@ -293,8 +293,8 @@
 
 .up-input:focus {
   outline: none;
-  border-color: #6344A6;
-  box-shadow: 0 0 0 2px rgba(99,68,166,0.12);
+  border-color: var(--dl-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235,0.12);
 }
 
 .up-messages {
@@ -324,7 +324,7 @@
 .up-stat-val {
   font-family: var(--dl-font);
   font-size: 22px;
-  color: #6344A6;
+  color: var(--dl-primary);
   font-weight: bold;
 }
 
@@ -348,7 +348,7 @@
   padding: 4px 12px;
   font-size: 12px;
   font-weight: bold;
-  color: #6344A6;
+  color: var(--dl-primary);
 }
 
 /* ── Commitment stars ── */
@@ -379,7 +379,7 @@
 }
 
 .up-btn-primary {
-  background: #6344A6;
+  background: var(--dl-primary);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -393,13 +393,13 @@
 }
 
 .up-btn-primary:hover {
-  box-shadow: 0 4px 12px rgba(99,68,166,0.28);
+  box-shadow: 0 4px 12px rgba(37, 99, 235,0.28);
 }
 
 .up-btn-secondary {
   background: #fff;
-  color: #6344A6;
-  border: 2px solid #6344A6;
+  color: var(--dl-primary);
+  border: 2px solid var(--dl-primary);
   border-radius: 8px;
   padding: 10px 28px;
   font-size: 14px;

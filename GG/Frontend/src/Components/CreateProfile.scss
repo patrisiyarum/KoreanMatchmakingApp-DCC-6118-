@@ -1,5 +1,5 @@
 // Variables for colors and styles
-$primary-color: #6344A6;
+$primary-color: var(--dl-primary);
 $primary-gradient: linear-gradient(135deg, rgba(34, 193, 195, 1) 0%, rgba(253, 187, 45, 1) 100%);
 $text-color: #333;
 $error-color: #e74c3c;
@@ -31,7 +31,7 @@ $dark-color: #364659;
 
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(99, 68, 166, 0.3);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
   }
 
   &:active {

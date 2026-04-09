@@ -542,7 +542,7 @@ function TeamPage() {
                               className="quest-progress-bar-fill"
                               style={{
                                 width: `${pct}%`,
-                                background: completed ? '#16a34a' : '#6344A6',
+                                background: completed ? '#16a34a' : '#2563eb',
                               }}
                             />
                           </div>

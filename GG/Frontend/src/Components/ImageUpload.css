@@ -34,13 +34,13 @@
 }
 
 .image-upload-preview:hover {
-  border-color: #6344A6;
+  border-color: var(--dl-primary);
 }
 
 .image-upload-placeholder {
   font-size: 28px;
   font-weight: bold;
-  color: #6344A6;
+  color: var(--dl-primary);
   font-family: var(--dl-font);
   user-select: none;
 }
@@ -80,7 +80,7 @@
 
 .image-upload-overlay-change {
   background: #fff;
-  color: #6344A6;
+  color: var(--dl-primary);
 }
 
 .image-upload-overlay-remove {
@@ -103,7 +103,7 @@
   content: '';
   width: 24px;
   height: 24px;
-  border: 3px solid #6344A6;
+  border: 3px solid var(--dl-primary);
   border-top-color: transparent;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;

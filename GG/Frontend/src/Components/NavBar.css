@@ -14,19 +14,49 @@
   background: var(--dl-white);
   display: flex;
   align-items: center;
-  padding: 0 24px;
-  height: 64px;
+  padding: 0 16px 0 20px;
+  min-height: 64px;
   box-sizing: border-box;
   position: sticky;
   top: 0;
   z-index: 10050;
-  box-shadow: 0 2px 0 0 var(--dl-gray-light);
-  gap: 8px;
+  border-bottom: 1px solid var(--dl-gray-light);
+  gap: 12px;
   flex-wrap: nowrap;
   flex-shrink: 0;
   overflow: visible;
   pointer-events: auto;
   isolation: isolate;
+}
+
+.app-top-nav-brand {
+  flex-shrink: 0;
+  padding-right: 8px;
+  border-right: 1px solid var(--dl-gray-light);
+  margin-right: 4px;
+  padding-left: 4px;
+}
+
+.app-top-nav-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--dl-dark);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.app-top-nav-tagline {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dl-muted);
+  line-height: 1.25;
+  max-width: 200px;
+}
+
+@media (max-width: 900px) {
+  .app-top-nav-tagline {
+    display: none;
+  }
 }
 
 .app-top-nav-links {
@@ -35,7 +65,7 @@
   gap: 2px;
   flex: 1;
   min-width: 0;
-  padding-left: 20px;
+  padding-left: 8px;
   position: relative;
   overflow-x: auto;
   overflow-y: visible;
@@ -49,7 +79,7 @@
 }
 
 .app-top-nav-links::-webkit-scrollbar-thumb {
-  background: rgba(99, 68, 166, 0.35);
+  background: rgba(37, 99, 235, 0.35);
   border-radius: 3px;
 }
 
@@ -90,14 +120,14 @@
 }
 
 .app-top-nav .top-nav-btn.top-nav-btn--active {
-  background: var(--dl-primary);
-  color: var(--dl-white);
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--dl-primary);
   font-weight: 800;
 }
 
 .app-top-nav .top-nav-btn.top-nav-btn--active:hover {
-  color: var(--dl-white);
-  background: var(--dl-primary-dark);
+  color: var(--dl-primary-dark);
+  background: rgba(37, 99, 235, 0.16);
 }
 
 .nav-challenge-notification {
@@ -113,7 +143,7 @@
 }
 
 .nav-challenge-notification-pending {
-  background: linear-gradient(135deg, #6344A6 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--dl-primary) 0%, #6366f1 100%);
 }
 
 .nav-challenge-notification-turn {
@@ -122,7 +152,7 @@
 
 .nav-challenge-notification-btn {
   background: #fff;
-  color: #6344A6;
+  color: var(--dl-primary);
   border: none;
   padding: 8px 18px;
   border-radius: 8px;
@@ -170,55 +200,54 @@
 }
 
 .app-top-nav .nav-assistant-btn {
-  background: linear-gradient(135deg, #6344A6 0%, #0d9488 60%, #06b6d4 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
   color: #fff;
   border: none;
-  border-radius: var(--dl-radius);
-  padding: 10px 20px;
-  font-size: 15px;
-  font-weight: 800;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 0 0 #0f766e;
-  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: none;
+  transition: filter 0.15s, transform 0.15s;
   white-space: nowrap;
   flex-shrink: 0;
   width: auto;
 }
 
 .app-top-nav .nav-assistant-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 0 0 #0f766e;
+  transform: translateY(-1px);
+  filter: brightness(1.05);
 }
 
 .app-top-nav .nav-assistant-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 0 #0f766e;
+  transform: translateY(0);
 }
 
 .app-top-nav .nav-translator-btn {
-  background: var(--dl-blue);
-  color: var(--dl-white);
-  border: none;
-  border-radius: var(--dl-radius);
-  padding: 10px 20px;
-  font-size: 15px;
-  font-weight: 800;
+  background: var(--dl-white);
+  color: var(--dl-primary);
+  border: 2px solid var(--dl-gray-light);
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 0 0 var(--dl-blue-dark);
-  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
   white-space: nowrap;
   flex-shrink: 0;
   width: auto;
 }
 
 .app-top-nav .nav-translator-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 0 0 var(--dl-blue-dark);
+  transform: none;
+  background: #fafafa;
+  border-color: #d4d4d4;
 }
 
 .app-top-nav .nav-translator-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 0 var(--dl-blue-dark);
+  transform: none;
 }
 
 .navbar-hamburger {
@@ -301,7 +330,7 @@
 
 .dropdown-link-active {
   color: var(--dl-primary) !important;
-  background: rgba(99, 68, 166, 0.1);
+  background: rgba(37, 99, 235, 0.1);
 }
 
 .nav-ai-wrap {

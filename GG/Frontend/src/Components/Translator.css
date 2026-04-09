@@ -90,7 +90,7 @@
 }
 
 .tl-swap:hover {
-  background: rgba(99, 68, 166, 0.1);
+  background: rgba(37, 99, 235, 0.1);
   border-color: var(--dl-primary);
 }
 
@@ -129,8 +129,8 @@
 
 .tl-box:focus {
   outline: none;
-  border-color: #6344A6;
-  box-shadow: 0 0 0 2px rgba(99,68,166,0.12);
+  border-color: var(--dl-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235,0.12);
 }
 
 .tl-box::placeholder {
@@ -145,7 +145,7 @@
 }
 
 .tl-btn-primary {
-  background: #6344A6;
+  background: var(--dl-primary);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -159,13 +159,13 @@
 }
 
 .tl-btn-primary:hover {
-  box-shadow: 0 4px 12px rgba(99,68,166,0.28);
+  box-shadow: 0 4px 12px rgba(37, 99, 235,0.28);
 }
 
 .tl-btn-secondary {
   background: #fff;
-  color: #6344A6;
-  border: 2px solid #6344A6;
+  color: var(--dl-primary);
+  border: 2px solid var(--dl-primary);
   border-radius: 8px;
   padding: 10px 24px;
   font-size: 14px;

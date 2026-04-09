@@ -6,7 +6,7 @@
 }
 
 .btn-group button {
-  background-color: #6344A6; /* Solid color */
+  background-color: var(--dl-primary); /* Solid color */
   padding: 12px 20px; /* Comfortable padding */
   font-size: 16px; /* Modern text size */
   font-weight: bold;
@@ -20,18 +20,18 @@
 }
 
 .btn-group button:hover {
-  background-color: darken(#6344A6, 10%);
+  background-color: darken(var(--dl-primary), 10%);
   box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
   transform: translateY(-2px);
 }
 
 .btn-group button:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 68, 166, 0.3);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
 }
 
 .btn-group button:active {
-  background-color: lighten(#6344A6, 10%);
+  background-color: lighten(var(--dl-primary), 10%);
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -67,7 +67,7 @@
 
 /* Button styling updated to match global styles */
 .btn-Screen {
-  background-color: #6344A6;
+  background-color: var(--dl-primary);
   width: 100%;
   margin: 10px 0;
   padding: 12px;
@@ -82,18 +82,18 @@
 }
 
 .btn-Screen:hover {
-  background-color: darken(#6344A6, 10%);
+  background-color: darken(var(--dl-primary), 10%);
   box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
   transform: translateY(-2px);
 }
 
 .btn-Screen:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 68, 166, 0.3);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
 }
 
 .btn-Screen:active {
-  background-color: lighten(#6344A6, 10%);
+  background-color: lighten(var(--dl-primary), 10%);
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }

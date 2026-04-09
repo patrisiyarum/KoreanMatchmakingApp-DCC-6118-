@@ -185,7 +185,7 @@
   background: var(--dl-primary);
   color: #fff;
   border-bottom-right-radius: 4px;
-  box-shadow: 0 2px 8px rgba(99,68,166,0.2);
+  box-shadow: 0 2px 8px rgba(37, 99, 235,0.2);
 }
 
 .ast-bot .ast-msg-bubble {
@@ -274,7 +274,7 @@
 
 .ast-input:focus {
   border-color: var(--dl-primary);
-  box-shadow: 0 0 0 3px rgba(99,68,166,0.12);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235,0.12);
 }
 
 .ast-send-btn {
@@ -295,7 +295,7 @@
 
 .ast-send-btn:hover:not(:disabled) {
   background: var(--dl-primary-dark);
-  box-shadow: 0 4px 12px rgba(99,68,166,0.3);
+  box-shadow: 0 4px 12px rgba(37, 99, 235,0.3);
 }
 
 .ast-send-btn:disabled { opacity: 0.4; cursor: default; }
@@ -351,7 +351,7 @@
 }
 
 .ast-transcript-btn:hover:not(:disabled) {
-  background: rgba(99,68,166,0.08);
+  background: rgba(37, 99, 235,0.08);
 }
 
 .ast-transcript-btn:disabled {

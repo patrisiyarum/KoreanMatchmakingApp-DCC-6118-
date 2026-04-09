@@ -142,7 +142,7 @@
 }
 
 .vc-transcript-btn:hover {
-  background: rgba(99, 68, 166, 0.08);
+  background: rgba(37, 99, 235, 0.08);
 }
 
 .vc-transcripts-empty {
@@ -208,7 +208,7 @@
 .join-form input:focus {
   border-color: var(--dl-primary);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(99, 68, 166, 0.2);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
 .join-error {
@@ -261,7 +261,7 @@
 }
 
 .join-copy-btn:hover {
-  background: rgba(99, 68, 166, 0.08);
+  background: rgba(37, 99, 235, 0.08);
 }
 
 .join-code-hint {
@@ -319,5 +319,5 @@
 }
 
 .btn-secondary:hover {
-  background: rgba(99, 68, 166, 0.08);
+  background: rgba(37, 99, 235, 0.08);
 }

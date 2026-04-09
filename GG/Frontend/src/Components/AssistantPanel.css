@@ -105,7 +105,7 @@
 
 .ap-prompts-btn:hover {
   color: var(--dl-primary);
-  background: rgba(99, 68, 166, 0.06);
+  background: rgba(37, 99, 235, 0.06);
 }
 
 .ap-fullview-btn {
@@ -123,7 +123,7 @@
 }
 
 .ap-fullview-btn:hover {
-  background: rgba(99, 68, 166, 0.08);
+  background: rgba(37, 99, 235, 0.08);
 }
 
 
@@ -296,7 +296,7 @@
 
 .ap-input:focus {
   border-color: var(--dl-primary);
-  box-shadow: 0 0 0 3px rgba(99, 68, 166, 0.15);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 .ap-send-btn {

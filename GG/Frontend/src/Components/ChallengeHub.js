@@ -151,7 +151,7 @@ function ChallengeHub() {
   };
 
   const statusBadge = (status) => {
-    const colors = { pending: '#f59e0b', accepted: '#3b82f6', in_progress: '#6344A6', completed: '#16a34a', declined: '#dc2626', expired: '#888' };
+    const colors = { pending: '#f59e0b', accepted: '#3b82f6', in_progress: '#2563eb', completed: '#16a34a', declined: '#dc2626', expired: '#888' };
     return <span className="ch-status-badge" style={{ background: colors[status] || '#888' }}>{status.replace('_', ' ')}</span>;
   };
 

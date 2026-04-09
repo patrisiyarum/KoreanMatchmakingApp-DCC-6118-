@@ -201,11 +201,11 @@
 .fs-input:focus {
   border-color: var(--dl-primary);
   outline: none;
-  box-shadow: 0 0 0 4px rgba(99, 68, 166, 0.2);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
 }
 
 .fs-btn-follow {
-  background: #6344A6;
+  background: var(--dl-primary);
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -218,11 +218,11 @@
 }
 
 .fs-btn-follow:hover {
-  box-shadow: 0 2px 8px rgba(99, 68, 166, 0.2);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
 }
 
 .fs-btn-primary {
-  background-color: #6344A6;
+  background-color: var(--dl-primary);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -235,12 +235,12 @@
 }
 
 .fs-btn-primary:hover {
-  box-shadow: 0 4px 12px rgba(99, 68, 166, 0.2);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
 .fs-btn-secondary {
   background-color: #ffffff;
-  color: #6344A6;
+  color: var(--dl-primary);
   border: 1px solid #d4d4d8;
   border-radius: 8px;
   padding: 10px 20px;
@@ -253,7 +253,7 @@
 }
 
 .fs-btn-secondary:hover {
-  border-color: #6344A6;
+  border-color: var(--dl-primary);
 }
 
 /* ── Shopping-style filter accordion ── */
@@ -443,7 +443,7 @@
 }
 
 .fs-avail-slot {
-  background: #6344A6;
+  background: var(--dl-primary);
   color: white;
   padding: 4px 10px;
   border-radius: 14px;
@@ -539,8 +539,8 @@
 }
 
 .fs-btn-sort:hover:not(.fs-btn-sort-active) {
-  color: #6344a6;
-  background: rgba(99, 68, 166, 0.08);
+  color: var(--dl-primary);
+  background: rgba(37, 99, 235, 0.08);
 }
 
 .fs-btn-sort:active:not(.fs-btn-sort-active) {
@@ -549,15 +549,15 @@
 
 .fs-btn-sort:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(99, 68, 166, 0.45);
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(37, 99, 235, 0.45);
 }
 
 .fs-btn-sort.fs-btn-sort-active {
   background: #fff !important;
-  color: #6344a6 !important;
+  color: var(--dl-primary) !important;
   box-shadow:
     0 1px 3px rgba(15, 23, 42, 0.1),
-    0 0 0 1px rgba(99, 68, 166, 0.18) !important;
+    0 0 0 1px rgba(37, 99, 235, 0.18) !important;
 }
 
 .fs-results-sort-hint {
@@ -577,7 +577,7 @@
 .fs-tag {
   font-size: 11px;
   font-weight: 600;
-  color: #6344A6;
+  color: var(--dl-primary);
   background: #f3f0fa;
   border: 1px solid #e9e3f5;
   border-radius: 999px;
@@ -800,14 +800,14 @@
 
 .fs-user-row:hover {
   border-color: #c4b5fd;
-  box-shadow: 0 2px 8px rgba(99, 68, 166, 0.08);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
 }
 
 .fs-avatar {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #6344A6;
+  background: var(--dl-primary);
   color: #fff;
   display: flex;
   align-items: center;
@@ -934,7 +934,7 @@
   padding: 6px 12px;
   border-radius: 6px;
   border: none;
-  background: #6344A6;
+  background: var(--dl-primary);
   color: #fff;
   font-size: 12px;
   font-weight: 600;

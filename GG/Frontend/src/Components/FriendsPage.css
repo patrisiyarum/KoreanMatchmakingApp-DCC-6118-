@@ -39,13 +39,13 @@
 
 .friends-page-tab:hover {
   border-color: #c4b5fd;
-  color: var(--dl-primary, #6344a6);
+  color: var(--dl-primary, var(--dl-primary));
 }
 
 .friends-page-tab-active {
-  background: var(--dl-primary, #6344a6);
+  background: var(--dl-primary, var(--dl-primary));
   color: var(--dl-white, #fff);
-  border-color: var(--dl-primary, #6344a6);
+  border-color: var(--dl-primary, var(--dl-primary));
 }
 
 .friends-page-panel {

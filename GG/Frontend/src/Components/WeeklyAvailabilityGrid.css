@@ -97,14 +97,14 @@ body.wag-dragging * {
 }
 
 .wag-time-slot:hover {
-  border-color: #6344a6;
-  background: #f8f6ff;
+  border-color: var(--dl-primary);
+  background: #eff6ff;
 }
 
 .wag-time-slot.selected {
-  background: linear-gradient(135deg, #6344a6 0%, #8b5cf6 100%);
-  border-color: #6344a6;
-  box-shadow: 0 2px 8px rgba(99, 68, 166, 0.35);
+  background: linear-gradient(135deg, var(--dl-primary) 0%, #8b5cf6 100%);
+  border-color: var(--dl-primary);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
 }
 
 /* Compact: used inside profile card */

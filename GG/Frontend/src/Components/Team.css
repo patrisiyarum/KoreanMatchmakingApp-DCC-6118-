@@ -159,18 +159,18 @@
   padding: 10px 16px;
   font-size: 13px;
   font-weight: 600;
-  color: #6344A6;
+  color: var(--dl-primary);
   background: #fff;
   border: 1px solid #c4b5fd;
   border-radius: 10px;
   cursor: pointer;
   font-family: inherit;
   transition: background 0.2s, color 0.2s, border-color 0.2s;
-  box-shadow: 0 1px 2px rgba(99, 68, 166, 0.06);
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.06);
 }
 
 .team-share-btn:hover {
-  background: #6344A6;
+  background: var(--dl-primary);
   color: #fff;
 }
 
@@ -237,7 +237,7 @@
 .team-total-xp {
   font-size: 14px;
   font-weight: bold;
-  color: #6344A6;
+  color: var(--dl-primary);
   background-color: #f3f0fa;
   padding: 6px 16px;
   border-radius: 20px;
@@ -295,8 +295,8 @@
 }
  
 .team-input:focus {
-  border-color: #6344A6;
-  box-shadow: 0 4px 6px rgba(99, 68, 166, 0.2);
+  border-color: var(--dl-primary);
+  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
   outline: none;
 }
  
@@ -310,7 +310,7 @@
 }
  
 .team-btn-primary {
-  background-color: #6344A6;
+  background-color: var(--dl-primary);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -340,8 +340,8 @@
  
 .team-btn-secondary {
   background-color: #ffffff;
-  color: #6344A6;
-  border: 2px solid #6344A6;
+  color: var(--dl-primary);
+  border: 2px solid var(--dl-primary);
   border-radius: 8px;
   padding: 10px 22px;
   font-size: 15px;
@@ -423,13 +423,13 @@
 }
  
 .logo-option:hover {
-  border-color: #6344A6;
+  border-color: var(--dl-primary);
   transform: scale(1.1);
   box-shadow: none;
 }
  
 .logo-selected {
-  border-color: #6344A6 !important;
+  border-color: var(--dl-primary) !important;
   background-color: #e9e4f5 !important;
   transform: scale(1.1);
 }
@@ -528,7 +528,7 @@
   font-size: 11px;
   font-weight: 700;
   color: #fff;
-  background: #6344A6;
+  background: var(--dl-primary);
   padding: 2px 8px;
   border-radius: 6px;
   vertical-align: middle;
@@ -537,7 +537,7 @@
  
 .leaderboard-level {
   font-size: 12px;
-  color: #6344A6;
+  color: var(--dl-primary);
   font-weight: bold;
   background-color: #ede9fe;
   padding: 2px 8px;
@@ -609,7 +609,7 @@
   padding: 8px 6px;
   font-size: 12px;
   font-weight: 600;
-  color: #6344A6;
+  color: var(--dl-primary);
   cursor: pointer;
   box-shadow: none;
   transition: background-color 0.15s ease;
@@ -617,13 +617,13 @@
 }
  
 .team-tab:hover {
-  background-color: rgba(99, 68, 166, 0.1);
+  background-color: rgba(37, 99, 235, 0.1);
   transform: none;
   box-shadow: none;
 }
  
 .team-tab-active {
-  background-color: #6344A6 !important;
+  background-color: var(--dl-primary) !important;
   color: #ffffff !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
@@ -661,7 +661,7 @@
  
 .search-result-logo { font-size: 20px; flex-shrink: 0; }
 .search-result-name { flex: 1; font-size: 14px; font-weight: bold; color: #364659; }
-.search-result-xp   { font-size: 12px; color: #6344A6; font-weight: bold; flex-shrink: 0; }
+.search-result-xp   { font-size: 12px; color: var(--dl-primary); font-weight: bold; flex-shrink: 0; }
  
 /* Footer: games link + actions */
 .team-footer-actions {
@@ -706,12 +706,12 @@
 }
 
 .team-footer-link:hover {
-  color: #6344A6;
-  background: rgba(99, 68, 166, 0.06);
+  color: var(--dl-primary);
+  background: rgba(37, 99, 235, 0.06);
 }
 
 .team-footer-link:focus-visible {
-  outline: 2px solid rgba(99, 68, 166, 0.35);
+  outline: 2px solid rgba(37, 99, 235, 0.35);
   outline-offset: 2px;
 }
 
@@ -746,7 +746,7 @@
   font-family: var(--dl-font);
   font-size: 24px;
   font-weight: 800;
-  color: #6344A6;
+  color: var(--dl-primary);
   letter-spacing: -0.02em;
 }
  
@@ -768,7 +768,7 @@
 /* ── Copy button ── */
 .team-copy-btn {
   background-color: #f3f0fa;
-  color: #6344A6;
+  color: var(--dl-primary);
   border: none;
   border-radius: 6px;
   padding: 4px 10px;
@@ -813,15 +813,15 @@
 }
  
 .team-section-tab:hover {
-  color: #6344A6;
-  background-color: rgba(99, 68, 166, 0.06);
+  color: var(--dl-primary);
+  background-color: rgba(37, 99, 235, 0.06);
   transform: none;
   box-shadow: none;
 }
  
 .team-section-tab-active {
-  color: #6344A6 !important;
-  border-bottom-color: #6344A6 !important;
+  color: var(--dl-primary) !important;
+  border-bottom-color: var(--dl-primary) !important;
 }
  
 /* ── Shared challenge cards ── */
@@ -881,7 +881,7 @@
 .quest-progress-xp {
   font-size: 12px;
   font-weight: bold;
-  color: #6344A6;
+  color: var(--dl-primary);
   background-color: #ede9fe;
   padding: 2px 8px;
   border-radius: 20px;
@@ -935,7 +935,7 @@
   padding: 12px 16px;
   font-size: 14px;
   font-weight: 600;
-  color: #6344A6;
+  color: var(--dl-primary);
   background-color: #f3f0fa;
   border: 2px dashed #c4b5fd;
   border-radius: 8px;
@@ -946,7 +946,7 @@
 
 .create-quest-btn:hover {
   background-color: #ede9fe;
-  border-color: #6344A6;
+  border-color: var(--dl-primary);
 }
 
 .create-quest-form {
@@ -978,7 +978,7 @@
 }
 
 .create-quest-input:focus {
-  border-color: #6344A6;
+  border-color: var(--dl-primary);
   outline: none;
 }
 

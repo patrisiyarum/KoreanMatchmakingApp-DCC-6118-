@@ -75,7 +75,7 @@
 .sched-meeting-item {
   background: #f9f9f9;
   border: 1px solid #eee;
-  border-left: 4px solid #6344A6;
+  border-left: 4px solid var(--dl-primary);
   border-radius: 8px;
   padding: 12px 14px;
   cursor: pointer;
@@ -107,11 +107,11 @@
 
 .sched-meeting-item:hover {
   border-color: #c4b5fd;
-  box-shadow: 0 2px 8px rgba(99,68,166,0.1);
+  box-shadow: 0 2px 8px rgba(37, 99, 235,0.1);
 }
 
 .sched-meeting-item strong {
-  color: #6344A6;
+  color: var(--dl-primary);
 }
 
 .sched-friends-list {
@@ -124,7 +124,7 @@
 .sched-friend-chip {
   padding: 8px 16px;
   background: #f3f0fa;
-  color: #6344A6;
+  color: var(--dl-primary);
   border-radius: 20px;
   cursor: pointer;
   font-weight: bold;
@@ -135,7 +135,7 @@
 
 .sched-friend-chip:hover {
   background: #ede9fe;
-  border-color: #6344A6;
+  border-color: var(--dl-primary);
 }
 
 .sched-panel {
@@ -181,12 +181,12 @@
 
 .sched-select:focus {
   outline: none;
-  border-color: #6344A6;
-  box-shadow: 0 0 0 2px rgba(99,68,166,0.12);
+  border-color: var(--dl-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235,0.12);
 }
 
 .sched-confirm-btn {
-  background: #6344A6;
+  background: var(--dl-primary);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -200,7 +200,7 @@
 }
 
 .sched-confirm-btn:hover:not(:disabled) {
-  box-shadow: 0 4px 12px rgba(99,68,166,0.28);
+  box-shadow: 0 4px 12px rgba(37, 99, 235,0.28);
 }
 
 .sched-confirm-btn:disabled {
@@ -210,8 +210,8 @@
 
 .sched-back-btn {
   background: #fff;
-  color: #6344A6;
-  border: 2px solid #6344A6;
+  color: var(--dl-primary);
+  border: 2px solid var(--dl-primary);
   border-radius: 8px;
   padding: 10px 24px;
   font-size: 14px;
@@ -328,9 +328,9 @@
   padding: 8px 16px;
   font-size: 13px;
   font-weight: 600;
-  color: #6344A6;
+  color: var(--dl-primary);
   background: #fff;
-  border: 2px solid #6344A6;
+  border: 2px solid var(--dl-primary);
   border-radius: 8px;
   cursor: pointer;
   font-family: var(--dl-font);

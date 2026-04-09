@@ -231,7 +231,7 @@ function GameSelect() {
                     <div className="quest-text">
                       <div style={{ fontWeight: 'bold', marginBottom: 2, fontSize: 12 }}>
                         {challenge.title}
-                        {challenge.isTeamQuest && <span style={{ fontSize: 9, color: '#6344A6', marginLeft: 4 }}>Team</span>}
+                        {challenge.isTeamQuest && <span style={{ fontSize: 9, color: 'var(--dl-primary)', marginLeft: 4 }}>Team</span>}
                       </div>
                       <div style={{ fontSize: 10, color: '#888', marginBottom: 3 }}>
                         {challenge.description}
@@ -241,7 +241,7 @@ function GameSelect() {
                           className="challenge-progress-bar-fill"
                           style={{
                             width: `${pct}%`,
-                            background: '#6344A6',
+                            background: 'var(--dl-primary)',
                           }}
                         />
                       </div>
@@ -260,7 +260,7 @@ function GameSelect() {
                           readOnly
                         />
                       )}
-                      <span style={{ fontSize: 9, color: '#6344A6', fontWeight: 'bold' }}>
+                      <span style={{ fontSize: 9, color: 'var(--dl-primary)', fontWeight: 'bold' }}>
                         +{challenge.xpReward}XP
                       </span>
                     </div>

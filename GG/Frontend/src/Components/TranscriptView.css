@@ -59,8 +59,8 @@
 
 .tv-date-input:focus {
   outline: none;
-  border-color: #6344A6;
-  box-shadow: 0 0 0 2px rgba(99,68,166,0.12);
+  border-color: var(--dl-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235,0.12);
 }
 
 .tv-list {
@@ -78,7 +78,7 @@
 .tv-item {
   background: #f9f9f9;
   border: 1px solid #eee;
-  border-left: 4px solid #6344A6;
+  border-left: 4px solid var(--dl-primary);
   border-radius: 8px;
   padding: 14px;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -86,7 +86,7 @@
 
 .tv-item:hover {
   border-color: #c4b5fd;
-  box-shadow: 0 2px 8px rgba(99,68,166,0.1);
+  box-shadow: 0 2px 8px rgba(37, 99, 235,0.1);
 }
 
 .tv-item-header {
@@ -94,7 +94,7 @@
   justify-content: space-between;
   margin-bottom: 6px;
   font-size: 12px;
-  color: #6344A6;
+  color: var(--dl-primary);
   font-weight: bold;
 }
 
@@ -123,8 +123,8 @@
 
 .tv-btn-outline {
   background: none;
-  border: 1px solid #6344A6;
-  color: #6344A6;
+  border: 1px solid var(--dl-primary);
+  color: var(--dl-primary);
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 12px;
@@ -135,12 +135,12 @@
 }
 
 .tv-btn-outline:hover {
-  background: #6344A6;
+  background: var(--dl-primary);
   color: #fff;
 }
 
 .tv-btn-primary {
-  background: #6344A6;
+  background: var(--dl-primary);
   border: none;
   color: #fff;
   padding: 6px 14px;
@@ -153,7 +153,7 @@
 }
 
 .tv-btn-primary:hover {
-  box-shadow: 0 4px 12px rgba(99,68,166,0.2);
+  box-shadow: 0 4px 12px rgba(37, 99, 235,0.2);
 }
 
 .tv-empty {
@@ -165,8 +165,8 @@
 
 .tv-back-btn {
   background: #fff;
-  color: #6344A6;
-  border: 2px solid #6344A6;
+  color: var(--dl-primary);
+  border: 2px solid var(--dl-primary);
   border-radius: 8px;
   padding: 10px 24px;
   font-size: 14px;

@@ -14,7 +14,7 @@
   font-family: var(--dl-font);
   font-size: 24px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.96);
+  color: var(--dl-dark);
   margin: 0 0 6px 0;
   letter-spacing: -0.02em;
   text-shadow: none;
@@ -22,7 +22,7 @@
 
 .dashboard-welcome p {
   font-size: 16px;
-  color: rgba(255,255,255,0.9);
+  color: var(--dl-muted);
   margin: 0;
 }
 
@@ -325,7 +325,7 @@
 }
 
 .dash-games-btn-primary {
-  background: #6344a6;
+  background: var(--dl-primary);
   color: #fff;
   box-shadow: none;
 }
@@ -338,13 +338,13 @@
 
 .dash-games-btn-secondary {
   background: #fff;
-  color: #6344a6;
+  color: var(--dl-primary);
   border: 1px solid #d4d4d8;
 }
 
 .dash-games-btn-secondary:hover {
   background: #f8fafc;
-  border-color: #6344a6;
+  border-color: var(--dl-primary);
 }
 
 .dash-challenge-banner {
@@ -362,7 +362,7 @@
 }
 
 .dash-challenge-banner-pending {
-  background: #6344a6;
+  background: var(--dl-primary);
 }
 
 .dash-challenge-banner-turn {
@@ -648,7 +648,7 @@
 
 .quick-action-btn:hover {
   border-color: var(--dl-primary);
-  background: rgba(99,68,166,0.08);
+  background: rgba(37, 99, 235,0.08);
 }
 
 .dashboard-footer {

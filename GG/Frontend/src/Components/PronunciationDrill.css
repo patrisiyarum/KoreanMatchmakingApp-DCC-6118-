@@ -106,7 +106,7 @@
 
 .pd-romanization {
   font-size: 18px;
-  color: #6344A6;
+  color: var(--dl-primary);
   font-weight: bold;
   background: #f3f0fa;
   border-radius: 8px;
@@ -117,8 +117,8 @@
 
 .pd-hint-btn {
   background: none;
-  border: 2px dashed #6344A6;
-  color: #6344A6;
+  border: 2px dashed var(--dl-primary);
+  color: var(--dl-primary);
   border-radius: 8px;
   padding: 8px 16px;
   font-size: 13px;
@@ -146,8 +146,8 @@
 
 .pd-prev-btn {
   background: none;
-  border: 2px solid #6344A6;
-  color: #6344A6;
+  border: 2px solid var(--dl-primary);
+  color: var(--dl-primary);
   border-radius: 8px;
   padding: 10px 20px;
   font-size: 14px;
@@ -167,7 +167,7 @@
 }
 
 .pd-practice-btn {
-  background-color: #6344A6;
+  background-color: var(--dl-primary);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -181,11 +181,11 @@
 }
 
 .pd-practice-btn:hover {
-  box-shadow: 0 4px 12px rgba(99,68,166,0.28);
+  box-shadow: 0 4px 12px rgba(37, 99, 235,0.28);
 }
 
 .pd-submit-btn {
-  background-color: #6344A6;
+  background-color: var(--dl-primary);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -199,7 +199,7 @@
 }
 
 .pd-submit-btn:hover:not(:disabled) {
-  box-shadow: 0 4px 12px rgba(99,68,166,0.28);
+  box-shadow: 0 4px 12px rgba(37, 99, 235,0.28);
 }
 
 .pd-submit-btn:disabled {
@@ -226,7 +226,7 @@
   font-family: var(--dl-font);
   font-size: 48px;
   font-weight: bold;
-  color: #6344A6;
+  color: var(--dl-primary);
 }
 
 .pd-score-detail {
@@ -246,7 +246,7 @@
 }
 
 .pd-new-badges h4 {
-  color: #6344A6;
+  color: var(--dl-primary);
   margin: 0 0 8px 0;
 }
 
@@ -299,7 +299,7 @@
 }
 
 .pd-phrase-rom {
-  color: #6344A6;
+  color: var(--dl-primary);
   flex: 1;
   text-align: center;
 }
@@ -312,8 +312,8 @@
 
 .pd-back-btn {
   background: #fff;
-  color: #6344A6;
-  border: 2px solid #6344A6;
+  color: var(--dl-primary);
+  border: 2px solid var(--dl-primary);
   border-radius: 8px;
   padding: 12px 24px;
   font-size: 14px;
@@ -334,7 +334,7 @@
   padding: 10px 14px;
   margin: 10px 0 16px;
   font-weight: bold;
-  color: #6344A6;
+  color: var(--dl-primary);
 }
 
 /* ── Duolingo-style completion ── */
@@ -350,12 +350,12 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6344A6 0%, #22c1c3 100%);
+  background: linear-gradient(135deg, var(--dl-primary) 0%, #22c1c3 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 12px;
-  box-shadow: 0 4px 20px rgba(99,68,166,0.3);
+  box-shadow: 0 4px 20px rgba(37, 99, 235,0.3);
 }
 
 .pd-mascot-face {
@@ -403,7 +403,7 @@
 
 .pd-xp-fill {
   height: 100%;
-  background: linear-gradient(90deg, #6344A6, #22c1c3);
+  background: linear-gradient(90deg, var(--dl-primary), #22c1c3);
   border-radius: 6px;
   animation: pd-grow 1s ease both 0.5s;
 }

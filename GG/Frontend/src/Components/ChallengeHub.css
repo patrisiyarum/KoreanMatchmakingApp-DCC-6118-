@@ -114,7 +114,7 @@
 }
 
 .ch-card-details { display: flex; gap: 10px; margin-bottom: 8px; font-size: 13px; color: #888; }
-.ch-game-label { font-weight: bold; color: #6344A6; }
+.ch-game-label { font-weight: bold; color: var(--dl-primary); }
 
 .ch-score-row { font-size: 13px; color: #555; margin-bottom: 8px; display: flex; justify-content: space-between; }
 .ch-winner { color: #16a34a; font-weight: bold; }
@@ -132,13 +132,13 @@
   padding: 8px 18px; font-size: 13px; font-weight: bold; cursor: pointer;
 }
 .ch-play-btn {
-  background: #6344A6; color: #fff; border: none; border-radius: 8px;
+  background: var(--dl-primary); color: #fff; border: none; border-radius: 8px;
   padding: 10px 24px; font-size: 14px; font-weight: bold; cursor: pointer;
   font-family: var(--dl-font);
 }
 
 .ch-turn-indicator { margin: 6px 0 4px; font-size: 13px; }
-.ch-your-turn { color: #6344A6; font-weight: bold; }
+.ch-your-turn { color: var(--dl-primary); font-weight: bold; }
 .ch-waiting { color: #888; font-style: italic; }
 
 .ch-back-wrap {

@@ -5,7 +5,7 @@
   justify-content: center;
   align-items: flex-start;
   min-height: 100vh;
-  background: linear-gradient(135deg, #E8D5F2 0%, #D1B3E6 100%);
+  background: linear-gradient(to bottom, #eff6ff 0%, #fafafa 45%, #fafafa 100%);
   padding: 20px;
   box-sizing: border-box;
   overflow-y: auto;
@@ -13,8 +13,9 @@
 
 .availability-picker {
   background: #ffffff;
-  border-radius: 15px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   padding: 40px;
   max-width: 900px;
   width: 100%;
@@ -111,10 +112,10 @@
 }
 
 .time-slot:hover {
-  border-color: #6344A6;
+  border-color: var(--dl-primary);
   background: #f8f6ff;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(99, 68, 166, 0.2);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
 }
 
 .time-slot.selected {
@@ -152,7 +153,7 @@
 
 .btn-confirm {
   padding: 12px 30px;
-  background: linear-gradient(135deg, #6344A6 0%, #8B5FBF 100%);
+  background: linear-gradient(135deg, var(--dl-primary) 0%, #8B5FBF 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -161,18 +162,18 @@
   cursor: pointer;
   transition: all 0.3s ease;
   min-width: 180px;
-  box-shadow: 0 4px 12px rgba(99, 68, 166, 0.3);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 .btn-confirm:hover {
   background: linear-gradient(135deg, #5a3d96 0%, #7a4fa8 100%);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(99, 68, 166, 0.4);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
 }
 
 .btn-confirm:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(99, 68, 166, 0.3);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
 }
 
 /* Responsive design */
@@ -272,12 +273,12 @@
 
 /* Focus states for accessibility */
 .time-slot:focus {
-  outline: 3px solid #6344A6;
+  outline: 3px solid var(--dl-primary);
   outline-offset: 2px;
 }
 
 .btn-back:focus,
 .btn-confirm:focus {
-  outline: 3px solid #6344A6;
+  outline: 3px solid var(--dl-primary);
   outline-offset: 2px;
 }

@@ -25,9 +25,9 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 2px solid #6344A6;
+  border: 2px solid var(--dl-primary);
   background: #fff;
-  color: #6344A6;
+  color: var(--dl-primary);
   font-size: 20px;
   cursor: pointer;
   display: flex;
@@ -39,7 +39,7 @@
 }
 
 .meeting-calendar-nav:hover {
-  background: #6344A6;
+  background: var(--dl-primary);
   color: #fff;
 }
 
@@ -49,7 +49,7 @@
   padding: 6px 14px;
   font-size: 12px;
   font-weight: 600;
-  color: #6344A6;
+  color: var(--dl-primary);
   background: #f3f0fa;
   border: 1px solid #ede9fe;
   border-radius: 20px;
@@ -134,7 +134,7 @@
 }
 
 .meeting-calendar-cell-clickable:hover {
-  background: rgba(99, 68, 166, 0.08);
+  background: rgba(37, 99, 235, 0.08);
 }
 
 body.mc-slot-painting {
@@ -146,18 +146,18 @@ body.mc-slot-painting .meeting-calendar-cell-clickable {
 }
 
 .meeting-calendar-cell--slot-paint {
-  background: rgba(99, 68, 166, 0.2) !important;
-  outline: 1px solid rgba(99, 68, 166, 0.45);
+  background: rgba(37, 99, 235, 0.2) !important;
+  outline: 1px solid rgba(37, 99, 235, 0.45);
 }
 
 .meeting-calendar-cell--drop-hover {
-  background: rgba(99, 68, 166, 0.14) !important;
-  outline: 2px dashed #6344A6;
+  background: rgba(37, 99, 235, 0.14) !important;
+  outline: 2px dashed var(--dl-primary);
   outline-offset: -2px;
 }
 
 .meeting-calendar--dragging .meeting-calendar-cell-clickable:hover {
-  background: rgba(99, 68, 166, 0.05);
+  background: rgba(37, 99, 235, 0.05);
 }
 
 .meeting-calendar-cell:last-child {
@@ -169,7 +169,7 @@ body.mc-slot-painting .meeting-calendar-cell-clickable {
   left: 2px;
   right: 2px;
   top: 2px;
-  background: linear-gradient(135deg, #6344A6 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--dl-primary) 0%, #8b5cf6 100%);
   color: #fff;
   border-radius: 6px;
   padding: 5px 8px 4px;
@@ -190,7 +190,7 @@ body.mc-slot-painting .meeting-calendar-cell-clickable {
 }
 
 .meeting-calendar-event:hover {
-  box-shadow: 0 2px 8px rgba(99, 68, 166, 0.4);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
   transform: translateY(-1px);
 }
 
@@ -232,5 +232,5 @@ body.mc-slot-painting .meeting-calendar-cell-clickable {
 /* Highlight today's column */
 .meeting-calendar-header-row .meeting-calendar-day-col.today,
 .meeting-calendar-row .meeting-calendar-cell.today {
-  background: rgba(99, 68, 166, 0.06);
+  background: rgba(37, 99, 235, 0.06);
 }

@@ -257,70 +257,72 @@ useEffect(() => {
               </div>
             </div>
 
-            <section className="vp-section dash-progress-section">
-              <h3 className="vp-section-title">Challenge record</h3>
-              <div className="vp-grid dash-challenge-stat-grid">
-                <div className="vp-info-card">
-                  <span className="vp-field-label">Wins</span>
-                  <span className="vp-field-value">{challengeStats.wins ?? 0}</span>
-                </div>
-                <div className="vp-info-card">
-                  <span className="vp-field-label">Losses</span>
-                  <span className="vp-field-value">{challengeStats.losses ?? 0}</span>
-                </div>
-                <div className="vp-info-card">
-                  <span className="vp-field-label">Draws</span>
-                  <span className="vp-field-value">{challengeStats.draws ?? 0}</span>
-                </div>
-                <div className="vp-info-card">
-                  <span className="vp-field-label">Win rate</span>
-                  <span className="vp-field-value">{challengeStats.winRate ?? 0}%</span>
-                </div>
-                <div className="vp-info-card">
-                  <span className="vp-field-label">Finished</span>
-                  <span className="vp-field-value">{challengeStats.totalChallenges ?? 0}</span>
-                </div>
-              </div>
-              {((challengeStats.completedGameSessions ?? 0) > 0 || (challengeStats.xpFromSessions ?? 0) > 0) && (
-                <p className="dash-progress-footnote">
-                  {challengeStats.completedGameSessions ?? 0} practice sessions completed
-                  {(challengeStats.xpFromSessions ?? 0) > 0
-                    ? ` · ${challengeStats.xpFromSessions} XP from games`
-                    : ''}
-                </p>
-              )}
-            </section>
-
-            {userStats.gameActivity && (
-              <section className="vp-section dash-progress-section">
-                <h3 className="vp-section-title">Game activity</h3>
-                <div className="vp-grid dash-activity-stat-grid">
+            <div className="dash-progress-split">
+              <section className="vp-section dash-progress-section dash-progress-section--flush">
+                <h3 className="vp-section-title">Challenge record</h3>
+                <div className="vp-grid dash-challenge-stat-grid">
                   <div className="vp-info-card">
-                    <span className="vp-field-label">Term matching</span>
-                    <span className="vp-field-value">{userStats.gameActivity.termMatching}</span>
+                    <span className="vp-field-label">Wins</span>
+                    <span className="vp-field-value">{challengeStats.wins ?? 0}</span>
                   </div>
                   <div className="vp-info-card">
-                    <span className="vp-field-label">Grammar</span>
-                    <span className="vp-field-value">{userStats.gameActivity.grammarQuiz}</span>
+                    <span className="vp-field-label">Losses</span>
+                    <span className="vp-field-value">{challengeStats.losses ?? 0}</span>
                   </div>
                   <div className="vp-info-card">
-                    <span className="vp-field-label">Pronunciation</span>
-                    <span className="vp-field-value">{userStats.gameActivity.pronunciation}</span>
+                    <span className="vp-field-label">Draws</span>
+                    <span className="vp-field-value">{challengeStats.draws ?? 0}</span>
                   </div>
                   <div className="vp-info-card">
-                    <span className="vp-field-label">Perfect rounds</span>
-                    <span className="vp-field-value">{userStats.gameActivity.perfectRounds}</span>
+                    <span className="vp-field-label">Win rate</span>
+                    <span className="vp-field-value">{challengeStats.winRate ?? 0}%</span>
                   </div>
-                  <div className="vp-info-card dash-activity-total-card">
-                    <span className="vp-field-label">Total games</span>
-                    <span className="vp-field-value">{userStats.gameActivity.gamesPlayed}</span>
+                  <div className="vp-info-card">
+                    <span className="vp-field-label">Finished</span>
+                    <span className="vp-field-value">{challengeStats.totalChallenges ?? 0}</span>
                   </div>
                 </div>
+                {((challengeStats.completedGameSessions ?? 0) > 0 || (challengeStats.xpFromSessions ?? 0) > 0) && (
+                  <p className="dash-progress-footnote">
+                    {challengeStats.completedGameSessions ?? 0} practice sessions completed
+                    {(challengeStats.xpFromSessions ?? 0) > 0
+                      ? ` · ${challengeStats.xpFromSessions} XP from games`
+                      : ''}
+                  </p>
+                )}
               </section>
-            )}
+
+              {userStats.gameActivity && (
+                <section className="vp-section dash-progress-section dash-progress-section--flush">
+                  <h3 className="vp-section-title">Game activity</h3>
+                  <div className="vp-grid dash-activity-stat-grid">
+                    <div className="vp-info-card">
+                      <span className="vp-field-label">Term matching</span>
+                      <span className="vp-field-value">{userStats.gameActivity.termMatching}</span>
+                    </div>
+                    <div className="vp-info-card">
+                      <span className="vp-field-label">Grammar</span>
+                      <span className="vp-field-value">{userStats.gameActivity.grammarQuiz}</span>
+                    </div>
+                    <div className="vp-info-card">
+                      <span className="vp-field-label">Pronunciation</span>
+                      <span className="vp-field-value">{userStats.gameActivity.pronunciation}</span>
+                    </div>
+                    <div className="vp-info-card">
+                      <span className="vp-field-label">Perfect rounds</span>
+                      <span className="vp-field-value">{userStats.gameActivity.perfectRounds}</span>
+                    </div>
+                    <div className="vp-info-card dash-activity-total-card">
+                      <span className="vp-field-label">Total games</span>
+                      <span className="vp-field-value">{userStats.gameActivity.gamesPlayed}</span>
+                    </div>
+                  </div>
+                </section>
+              )}
+            </div>
 
             {badges.length > 0 && (
-              <section className="vp-section dash-progress-section">
+              <section className="vp-section dash-progress-section dash-progress-section--badges">
                 <h3 className="vp-section-title">Badges ({badges.length})</h3>
                 <div className="vp-tags dash-progress-badge-tags">
                   {badges.map((b) => (

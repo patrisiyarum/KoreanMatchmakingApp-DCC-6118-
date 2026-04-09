@@ -36,6 +36,7 @@ import TeamLobby  from '../Components/TeamLobby';
 import TeamCreate from '../Components/TeamCreate';
 import TeamPage   from '../Components/TeamPage';
 import ViewProfile from '../Components/ViewProfile';
+import SiteChrome from '../Components/SiteChrome';
 
 function RedirectToFriends({ discover }) {
   const [sp] = useSearchParams();
@@ -86,6 +87,7 @@ const App = () => {
        <TranslatorPanel />
        <AssistantPanel />
       </Router>
+      <SiteChrome />
       </AssistantProvider>
       </TranslatorProvider>
     </div>

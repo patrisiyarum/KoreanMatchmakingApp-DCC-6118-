@@ -1,0 +1,70 @@
+/* Hide Google Translate UI chrome; we drive language via cookie + reload */
+.lm-google-translate-host {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+body {
+  top: 0 !important;
+}
+
+iframe.skiptranslate,
+.goog-te-banner-frame,
+#goog-gt-tt {
+  display: none !important;
+}
+
+.site-chrome {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 9990;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  align-items: stretch;
+}
+
+.site-chrome-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.site-chrome-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.16);
+}
+
+.site-chrome-btn--lang {
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  color: #9a3412;
+  border: 1px solid #fdba74;
+}
+
+.site-chrome-btn--feedback {
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  color: #3730a3;
+  border: 1px solid #a5b4fc;
+}
+
+@media (max-width: 480px) {
+  .site-chrome {
+    bottom: 0.65rem;
+    right: 0.65rem;
+  }
+
+  .site-chrome-btn {
+    font-size: 0.78rem;
+    padding: 0.4rem 0.75rem;
+  }
+}

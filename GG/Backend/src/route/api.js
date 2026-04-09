@@ -21,6 +21,7 @@ import badgeRoutes from './badgeRoutes.js';
 import challengeRoutes from './challengeRoutes.js';
 import uploadRoutes from './uploadRoutes.js';
 import userController from '../controller/userController.js';
+import { submitFeedback } from '../controller/feedbackController.js';
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -77,6 +78,7 @@ const initAPIRoute = (app) => {
     router.get("/meetings/:userId", getMeetingsForUser);
     router.get('/users', APIController.getAllUsers);
     /** Same behavior as POST /Register (web.js); use this path when the host only proxies /api (e.g. Plesk). */
+    router.post('/feedback', submitFeedback);
     router.post('/register', userController.handleRegister);
     /** Same as POST /CreateProfile and PUT /UpdateProfile (web.js). */
     router.post('/create-profile', userController.handleProfileCreation);

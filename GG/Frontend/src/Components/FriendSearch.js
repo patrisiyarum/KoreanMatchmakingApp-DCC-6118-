@@ -46,26 +46,6 @@ function commitmentHintText(level) {
   return 'Moderate';
 }
 
-function parseGameStats(raw) {
-  if (raw == null || raw === '') return null;
-  try {
-    return typeof raw === 'string' ? JSON.parse(raw) : raw;
-  } catch {
-    return null;
-  }
-}
-
-function activityFromGameStats(raw) {
-  const o = parseGameStats(raw);
-  if (!o) return null;
-  const term = o.term_matching_played || 0;
-  const grammar = o.grammar_quiz_played || 0;
-  const pron = o.pronunciation_played || 0;
-  const played = o.games_played ?? term + grammar + pron;
-  if (!played && !o.perfect_score) return null;
-  return { gamesPlayed: played, perfectRounds: o.perfect_score || 0 };
-}
-
 /** "Monday" / "monday" → canonical weekday name for comparison */
 function normalizeDayName(d) {
   if (d == null) return '';
@@ -153,7 +133,12 @@ const ZODIAC_OPTIONS = [
   'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'
 ].map(v => ({ value: v, label: v }));
 
-const FILTER_TABS = ['Guide', 'Personality', 'Interests', 'Schedule', 'Match filters'];
+const FILTER_TABS = [
+  'How it works',
+  'Personality & interests',
+  'Schedule',
+  'Match profile',
+];
 
 const COMMITMENT_FLEX_OPTIONS = [
   { value: 0, label: 'Exact level' },
@@ -163,16 +148,25 @@ const COMMITMENT_FLEX_OPTIONS = [
 
 const selectStyles = {
   container: (base) => ({ ...base, width: '100%' }),
-  control:   (base, state) => ({
-    ...base, minHeight: 38, borderRadius: 8,
-    borderColor: state.isFocused ? '#6344A6' : '#d4d4d8',
-    boxShadow: 'none', fontSize: 13,
-    '&:hover': { borderColor: '#6344A6' }
+  control: (base, state) => ({
+    ...base,
+    minHeight: 40,
+    borderRadius: 6,
+    borderColor: state.isFocused ? '#111827' : '#d1d5db',
+    backgroundColor: '#fff',
+    boxShadow: state.isFocused ? '0 0 0 1px #111827' : 'none',
+    fontSize: 13,
+    '&:hover': { borderColor: '#9ca3af' },
   }),
-  multiValue:       (base) => ({ ...base, background: '#ede9fe' }),
-  multiValueLabel:  (base) => ({ ...base, color: '#6344A6', fontSize: 12 }),
-  multiValueRemove: (base) => ({ ...base, color: '#6344A6', ':hover': { background: '#6344A6', color: '#fff' } }),
-  menu: (base) => ({ ...base, zIndex: 5 })
+  multiValue: (base) => ({ ...base, background: '#ede9fe' }),
+  multiValueLabel: (base) => ({ ...base, color: '#6344A6', fontSize: 12 }),
+  multiValueRemove: (base) => ({
+    ...base,
+    color: '#6344A6',
+    ':hover': { background: '#6344A6', color: '#fff' },
+  }),
+  menu: (base) => ({ ...base, zIndex: 20 }),
+  placeholder: (base) => ({ ...base, color: '#9ca3af', fontSize: 13 }),
 };
 
 const FriendSearch = ({ embedded = false }) => {
@@ -202,6 +196,12 @@ const FriendSearch = ({ embedded = false }) => {
   const [filterMatchCommitment, setFilterMatchCommitment] = useState('');
   const [filterCommitmentFlex, setFilterCommitmentFlex] = useState(0);
   const [matchFieldOptions, setMatchFieldOptions] = useState({ learningGoals: [], communicationStyles: [] });
+
+  const clearPersonalityInterestSelections = () => {
+    setSelectedMbti([]);
+    setSelectedZodiac([]);
+    setSelectedInterests([]);
+  };
 
   const fetchDiscoverAndEnrich = async (opts) => {
     const discoverRes = await handleDiscoverUsersApi(id, opts);
@@ -567,7 +567,7 @@ const FriendSearch = ({ embedded = false }) => {
       {!embedded && <Navbar id={id} />}
 
       <div className="fs-center">
-        <div className="fs-card">
+        <div className="fs-card fs-card--discover-filters">
           {!embedded && (
             <button className="back-to-dashboard" onClick={() => navigate({ pathname: '/Dashboard', search: createSearchParams({ id }).toString() })}>Dashboard</button>
           )}
@@ -588,168 +588,195 @@ const FriendSearch = ({ embedded = false }) => {
             </button>
           </div>
 
-          {/* Filter tabs */}
-          <div className="fs-filter-tabs" aria-label="Discover filters">
+          {/* Filters — shopping-style accordion */}
+          <div className="fs-shop-filters" aria-label="Discover filters">
+            <div className="fs-shop-filters-header">
+              <span className="fs-shop-filters-title">Narrow results</span>
+              <span className="fs-shop-filters-hint">Open a section to set filters</span>
+            </div>
             {FILTER_TABS.map((tab, i) => (
-              <button
+              <div
                 key={tab}
-                type="button"
-                className={`fs-filter-tab ${activeFilter === i ? 'fs-filter-tab-active' : ''}`}
-                onClick={() => setActiveFilter(activeFilter === i ? -1 : i)}
+                className={`fs-shop-filter-section${activeFilter === i ? ' fs-shop-filter-section--open' : ''}`}
               >
-                {tab}
-              </button>
+                <button
+                  type="button"
+                  className="fs-shop-filter-trigger"
+                  onClick={() => setActiveFilter(activeFilter === i ? -1 : i)}
+                  aria-expanded={activeFilter === i}
+                >
+                  <span className="fs-shop-filter-trigger-label">{tab}</span>
+                  <span className="fs-shop-filter-chevron" aria-hidden="true" />
+                </button>
+                {activeFilter === i && (
+                  <div className="fs-shop-filter-body">
+                    {i === 0 && (
+                      <div className="fs-filter-panel-tip fs-filter-panel-tip--in-accordion">
+                        <p className="fs-help-lead">How Discover works</p>
+                        <ol className="fs-help-list">
+                          <li><strong>Search</strong> finds people by name (tap Search or Enter).</li>
+                          <li>
+                            <strong>Personality &amp; interests</strong> are optional filters in one place. Tap <em>Apply</em> after choosing.
+                          </li>
+                          <li>
+                            <strong>Schedule.</strong>{' '}
+                            Choose when you are usually free. We list people who have at least one overlapping hour on the same day
+                            (times can differ slightly; we match overlap, not exact copies).
+                          </li>
+                          <li>
+                            <strong>Match profile</strong> optionally limits the server list by goal, style, and commitment (same fields as your profile).
+                            <strong> Best profile match</strong> sorts everyone still shown by how closely their goal, style, and commitment match yours. Personality, interests, and schedule only narrow who appears; they are not part of the % score yet.
+                          </li>
+                        </ol>
+                      </div>
+                    )}
+                    {i === 1 && (
+                      <div className="fs-filter-panel fs-filter-panel--shop">
+                        <div className="fs-shop-filter-group">
+                          <div className="fs-shop-filter-group-title">Personality</div>
+                          <div className="fs-filter-row">
+                            <div>
+                              <div className="fs-filter-label">MBTI</div>
+                              <Select
+                                isMulti
+                                options={MBTI_OPTIONS}
+                                value={MBTI_OPTIONS.filter((o) => selectedMbti.includes(o.value))}
+                                onChange={(vals) => setSelectedMbti((vals || []).map((v) => v.value))}
+                                placeholder="Any type"
+                                styles={selectStyles}
+                              />
+                            </div>
+                            <div>
+                              <div className="fs-filter-label">Zodiac</div>
+                              <Select
+                                isMulti
+                                options={ZODIAC_OPTIONS}
+                                value={ZODIAC_OPTIONS.filter((o) => selectedZodiac.includes(o.value))}
+                                onChange={(vals) => setSelectedZodiac((vals || []).map((v) => v.value))}
+                                placeholder="Any sign"
+                                styles={selectStyles}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="fs-shop-filter-group">
+                          <div className="fs-shop-filter-group-title">Interests</div>
+                          <Select
+                            isMulti
+                            options={allInterests.map((n) => ({ value: n, label: n }))}
+                            value={allInterests
+                              .map((n) => ({ value: n, label: n }))
+                              .filter((o) => selectedInterests.includes(o.value))}
+                            onChange={(vals) => setSelectedInterests((vals || []).map((v) => v.value))}
+                            placeholder="Select interests…"
+                            styles={selectStyles}
+                          />
+                        </div>
+                        <div className="fs-filter-actions fs-filter-actions--shop">
+                          <button
+                            type="button"
+                            className="fs-btn-secondary fs-btn-shop"
+                            onClick={clearPersonalityInterestSelections}
+                          >
+                            Clear
+                          </button>
+                          <button type="button" className="fs-btn-primary fs-btn-shop" onClick={applyFilters}>
+                            Apply
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {i === 2 && (
+                      <div className="fs-filter-panel fs-filter-panel--shop">
+                        <p className="fs-panel-desc">
+                          Choose when you are usually free. We list people who have at least one overlapping hour on the same day
+                          (times can differ slightly; we match overlap, not exact copies).
+                        </p>
+                        <button
+                          type="button"
+                          className="fs-btn-primary fs-btn-shop fs-btn-shop-block"
+                          onClick={() => navigate({
+                            pathname: '/AvailabilityPicker',
+                            search: createSearchParams({ id, returnTo: 'Friends', friendsSub: 'discover' }).toString(),
+                          })}
+                        >
+                          Choose my free times
+                        </button>
+                        {selectedAvailability && selectedAvailability.length > 0 && (
+                          <>
+                            <div className="fs-avail-display">
+                              {selectedAvailability.map((slot, j) => {
+                                const day = slot.day_of_week || slot.day || '';
+                                const start = (slot.start_time || '').toString().slice(0, 5);
+                                const end = (slot.end_time || '').toString().slice(0, 5);
+                                const label = end ? `${day} ${start}–${end}` : `${day} ${start}`;
+                                return (
+                                  <span key={j} className="fs-avail-slot">{label}</span>
+                                );
+                              })}
+                            </div>
+                            <button
+                              type="button"
+                              className="fs-btn-secondary fs-btn-shop fs-btn-shop-block"
+                              onClick={() => setSelectedAvailability(null)}
+                            >
+                              Clear schedule filter
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                    {i === 3 && (
+                      <div className="fs-filter-panel fs-filter-panel--shop">
+                        <div className="fs-filter-label">Learning objective</div>
+                        <Select
+                          styles={selectStyles}
+                          isClearable
+                          placeholder="Any goal"
+                          options={matchFieldOptions.learningGoals.map((g) => ({ value: g, label: g }))}
+                          value={filterMatchLearningGoal ? { value: filterMatchLearningGoal, label: filterMatchLearningGoal } : null}
+                          onChange={(o) => setFilterMatchLearningGoal(o?.value ?? '')}
+                        />
+                        <div className="fs-filter-label fs-filter-label--spaced">Communication style</div>
+                        <Select
+                          styles={selectStyles}
+                          isClearable
+                          placeholder="Any style"
+                          options={matchFieldOptions.communicationStyles.map((g) => ({ value: g, label: g }))}
+                          value={filterMatchCommunicationStyle ? { value: filterMatchCommunicationStyle, label: filterMatchCommunicationStyle } : null}
+                          onChange={(o) => setFilterMatchCommunicationStyle(o?.value ?? '')}
+                        />
+                        <div className="fs-filter-label fs-filter-label--spaced">Commitment level</div>
+                        <Select
+                          styles={selectStyles}
+                          isClearable
+                          placeholder="Any level"
+                          options={[1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n} star${n > 1 ? 's' : ''}` }))}
+                          value={filterMatchCommitment === '' ? null : { value: Number(filterMatchCommitment), label: String(filterMatchCommitment) }}
+                          onChange={(o) => setFilterMatchCommitment(o == null ? '' : String(o.value))}
+                        />
+                        <div className="fs-filter-label fs-filter-label--spaced">Commitment match</div>
+                        <Select
+                          styles={selectStyles}
+                          options={COMMITMENT_FLEX_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                          value={COMMITMENT_FLEX_OPTIONS.map((o) => ({ value: o.value, label: o.label })).find((o) => o.value === filterCommitmentFlex)}
+                          onChange={(o) => setFilterCommitmentFlex(o?.value ?? 0)}
+                        />
+                        <div className="fs-filter-actions fs-filter-actions--shop">
+                          <button type="button" className="fs-btn-secondary fs-btn-shop" onClick={clearAll}>
+                            Clear all
+                          </button>
+                          <button type="button" className="fs-btn-primary fs-btn-shop" onClick={() => applyMatchFilters()}>
+                            Apply
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
-
-          {activeFilter === 0 && (
-            <div className="fs-filter-panel fs-filter-panel-tip">
-              <p className="fs-help-lead">How Discover works</p>
-              <ol className="fs-help-list">
-                <li><strong>Search</strong> finds people by name (tap Search or Enter).</li>
-                <li><strong>Personality and interests</strong> are optional. Tap <em>Apply</em> after choosing.</li>
-                <li>
-                  <strong>Schedule.</strong>{' '}
-                  Choose when you are usually free. We list people who have at least one overlapping hour on the same day
-                  (times can differ slightly; we match overlap, not exact copies).
-                </li>
-                <li>
-                  <strong>Match filters</strong> optionally limits the server list by goal, style, and commitment (same fields as your profile).
-                  <strong> Best profile match</strong> sorts everyone still shown by how closely their goal, style, and commitment match yours. Personality, interests, and schedule only narrow who appears; they are not part of the % score yet.
-                </li>
-              </ol>
-            </div>
-          )}
-
-          {/* MBTI / Zodiac panel */}
-          {activeFilter === 1 && (
-            <div className="fs-filter-panel">
-              <div className="fs-filter-row">
-                <div>
-                  <div className="fs-filter-label">MBTI</div>
-                  <Select isMulti options={MBTI_OPTIONS}
-                    value={MBTI_OPTIONS.filter(o => selectedMbti.includes(o.value))}
-                    onChange={(vals) => setSelectedMbti((vals || []).map(v => v.value))}
-                    placeholder="Select..." styles={selectStyles} />
-                </div>
-                <div>
-                  <div className="fs-filter-label">Zodiac</div>
-                  <Select isMulti options={ZODIAC_OPTIONS}
-                    value={ZODIAC_OPTIONS.filter(o => selectedZodiac.includes(o.value))}
-                    onChange={(vals) => setSelectedZodiac((vals || []).map(v => v.value))}
-                    placeholder="Select..." styles={selectStyles} />
-                </div>
-              </div>
-              <div className="fs-filter-actions">
-                <button className="fs-btn-secondary" onClick={clearAll}>Clear</button>
-                <button className="fs-btn-primary" onClick={applyFilters}>Apply</button>
-              </div>
-            </div>
-          )}
-
-          {/* Interests panel */}
-          {activeFilter === 2 && (
-            <div className="fs-filter-panel">
-              <div className="fs-filter-label">Interests</div>
-              <Select isMulti
-                options={allInterests.map(n => ({ value: n, label: n }))}
-                value={allInterests.map(n => ({ value: n, label: n })).filter(o => selectedInterests.includes(o.value))}
-                onChange={(vals) => setSelectedInterests((vals || []).map(v => v.value))}
-                placeholder="Select interests..." styles={selectStyles} />
-              <div className="fs-filter-actions">
-                <button type="button" className="fs-btn-secondary" onClick={() => setSelectedInterests([])}>Clear</button>
-                <button className="fs-btn-primary" onClick={applyFilters}>Apply</button>
-              </div>
-            </div>
-          )}
-
-          {/* Availability panel */}
-          {activeFilter === 3 && (
-            <div className="fs-filter-panel">
-              <p className="fs-panel-desc">
-                Choose when you are usually free. We list people who have at least one overlapping hour on the same day
-                (times can differ slightly; we match overlap, not exact copies).
-              </p>
-              <button
-                type="button"
-                className="fs-btn-primary"
-                style={{ width: '100%' }}
-                onClick={() => navigate({
-                  pathname: '/AvailabilityPicker',
-                  search: createSearchParams({ id, returnTo: 'Friends', friendsSub: 'discover' }).toString(),
-                })}
-              >
-                Choose my free times
-              </button>
-              {selectedAvailability && selectedAvailability.length > 0 && (
-                <>
-                  <div className="fs-avail-display">
-                    {selectedAvailability.map((slot, i) => {
-                      const day = slot.day_of_week || slot.day || '';
-                      const start = (slot.start_time || '').toString().slice(0, 5);
-                      const end = (slot.end_time || '').toString().slice(0, 5);
-                      const label = end ? `${day} ${start}–${end}` : `${day} ${start}`;
-                      return (
-                        <span key={i} className="fs-avail-slot">{label}</span>
-                      );
-                    })}
-                  </div>
-                  <button
-                    type="button"
-                    className="fs-btn-secondary"
-                    style={{ width: '100%' }}
-                    onClick={() => setSelectedAvailability(null)}
-                  >
-                    Clear schedule filter
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Match profile — server-side filter + sort */}
-          {activeFilter === 4 && (
-            <div className="fs-filter-panel">
-              <div className="fs-filter-label">Learning objective</div>
-              <Select
-                styles={selectStyles}
-                isClearable
-                placeholder="Any goal"
-                options={matchFieldOptions.learningGoals.map((g) => ({ value: g, label: g }))}
-                value={filterMatchLearningGoal ? { value: filterMatchLearningGoal, label: filterMatchLearningGoal } : null}
-                onChange={(o) => setFilterMatchLearningGoal(o?.value ?? '')}
-              />
-              <div className="fs-filter-label" style={{ marginTop: 10 }}>Communication style</div>
-              <Select
-                styles={selectStyles}
-                isClearable
-                placeholder="Any style"
-                options={matchFieldOptions.communicationStyles.map((g) => ({ value: g, label: g }))}
-                value={filterMatchCommunicationStyle ? { value: filterMatchCommunicationStyle, label: filterMatchCommunicationStyle } : null}
-                onChange={(o) => setFilterMatchCommunicationStyle(o?.value ?? '')}
-              />
-              <div className="fs-filter-label" style={{ marginTop: 10 }}>Commitment level</div>
-              <Select
-                styles={selectStyles}
-                isClearable
-                placeholder="Any level"
-                options={[1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n} star${n > 1 ? 's' : ''}` }))}
-                value={filterMatchCommitment === '' ? null : { value: Number(filterMatchCommitment), label: String(filterMatchCommitment) }}
-                onChange={(o) => setFilterMatchCommitment(o == null ? '' : String(o.value))}
-              />
-              <div className="fs-filter-label" style={{ marginTop: 10 }}>Commitment match</div>
-              <Select
-                styles={selectStyles}
-                options={COMMITMENT_FLEX_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-                value={COMMITMENT_FLEX_OPTIONS.map((o) => ({ value: o.value, label: o.label })).find((o) => o.value === filterCommitmentFlex)}
-                onChange={(o) => setFilterCommitmentFlex(o?.value ?? 0)}
-              />
-              <div className="fs-filter-actions">
-                <button type="button" className="fs-btn-secondary" onClick={clearAll}>Clear all</button>
-                <button type="button" className="fs-btn-primary" onClick={() => applyMatchFilters()}>Apply</button>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Incoming requests card */}
@@ -800,7 +827,7 @@ const FriendSearch = ({ embedded = false }) => {
                   type="button"
                   className={`fs-btn-sort${sortDiscover === 'best_match' ? ' fs-btn-sort-active' : ''}`}
                   onClick={() => applySortDiscover('best_match')}
-                  title="Sort by profile alignment: compares each person’s learning goal, communication style, and commitment to yours. Search, Match filters, Personality, Interests, and Schedule only restrict who is listed—they do not change the percentage."
+                  title="Sort by profile alignment: compares each person’s learning goal, communication style, and commitment to yours. Search, Match profile, Personality & interests, and Schedule only restrict who is listed—they do not change the percentage."
                 >
                   Best profile match
                 </button>
@@ -845,12 +872,6 @@ const FriendSearch = ({ embedded = false }) => {
                 const nativeL = getField(user, ['nativeLanguage', 'native_language']);
                 const targetL = getField(user, ['targetLanguage', 'target_language']);
                 const prof = getField(user, ['targetLanguageProficiency', 'target_language_proficiency']);
-                const activity = activityFromGameStats(user.gameStats);
-                const badgeCount = user.badgeCount != null ? Number(user.badgeCount) : 0;
-                const badgeIcons = typeof user.badgeIcons === 'string' && user.badgeIcons.trim()
-                  ? user.badgeIcons.trim().split(/\s+/).filter(Boolean)
-                  : [];
-
                 const emailLine = typeof user.email === 'string' && user.email.trim()
                   ? user.email.trim()
                   : '';
@@ -876,14 +897,6 @@ const FriendSearch = ({ embedded = false }) => {
                   : null;
                 const showMatchHighlight = sortDiscover === 'best_match' && matchPct != null;
 
-                const showActivity = Boolean(
-                  user.level != null
-                  || user.xp != null
-                  || activity?.gamesPlayed
-                  || (matchPct != null && sortDiscover !== 'best_match')
-                );
-                const showBadges = badgeCount > 0 || badgeIcons.length > 0;
-
                 const langLine = [
                   nativeL ? `Native ${nativeL}` : null,
                   targetL ? `Target ${targetL}` : null,
@@ -903,18 +916,6 @@ const FriendSearch = ({ embedded = false }) => {
                   user.communication_style || null,
                 ].filter(Boolean).join(' · ');
 
-                const activityParts = [];
-                if (user.level != null || user.xp != null) {
-                  activityParts.push(`Lv ${user.level ?? 1} · ${user.xp ?? 0} XP`);
-                }
-                if (activity?.gamesPlayed) {
-                  activityParts.push(`${activity.gamesPlayed} game${activity.gamesPlayed === 1 ? '' : 's'}`);
-                }
-                if (matchPct != null && sortDiscover !== 'best_match') {
-                  activityParts.push(`${matchPct}% match`);
-                }
-                const activityLine = activityParts.join(' · ');
-
                 const profileMerged = [langLine, aboutLine].filter(Boolean).join(' · ');
                 const hasLearningBlock = Boolean(
                   showLearningStyle && (learnLine || hasCommitment)
@@ -922,8 +923,6 @@ const FriendSearch = ({ embedded = false }) => {
                 const hasBodyContent = Boolean(
                   profileMerged
                   || hasLearningBlock
-                  || (showActivity && activityLine)
-                  || showBadges
                 );
 
                 return (
@@ -996,21 +995,6 @@ const FriendSearch = ({ embedded = false }) => {
                               </p>
                             ) : null}
                           </>
-                        ) : null}
-                        {showActivity && activityLine ? (
-                          <p className="fs-discover-line">{activityLine}</p>
-                        ) : null}
-                        {showBadges ? (
-                          <p className="fs-discover-badges-line">
-                            {badgeIcons.map((icon, j) => (
-                              <span key={j} className="fs-badge-emoji" title="Badge">{icon}</span>
-                            ))}
-                            {badgeCount > 0 ? (
-                              <span className="fs-discover-badge-suffix">
-                                {badgeIcons.length ? ' · ' : ''}{badgeCount} earned
-                              </span>
-                            ) : null}
-                          </p>
                         ) : null}
                       </div>
                     ) : null}

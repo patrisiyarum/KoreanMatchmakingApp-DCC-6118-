@@ -180,14 +180,6 @@
   font-family: var(--dl-font);
 }
 
-.dashboard-progress-wrap .dash-duo-foot {
-  margin: 12px 0 0 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: #94a3b8;
-  text-align: center;
-}
-
 .dashboard-progress-wrap .dash-duo-badges-wrap {
   margin-top: 14px;
   padding-top: 12px;

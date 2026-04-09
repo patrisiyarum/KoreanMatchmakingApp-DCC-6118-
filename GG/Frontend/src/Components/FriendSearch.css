@@ -33,6 +33,10 @@
   gap: 20px;
 }
 
+.fs-card.fs-card--discover-filters {
+  max-width: 680px;
+}
+
 .fs-results-card {
   max-width: 640px;
 }
@@ -62,6 +66,13 @@
   align-self: stretch;
   width: 100%;
   box-sizing: border-box;
+}
+
+.fs-filter-panel-tip--in-accordion {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: #f9fafb;
 }
 
 .fs-help-lead {
@@ -197,61 +208,146 @@
   border-color: #6344A6;
 }
 
-/* ── Filter tabs (segmented control) ── */
-.fs-filter-tabs {
-  display: flex;
-  flex-wrap: wrap;
+/* ── Shopping-style filter accordion ── */
+.fs-shop-filters {
   width: 100%;
-  gap: 6px;
-  padding: 6px;
-  box-sizing: border-box;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
-}
-
-.fs-filter-tab {
-  flex: 1 1 auto;
-  min-width: 0;
-  position: relative;
-  background: transparent;
-  border: none;
+  align-self: stretch;
+  border: 1px solid #e5e7eb;
   border-radius: 10px;
-  padding: 10px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: #64748b;
-  cursor: pointer;
+  background: #fafafa;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.fs-shop-filters-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px 12px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.fs-shop-filters-title {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #111827;
   font-family: var(--dl-font);
-  transition:
-    color 0.18s ease,
-    background 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.12s ease;
 }
 
-.fs-filter-tab:hover:not(.fs-filter-tab-active) {
-  color: #6344a6;
-  background: rgba(99, 68, 166, 0.08);
+.fs-shop-filters-hint {
+  font-size: 12px;
+  color: #6b7280;
+  font-family: var(--dl-font);
 }
 
-.fs-filter-tab:active:not(.fs-filter-tab-active) {
-  transform: scale(0.98);
+.fs-shop-filter-section {
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
 }
 
-.fs-filter-tab:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(99, 68, 166, 0.45);
+.fs-shop-filter-section:last-child {
+  border-bottom: none;
 }
 
-.fs-filter-tab-active {
-  background: #fff !important;
-  color: #6344a6 !important;
-  box-shadow:
-    0 1px 3px rgba(15, 23, 42, 0.1),
-    0 0 0 1px rgba(99, 68, 166, 0.18) !important;
+.fs-shop-filter-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin: 0;
+  padding: 14px 16px;
+  border: none;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--dl-font);
+  transition: background 0.15s ease;
+}
+
+.fs-shop-filter-trigger:hover {
+  background: #f9fafb;
+}
+
+.fs-shop-filter-section--open .fs-shop-filter-trigger {
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.fs-shop-filter-trigger-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.fs-shop-filter-chevron {
+  flex-shrink: 0;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid #6b7280;
+  transition: transform 0.2s ease;
+}
+
+.fs-shop-filter-section--open .fs-shop-filter-chevron {
+  transform: rotate(180deg);
+}
+
+.fs-shop-filter-body {
+  background: #fff;
+}
+
+.fs-shop-filter-group {
+  margin-bottom: 16px;
+}
+
+.fs-shop-filter-group:last-of-type {
+  margin-bottom: 0;
+}
+
+.fs-shop-filter-group-title {
+  margin: 0 0 8px 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+  font-family: var(--dl-font);
+}
+
+.fs-filter-panel--shop {
+  padding: 14px 16px 16px;
+  gap: 12px;
+}
+
+.fs-filter-label--spaced {
+  margin-top: 12px;
+}
+
+.fs-filter-actions--shop {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f3f4f6;
+  justify-content: flex-end;
+}
+
+.fs-btn-shop {
+  min-width: 96px;
+}
+
+.fs-btn-shop-block {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 520px) {
+  .fs-filter-panel--shop .fs-filter-row {
+    flex-direction: column;
+  }
 }
 
 /* ── Filter panel ── */
@@ -579,9 +675,7 @@
 
 .fs-discover-body > .fs-discover-line + .fs-discover-line,
 .fs-discover-body > .fs-discover-line + .fs-discover-commit,
-.fs-discover-body > .fs-discover-commit + .fs-discover-line,
-.fs-discover-body > .fs-discover-commit + .fs-discover-badges-line,
-.fs-discover-body > .fs-discover-line + .fs-discover-badges-line {
+.fs-discover-body > .fs-discover-commit + .fs-discover-line {
   margin-top: 0.5rem;
 }
 
@@ -619,24 +713,6 @@
 .fs-discover-commit-hint {
   font-size: 13px;
   color: #64748b;
-}
-
-.fs-discover-badges-line {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
-  color: #334155;
-}
-
-.fs-discover-badge-suffix {
-  color: #94a3b8;
-  font-size: 13px;
-}
-
-.fs-badge-emoji {
-  font-size: 17px;
-  line-height: 1;
-  margin-right: 4px;
 }
 
 .fs-user-row {
@@ -753,11 +829,6 @@
 @media (max-width: 600px) {
   .fs-filter-row {
     flex-direction: column;
-  }
-
-  .fs-filter-tab {
-    font-size: 11px;
-    padding: 9px 6px;
   }
 
   .fs-results-header {

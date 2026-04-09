@@ -242,8 +242,6 @@ useEffect(() => {
         const wins = ch?.wins ?? 0;
         const losses = ch?.losses ?? 0;
         const finished = ch?.totalChallenges ?? 0;
-        const sess = ch?.completedGameSessions ?? 0;
-        const xpSess = ch?.xpFromSessions ?? 0;
         return (
           <div className="dashboard-progress-wrap">
             <div className="dashboard-progress-card dash-duo-card">
@@ -284,12 +282,6 @@ useEffect(() => {
                   <span className="dash-duo-stat-cap">Challenges</span>
                 </div>
               </div>
-
-              {(sess > 0 || xpSess > 0) && (
-                <p className="dash-duo-foot">
-                  {sess} practice · {xpSess} XP from games
-                </p>
-              )}
 
               {badges.length > 0 && (
                 <div className="dash-duo-badges-wrap">

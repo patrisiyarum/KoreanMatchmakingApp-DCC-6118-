@@ -2,6 +2,30 @@
   background: var(--lm-bg, #f4f7ff) !important;
 }
 
+.lm-game-page--minimal {
+  background: linear-gradient(180deg, #faf5ff 0%, #fafafa 100%) !important;
+  min-height: 100vh;
+}
+
+.lm-games-menu-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 24px 16px 48px;
+  max-width: 28rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.lm-game-cards--solo {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
 .lm-games-hero {
   text-align: center;
   margin-bottom: 20px;
@@ -64,6 +88,18 @@
   transform: translateY(-2px);
   box-shadow: 0 8px 28px rgba(15, 23, 42, 0.1);
   border-color: rgba(37, 99, 235, 0.2);
+}
+
+button.lm-game-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+}
+
+button.lm-game-card:disabled:hover {
+  transform: none;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
 }
 
 .lm-game-card--disabled {

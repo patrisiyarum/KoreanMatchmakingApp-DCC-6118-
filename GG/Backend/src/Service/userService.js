@@ -162,7 +162,7 @@ let handleProfileCreation = (id, native_language, target_language, target_langua
     })
 }
 
-let handleProfileUpdate = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, learning_goal, communication_style, commitment_level) => {
+let handleProfileUpdate = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, learning_goal, communication_style, commitment_level, bio) => {
     return new Promise(async (resolve, reject) => {
         try {
             let userData = {};
@@ -208,6 +208,12 @@ let handleProfileUpdate = (id, native_language, target_language, target_language
                 commitment_level:
                     nextCommitment ??
                     normalizeCommitmentLevel(null, 3),
+                bio:
+                    bio === undefined || bio === null
+                        ? existing?.bio
+                        : String(bio).trim() === ''
+                          ? null
+                          : String(bio).trim().slice(0, 2000),
             });
  
             userData.errCode = 0;

@@ -39,6 +39,14 @@ function Avatar({ src, name, size = 44 }) {
 }
 
 /** Collapsible filter panel on embedded Discover (matches reference app UX). */
+function partnerBioText(user) {
+  const b = user?.bio != null && String(user.bio).trim() !== '' ? String(user.bio).trim() : '';
+  if (b) return b;
+  return user?.learning_goal != null && String(user.learning_goal).trim() !== ''
+    ? String(user.learning_goal).trim()
+    : '';
+}
+
 function DiscoverFiltersCardWrapper({ embedded, summaryLabel, children }) {
   if (embedded) {
     return (
@@ -219,7 +227,6 @@ const FriendSearch = ({ embedded = false }) => {
 
   /** Embedded Friends → Discover: one card at a time (Language Exchange Matchmaker App / Discover.tsx). */
   const [discoverSwipeIndex, setDiscoverSwipeIndex] = useState(0);
-  const [sessionLikesCount, setSessionLikesCount] = useState(0);
 
   const clearPersonalityInterestSelections = () => {
     setSelectedMbti([]);
@@ -384,7 +391,6 @@ const FriendSearch = ({ embedded = false }) => {
       await handleAddTrueFriend(Number(id), Number(user.id));
       flash(`Friend request sent to ${user.firstName} ${user.lastName}`);
       if (embedded && fromSwipe) {
-        setSessionLikesCount((c) => c + 1);
         bumpDiscoverSwipeIndex();
       }
       await refreshRequests();
@@ -649,13 +655,14 @@ const FriendSearch = ({ embedded = false }) => {
       viewerInterestLc.has(String(n).toLowerCase())
     ).length;
 
+    const bioText = partnerBioText(user);
     const hasBodyContent = Boolean(
       profileMerged
       || hasLearningBlock
       || showBadges
       || user.target_language_proficiency
       || userInterestNames.length > 0
-      || user.learning_goal
+      || bioText
       || sharedInterestCount > 0
       || getRequestStatusForUser(user.id).status !== 'none'
     );
@@ -740,10 +747,10 @@ const FriendSearch = ({ embedded = false }) => {
                   </div>
                 </div>
               ) : null}
-              {user.learning_goal ? (
+              {bioText ? (
                 <div className="lm-discover-section">
                   <div className="lm-discover-label">Bio</div>
-                  <div className="lm-discover-value lm-discover-bio">{user.learning_goal}</div>
+                  <div className="lm-discover-value lm-discover-bio">{bioText}</div>
                 </div>
               ) : null}
               {sharedInterestCount > 0 ? (
@@ -755,7 +762,7 @@ const FriendSearch = ({ embedded = false }) => {
               {profileMerged &&
               !user.target_language_proficiency &&
               userInterestNames.length === 0 &&
-              !user.learning_goal ? (
+              !bioText ? (
                 <p className="fs-discover-line">{profileMerged}</p>
               ) : null}
               {hasLearningBlock ? (
@@ -854,9 +861,10 @@ const FriendSearch = ({ embedded = false }) => {
       {!embedded && <Navbar id={id} />}
 
       <div className={`fs-center fs-center--discover${embedded ? ' fs-center--discover-embedded lm-discover-embed-column' : ''}`}>
-        <div className={`fs-discover-layout${embedded ? ' fs-discover-layout--embedded' : ''}`}>
-          <div className={`fs-discover-sidebar${embedded ? ' fs-discover-sidebar--embed' : ''}`}>
-        <DiscoverFiltersCardWrapper embedded={embedded} summaryLabel="Search & filters">
+        <div className={`fs-discover-layout${embedded ? ' fs-discover-layout--embedded fs-discover-layout--embed-solo' : ''}`}>
+          {!embedded ? (
+          <div className="fs-discover-sidebar">
+        <DiscoverFiltersCardWrapper embedded={false} summaryLabel="Search & filters">
         <div className="fs-card fs-card--discover-filters">
           {!embedded && (
             <button className="back-to-dashboard" onClick={() => navigate({ pathname: '/Dashboard', search: createSearchParams({ id }).toString() })}>Dashboard</button>
@@ -1060,15 +1068,9 @@ const FriendSearch = ({ embedded = false }) => {
         </div>
         </DiscoverFiltersCardWrapper>
           </div>
+          ) : null}
 
           <div className={`fs-discover-main${embedded ? ' fs-discover-main--embed' : ''}`}>
-        {embedded ? (
-          <p className="lm-discover-sparkle" aria-live="polite">
-            <span aria-hidden>✨</span>{' '}
-            {sessionLikesCount} match{sessionLikesCount !== 1 ? 'es' : ''} today
-            <span className="lm-discover-sparkle-ko" lang="ko">· 오늘의 매치</span>
-          </p>
-        ) : null}
         {/* Incoming requests card */}
         {friendRequests.incoming.length > 0 && (
           <div className="fs-card">
@@ -1134,28 +1136,6 @@ const FriendSearch = ({ embedded = false }) => {
             </div>
           </div>
             ) : null}
-          {embedded && displayedUsers.length > 0 ? (
-            <div className="lm-discover-embed-sort-wrap">
-              <div className="fs-sort-toggle" role="group" aria-label="Sort discovery results">
-                <button
-                  type="button"
-                  className={`fs-btn-sort${sortDiscover === 'best_match' ? ' fs-btn-sort-active' : ''}`}
-                  onClick={() => applySortDiscover('best_match')}
-                  title="Sort by match score or A–Z"
-                >
-                  Best match
-                </button>
-                <button
-                  type="button"
-                  className={`fs-btn-sort${sortDiscover === 'name' ? ' fs-btn-sort-active' : ''}`}
-                  onClick={() => applySortDiscover('name')}
-                  title="Alphabetical by first name"
-                >
-                  Name A–Z
-                </button>
-              </div>
-            </div>
-          ) : null}
           {!embedded && displayedUsers.length > 0 ? (
             <p className="fs-results-sort-hint">
               {sortDiscover === 'best_match' ? (
@@ -1171,7 +1151,7 @@ const FriendSearch = ({ embedded = false }) => {
           {displayedUsers.length === 0 ? (
             <div className={`fs-empty-block fs-empty-block--minimal${embedded ? ' fs-empty-block--embed-discover' : ''}`}>
               <p className="fs-empty">{embedded ? 'No more partners to show right now!' : 'No matches yet'}</p>
-              {normalizeSelectedAvailabilitySlots(
+              {!embedded && normalizeSelectedAvailabilitySlots(
                 selectedAvailability,
                 currentUser?.default_time_zone || getUserData()?.default_time_zone || 'UTC'
               ).length > 0 ? (
@@ -1185,9 +1165,13 @@ const FriendSearch = ({ embedded = false }) => {
                     Clear schedule filter
                   </button>
                 </>
-              ) : (
-                <p className="fs-empty-hint">{embedded ? 'Open Search & filters above to widen your search.' : 'Adjust filters or search to see people here.'}</p>
-              )}
+              ) : null}
+              {!embedded && normalizeSelectedAvailabilitySlots(
+                selectedAvailability,
+                currentUser?.default_time_zone || getUserData()?.default_time_zone || 'UTC'
+              ).length === 0 ? (
+                <p className="fs-empty-hint">Adjust filters or search to see people here.</p>
+              ) : null}
             </div>
           ) : embedded ? (
             renderEmbeddedSwipeDeck()
@@ -1258,13 +1242,14 @@ const FriendSearch = ({ embedded = false }) => {
                   viewerInterestLc.has(String(n).toLowerCase())
                 ).length;
 
+                const listBioText = partnerBioText(user);
                 const hasBodyContent = Boolean(
                   profileMerged
                   || hasLearningBlock
                   || showBadges
                   || user.target_language_proficiency
                   || userInterestNames.length > 0
-                  || user.learning_goal
+                  || listBioText
                   || sharedInterestCount > 0
                 );
 
@@ -1342,10 +1327,10 @@ const FriendSearch = ({ embedded = false }) => {
                             </div>
                           </div>
                         ) : null}
-                        {user.learning_goal ? (
+                        {listBioText ? (
                           <div className="lm-discover-section">
                             <div className="lm-discover-label">Bio</div>
-                            <div className="lm-discover-value lm-discover-bio">{user.learning_goal}</div>
+                            <div className="lm-discover-value lm-discover-bio">{listBioText}</div>
                           </div>
                         ) : null}
                         {sharedInterestCount > 0 ? (
@@ -1357,7 +1342,7 @@ const FriendSearch = ({ embedded = false }) => {
                         {profileMerged &&
                         !user.target_language_proficiency &&
                         userInterestNames.length === 0 &&
-                        !user.learning_goal ? (
+                        !listBioText ? (
                           <p className="fs-discover-line">{profileMerged}</p>
                         ) : null}
                         {hasLearningBlock ? (

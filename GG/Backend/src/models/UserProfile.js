@@ -46,6 +46,10 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true,
     },
+    bio: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
     communication_style: {
       type: DataTypes.STRING,
       allowNull: true,

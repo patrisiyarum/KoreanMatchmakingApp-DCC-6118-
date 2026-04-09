@@ -300,7 +300,7 @@ const getDiscoverUsers = async (req, res) => {
       SELECT
         ua.id, ua.email, ua.firstName, ua.lastName, ua.createdAt, ua.updatedAt, ua.loggedIn, ua.gameStats, ua.xp, ua.level, ua.profileImage,
         up.native_language, up.target_language, up.target_language_proficiency, up.age, up.gender, up.profession, up.mbti, up.zodiac, up.visibility,
-        up.default_time_zone, up.rating, up.learning_goal, up.communication_style, up.commitment_level,
+        up.default_time_zone, up.rating, up.learning_goal, up.communication_style, up.commitment_level, up.bio,
         COALESCE(badge_counts.cnt, 0) AS badgeCount,
         badge_strip.icons AS badgeIcons,
         LEAST(100, GREATEST(0, ROUND(100 * (${matchExpr}) / ${PROFILE_MATCH_MAX_RAW}))) AS matchScore
@@ -350,7 +350,7 @@ const getDiscoverUsers = async (req, res) => {
           ua.id, ua.email, ua.firstName, ua.lastName, ua.createdAt, ua.updatedAt, ua.loggedIn, ua.gameStats, ua.xp, ua.level, ua.profileImage,
           up.native_language, up.target_language, up.target_language_proficiency, up.age, up.gender, up.profession, up.mbti, up.zodiac, up.visibility,
           up.default_time_zone, up.rating,
-          NULL AS learning_goal, NULL AS communication_style, NULL AS commitment_level,
+          NULL AS learning_goal, NULL AS communication_style, NULL AS commitment_level, NULL AS bio,
           0 AS badgeCount, NULL AS badgeIcons,
           0 AS matchScore
         FROM useraccount ua

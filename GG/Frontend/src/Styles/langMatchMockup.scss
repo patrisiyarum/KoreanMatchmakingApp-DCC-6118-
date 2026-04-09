@@ -649,6 +649,18 @@ body.lm-mockup-ui .lm-mp-empty-cta:hover {
   background: #1d4ed8;
 }
 
+body.lm-mockup-ui .lm-mp-empty--minimal {
+  padding: 24px 16px;
+}
+
+body.lm-mockup-ui .lm-mp-partner-hint {
+  font-size: 14px;
+  color: #525252;
+  margin: 0 0 16px;
+  line-height: 1.45;
+  max-width: 28rem;
+}
+
 body.lm-mockup-ui .lm-mp-card {
   border-radius: 16px;
   border: 1px solid #e5e5e5;

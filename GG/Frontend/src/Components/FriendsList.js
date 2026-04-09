@@ -11,15 +11,6 @@ import {
 import { getImageUrl } from '../Services/uploadImageService';
 import Navbar from './NavBar';
 
-function CalendarGlyph() {
-  return (
-    <svg className="lm-mp-cal-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path d="M16 2v4M8 2v4M3 10h18" />
-    </svg>
-  );
-}
-
 function Avatar({ src, name, size = 44 }) {
   const initial = name ? name.charAt(0).toUpperCase() : '?';
   return (
@@ -185,10 +176,7 @@ const FriendsList = ({ embedded = false }) => {
           <div className="fl-section">
             {friends.length === 0 && incomingRequests.length === 0 && outgoingRequests.length === 0 ? (
               embedded ? (
-                <div className="lm-mp-empty">
-                  <div className="lm-mp-empty-emoji" aria-hidden>👥</div>
-                  <h3 className="lm-mp-empty-title">No partners yet</h3>
-                  <p className="lm-mp-empty-text">Start swiping to find your perfect study buddy!</p>
+                <div className="lm-mp-empty lm-mp-empty--minimal">
                   <button type="button" className="lm-mp-empty-cta" onClick={goDiscover}>
                     Find partners
                   </button>
@@ -198,10 +186,7 @@ const FriendsList = ({ embedded = false }) => {
               )
             ) : friends.length === 0 ? (
               embedded ? (
-                <div className="lm-mp-empty">
-                  <div className="lm-mp-empty-emoji" aria-hidden>👥</div>
-                  <h3 className="lm-mp-empty-title">No partners yet</h3>
-                  <p className="lm-mp-empty-text">Accept requests above or discover new people.</p>
+                <div className="lm-mp-empty lm-mp-empty--minimal">
                   <button type="button" className="lm-mp-empty-cta" onClick={goDiscover}>
                     Find partners
                   </button>
@@ -210,6 +195,12 @@ const FriendsList = ({ embedded = false }) => {
                 <p className="fl-empty">No friends added yet.</p>
               )
             ) : (
+              <>
+                {embedded ? (
+                  <p className="lm-mp-partner-hint">
+                    Play games together, chat in the app, or call through Zoom from each card below.
+                  </p>
+                ) : null}
               <div className={`fl-list fl-list--partners${embedded ? ' lm-mp-list' : ''}`}>
                 {friends.map((friend) => (
                   <div key={friend.id} className={`lm-partner-card${embedded ? ' lm-mp-card' : ''}`}>
@@ -220,18 +211,8 @@ const FriendsList = ({ embedded = false }) => {
                           <div className="lm-partner-name lm-mp-name">
                             {friend.firstName} {friend.lastName || ''}
                           </div>
-                          {embedded ? (
-                            <div className="lm-mp-lang-line">
-                              <span className="lm-mp-email-meta">{friend.email || 'Study partner'}</span>
-                            </div>
-                          ) : (
+                          {!embedded ? (
                             <div className="lm-partner-meta">Language exchange partner · 언어 교환 파트너</div>
-                          )}
-                          {embedded ? (
-                            <div className="lm-mp-matched-row">
-                              <CalendarGlyph />
-                              <span>Connected</span>
-                            </div>
                           ) : null}
                         </div>
                       </div>
@@ -300,6 +281,7 @@ const FriendsList = ({ embedded = false }) => {
                   </div>
                 ))}
               </div>
+              </>
             )}
           </div>
 

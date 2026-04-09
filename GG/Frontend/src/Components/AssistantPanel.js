@@ -63,10 +63,20 @@ function AssistantPanel() {
     setLoading(true);
     try {
       const res = await handleChatWithAssistant(trimmed, null, userId, null);
-      const reply = res?.data?.reply || res?.data?.message || res?.data?.response || 'No response received.';
+      // axios instance returns response body directly (not { data: ... })
+      const reply =
+        res?.reply ||
+        res?.message ||
+        res?.response ||
+        (typeof res === 'string' ? res : null) ||
+        'No response received.';
       addMessage({ role: 'assistant', content: reply });
     } catch (err) {
-      const errMsg = err?.response?.data?.error || 'Something went wrong. Please try again.';
+      const errMsg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        (typeof err?.response?.data === 'string' ? err.response.data : null) ||
+        'Something went wrong. Please try again.';
       addMessage({ role: 'assistant', content: errMsg });
     } finally {
       setLoading(false);

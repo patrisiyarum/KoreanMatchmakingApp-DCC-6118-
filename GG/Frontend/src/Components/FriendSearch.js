@@ -595,20 +595,16 @@ const FriendSearch = ({ embedded = false }) => {
 
           {activeFilter === 0 && (
             <div className="fs-filter-panel fs-filter-panel-tip">
-              <p className="fs-help-lead">How Discover works</p>
-              <ol className="fs-help-list">
-                <li><strong>Search</strong> finds people by name (tap Search or Enter).</li>
-                <li><strong>Personality and interests</strong> are optional. Tap <em>Apply</em> after choosing.</li>
+              <p className="fs-help-lead">Quick tips</p>
+              <ul className="fs-help-list fs-help-list--short">
                 <li>
-                  <strong>Schedule.</strong>{' '}
-                  Choose when you are usually free. We list people who have at least one overlapping hour on the same day
-                  (times can differ slightly; we match overlap, not exact copies).
+                  <strong>Search</strong> and filters (tap <em>Apply</em> where needed).{' '}
+                  <strong>Schedule</strong> uses overlapping hours on the same day.
                 </li>
                 <li>
-                  <strong>Match filters</strong> optionally limits the server list by goal, style, and commitment (same fields as your profile).
-                  <strong> Best profile match</strong> sorts everyone still shown by how closely their goal, style, and commitment match yours. Personality, interests, and schedule only narrow who appears; they are not part of the % score yet.
+                  <strong>Best profile match</strong> sorts by goal, style, and commitment; other filters only narrow the list.
                 </li>
-              </ol>
+              </ul>
             </div>
           )}
 
@@ -657,9 +653,8 @@ const FriendSearch = ({ embedded = false }) => {
           {/* Availability panel */}
           {activeFilter === 3 && (
             <div className="fs-filter-panel">
-              <p className="fs-panel-desc">
-                Choose when you are usually free. We list people who have at least one overlapping hour on the same day
-                (times can differ slightly; we match overlap, not exact copies).
+              <p className="fs-panel-desc fs-panel-desc--short">
+                We match overlapping hours on the same day (not identical schedules).
               </p>
               <button
                 type="button"
@@ -786,7 +781,7 @@ const FriendSearch = ({ embedded = false }) => {
                 type="button"
                 className={`fs-btn-sort${sortDiscover === 'best_match' ? ' fs-btn-sort-active' : ''}`}
                 onClick={() => applySortDiscover('best_match')}
-                title="Sort by profile alignment: compares each person’s learning goal, communication style, and commitment to yours. Search, Match filters, Personality, Interests, and Schedule only restrict who is listed—they do not change the percentage."
+                title="By goal, style, and commitment vs your profile. Filters only narrow the list."
               >
                 Best profile match
               </button>
@@ -800,16 +795,6 @@ const FriendSearch = ({ embedded = false }) => {
               </button>
             </div>
           </div>
-          <p className="fs-results-sort-hint">
-            {sortDiscover === 'best_match' ? (
-              <>
-                Sorted by how well each person’s <strong>goal, style, and commitment</strong> match your profile.
-                Filters (search, personality, interests, schedule, match filters) only hide people who don’t fit—they don’t change the match %.
-              </>
-            ) : (
-              <>Sorted alphabetically by first name.</>
-            )}
-          </p>
 
           {displayedUsers.length === 0 ? (
             <div className="fs-empty-block">
@@ -834,10 +819,6 @@ const FriendSearch = ({ embedded = false }) => {
                 const targetL = getField(user, ['targetLanguage', 'target_language']);
                 const prof = getField(user, ['targetLanguageProficiency', 'target_language_proficiency']);
                 const activity = activityFromGameStats(user.gameStats);
-                const badgeCount = user.badgeCount != null ? Number(user.badgeCount) : 0;
-                const badgeIcons = typeof user.badgeIcons === 'string' && user.badgeIcons.trim()
-                  ? user.badgeIcons.trim().split(/\s+/).filter(Boolean)
-                  : [];
 
                 return (
                   <div key={i} className="fs-profile-card">
@@ -875,20 +856,14 @@ const FriendSearch = ({ embedded = false }) => {
                     </div>
 
                     {user.learning_goal ? (
-                      <div className="fs-profile-goal">
-                        <span className="fs-profile-goal-label">Goal</span>
-                        <span className="fs-profile-goal-text">{user.learning_goal}</span>
-                      </div>
+                      <p className="fs-profile-one-line fs-profile-one-line--goal">{user.learning_goal}</p>
                     ) : null}
 
                     {(nativeL || targetL) ? (
-                      <div className="fs-profile-langs">
-                        <span className="fs-profile-lang-label">Languages</span>
-                        <span className="fs-profile-lang-line">
-                          {nativeL || '—'} → {targetL || '—'}
-                          {prof ? <span className="fs-profile-lang-prof"> · {prof}</span> : null}
-                        </span>
-                      </div>
+                      <p className="fs-profile-one-line">
+                        {nativeL || '—'} → {targetL || '—'}
+                        {prof ? <span className="fs-profile-lang-prof"> · {prof}</span> : null}
+                      </p>
                     ) : null}
 
                     <div className="fs-profile-stats-row">
@@ -903,26 +878,12 @@ const FriendSearch = ({ embedded = false }) => {
                       {user.matchScore != null && sortDiscover === 'best_match' ? (
                         <span
                           className="fs-profile-stat-pill fs-profile-match"
-                          title="Based on learning goal, communication style, and commitment vs your profile (not MBTI, interests, or schedule)."
+                          title="Goal, style, and commitment vs your profile."
                         >
-                          Profile match {Math.round(Number(user.matchScore))}%
+                          {Math.round(Number(user.matchScore))}%
                         </span>
                       ) : null}
                     </div>
-
-                    {(badgeCount > 0 || badgeIcons.length > 0) ? (
-                      <div className="fs-profile-badges">
-                        <span className="fs-profile-badges-label">Badges</span>
-                        <div className="fs-profile-badges-icons">
-                          {badgeIcons.map((icon, j) => (
-                            <span key={j} className="fs-badge-emoji" title="Badge">{icon}</span>
-                          ))}
-                        </div>
-                        {badgeCount > 0 ? (
-                          <span className="fs-profile-badge-count">{badgeCount} earned</span>
-                        ) : null}
-                      </div>
-                    ) : null}
 
                     {(user.communication_style || user.commitment_level != null) ? (
                       <div className="fs-user-match-tags fs-profile-footer-tags">

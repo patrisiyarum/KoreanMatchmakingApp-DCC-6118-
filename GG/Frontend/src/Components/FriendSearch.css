@@ -85,6 +85,18 @@
   margin-bottom: 6px;
 }
 
+.fs-help-list--short {
+  padding-left: 1.1em;
+}
+
+.fs-help-list--short li {
+  margin-bottom: 8px;
+}
+
+.fs-help-list--short li:last-child {
+  margin-bottom: 0;
+}
+
 .fs-panel-desc {
   margin: 0;
   font-size: 13px;
@@ -93,6 +105,25 @@
   text-align: left;
   align-self: stretch;
   width: 100%;
+}
+
+.fs-panel-desc--short {
+  margin-bottom: 10px;
+}
+
+.fs-profile-one-line {
+  margin: 6px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.fs-profile-one-line--goal {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-top: 8px;
 }
 
 .fs-empty-block {
@@ -326,13 +357,6 @@
   background: rgba(99, 68, 166, 0.12) !important;
   border-radius: 6px;
   padding: 4px 8px;
-}
-
-.fs-results-sort-hint {
-  margin: 8px 0 0;
-  font-size: 12px;
-  line-height: 1.45;
-  color: rgba(54, 70, 89, 0.72);
 }
 
 .fs-user-match-tags {

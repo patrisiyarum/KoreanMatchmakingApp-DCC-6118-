@@ -101,17 +101,9 @@ function Login() {
 
             <div className="error-message">{errMsg}</div>
 
-            <div className="auth-signin-row">
-              <button type="button" className="auth-pill-submit" onClick={handleOnClick}>
+            <div className="auth-actions">
+              <button type="button" className="auth-primary" style={{ width: '100%' }} onClick={handleOnClick}>
                 Sign in
-              </button>
-              <button
-                type="button"
-                className="auth-arrow-submit"
-                onClick={handleOnClick}
-                aria-label="Sign in"
-              >
-                →
               </button>
             </div>
 

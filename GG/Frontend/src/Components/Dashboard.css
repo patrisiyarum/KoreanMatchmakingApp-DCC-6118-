@@ -344,6 +344,60 @@
   color: var(--dl-gray-dark);
 }
 
+/* Profile: understated links; show on hover/focus (always on touch) */
+.profile-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease;
+}
+
+.dashboard-tile.dash-tile-profile:hover .profile-card-actions,
+.dashboard-tile.dash-tile-profile:focus-within .profile-card-actions {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .profile-card-actions {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.profile-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-family: var(--dl-font);
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.profile-link-btn:hover,
+.profile-link-btn:focus-visible {
+  color: var(--dl-primary);
+}
+
+.profile-link-btn:focus-visible {
+  outline: 2px solid rgba(99, 68, 166, 0.35);
+  outline-offset: 2px;
+}
+
+.profile-actions-sep {
+  color: #cbd5e1;
+  font-size: 12px;
+  user-select: none;
+}
+
 .profile-edit-btn,
 .small-btn,
 .quick-action-btn,

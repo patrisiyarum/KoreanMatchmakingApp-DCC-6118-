@@ -10,6 +10,7 @@ import { handleGetUserStatsApi } from '../Services/gameSelectionService';
 import { handleGetUserBadgesApi } from '../Services/badgeService';
 import { setUserData } from '../Utils/userData';
 import { getImageUrl } from '../Services/uploadImageService';
+import { XP_PER_LEVEL } from '../config/gameRuntime.js';
 import Navbar from './NavBar';
 
 
@@ -31,30 +32,37 @@ function Dashboard() {
   const navigate = useNavigate();
 
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await handleUserDashBoardApi(id);
-        const user = data.user || {};
-        console.log('User data:', user);
-        console.log('Profile image:', user.profileImage);
-        setFirstName(user.firstName || '');
-        setLastName(user.lastName || '');
-        if (user.profileImage) {
-          setProfileImage(user.profileImage);
-          setProfileImgError(false);
-        }
-        setUserData({
-          firstName: user.firstName || '',
-          lastName: user.lastName || '',
-          email: user.email || '',
-        });
-      } catch (err) {
-        console.log(err);
+useEffect(() => {
+  const load = async () => {
+    try {
+      const [dashData, statsData] = await Promise.allSettled([
+        handleUserDashBoardApi(id),
+        handleGetUserStatsApi(id),
+      ]);
+
+      const user = dashData.status === 'fulfilled' ? (dashData.value?.user || {}) : {};
+      setFirstName(user.firstName || '');
+      setLastName(user.lastName || '');
+      setUserData({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+      });
+
+      // Profile image lives on the stats endpoint (same source as UpdateProfile)
+      const imgPath = statsData.status === 'fulfilled'
+        ? statsData.value?.profileImage
+        : user.profileImage;
+      if (imgPath) {
+        setProfileImage(imgPath);
+        setProfileImgError(false);
       }
-    };
-    if (id) load();
-  }, [id]);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  if (id) load();
+}, [id]);
 
   useEffect(() => {
     if (!id) {
@@ -73,7 +81,7 @@ function Dashboard() {
         if (statsRes.status === 'fulfilled' && statsRes.value) {
           setUserStats(statsRes.value);
         } else {
-          setUserStats({ level: 1, xp: 0, xpToNext: 500, gameActivity: null });
+          setUserStats({ level: 1, xp: 0, xpToNext: XP_PER_LEVEL, gameActivity: null });
         }
         if (chRes.status === 'fulfilled' && chRes.value) {
           setChallengeStats(chRes.value);
@@ -185,7 +193,6 @@ function Dashboard() {
 
       <div className="dashboard-welcome">
         <h1>Welcome back, {firstName} {lastName || ''}</h1>
-        <p>Select a section to continue</p>
       </div>
 
       {id && progressLoaded && userStats && challengeStats && (
@@ -196,7 +203,7 @@ function Dashboard() {
               <div className="up-integrated-row">
                 <span className="up-integrated-strong">Level {userStats.level ?? 1}</span>
                 <span className="up-integrated-muted">
-                  {userStats.xp ?? 0} / {userStats.xpToNext ?? 500} XP this level
+                  {userStats.xp ?? 0} / {userStats.xpToNext ?? XP_PER_LEVEL} XP this level
                 </span>
               </div>
               <div className="up-xp-bar-track">
@@ -205,7 +212,7 @@ function Dashboard() {
                   style={{
                     width: `${Math.min(
                       100,
-                      ((userStats.xp ?? 0) / Math.max(1, userStats.xpToNext ?? 500)) * 100
+                      ((userStats.xp ?? 0) / Math.max(1, userStats.xpToNext ?? XP_PER_LEVEL)) * 100
                     )}%`,
                   }}
                 />
@@ -286,23 +293,24 @@ function Dashboard() {
       <div className="dashboard-main-grid">
         <div className="dashboard-left-panel">
           <section className="dashboard-card profile-card">
-            <div className="profile-avatar">
-                {profileImage && !profileImgError ? (
-                  <img
-                    src={getImageUrl(profileImage)}
-                    alt="Profile"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                    onError={() => setProfileImgError(true)}
-                  />
-                ) : (
-                  getInitial()
-                )}
-                </div>
-            <div className="profile-details">
-              <h2>{firstName} {lastName}</h2>
-              <button className="profile-edit-btn" onClick={() => goTo('/UpdateProfile')}>Edit Profile</button>
-            </div>
-          </section>
+          <div className="profile-avatar">
+            {profileImage && !profileImgError ? (
+              <img
+                src={getImageUrl(profileImage)}
+                alt="Profile"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                onError={() => setProfileImgError(true)}
+              />
+            ) : (
+              getInitial()
+            )}
+          </div>
+          <div className="profile-details">
+            <h2>{firstName} {lastName}</h2>
+            <button className="profile-edit-btn" onClick={() => goTo('/ViewProfile')}>View Profile</button>
+            <button className="profile-edit-btn" onClick={() => goTo('/UpdateProfile')}>Edit Profile</button>
+          </div>
+        </section>
 
           <section className="dashboard-card schedule-card">
             <div className="panel-header">
@@ -351,15 +359,6 @@ function Dashboard() {
         </div>
       </div>
 
-
-      <div className="dashboard-footer">
-        <button
-          className="dash-logout-btn"
-          onClick={() => goTo('/LogoutConfirmation')}
-        >
-          Log Out
-        </button>
-      </div>
     </div>
   );
 }

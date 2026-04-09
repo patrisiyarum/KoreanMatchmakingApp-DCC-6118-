@@ -1,5 +1,5 @@
-
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useLayoutEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, createSearchParams, useLocation } from 'react-router-dom';
 import { getUserChallenges } from '../Services/challengeService';
 import { handleGetTeamInvitesApi } from '../Services/teamService';
@@ -18,13 +18,20 @@ const GAMES_RELATED_PATHS = new Set([
   '/PronunciationDrill',
 ]);
 
+const AI_NAV_LINKS = [
+  { label: 'Chat Assistant', path: '/Assistant' },
+  { label: 'Transcripts', path: '/TranscriptView' },
+];
+
+const AI_SECTION_PATHS = new Set(AI_NAV_LINKS.map((l) => l.path));
+
 const NAV_SLOTS = [
   { type: 'simple', label: 'Home', path: '/Dashboard' },
   { type: 'games' },
   { type: 'simple', label: 'Friends', path: '/Friends' },
   { type: 'simple', label: 'Calls', path: '/Videocall' },
   { type: 'simple', label: 'Scheduler', path: '/Scheduler' },
-  { type: 'simple', label: 'Profile', path: '/UpdateProfile' },
+  { type: 'simple', label: 'Profile', path: '/ViewProfile' },
 ];
 
 const PARENT_ROUTES = {
@@ -55,6 +62,32 @@ function Navbar({ id }) {
   };
 
   const isGamesPathActive = () => GAMES_RELATED_PATHS.has(location.pathname);
+
+  const isAiSectionActive = () => AI_SECTION_PATHS.has(location.pathname);
+
+  useLayoutEffect(() => {
+    if (!aiMenuOpen) return;
+    updateAiMenuPosition();
+  }, [aiMenuOpen, updateAiMenuPosition]);
+
+  useEffect(() => {
+    if (!aiMenuOpen) return;
+    const onDocMouseDown = (e) => {
+      const t = e.target;
+      if (aiNavWrapRef.current?.contains(t)) return;
+      if (aiDropdownRef.current?.contains(t)) return;
+      setAiMenuOpen(false);
+    };
+    const onReposition = () => updateAiMenuPosition();
+    document.addEventListener('mousedown', onDocMouseDown);
+    window.addEventListener('scroll', onReposition, true);
+    window.addEventListener('resize', onReposition);
+    return () => {
+      document.removeEventListener('mousedown', onDocMouseDown);
+      window.removeEventListener('scroll', onReposition, true);
+      window.removeEventListener('resize', onReposition);
+    };
+  }, [aiMenuOpen, updateAiMenuPosition]);
 
   const simpleBtnClass = (path) => {
     let active = location.pathname === path;
@@ -153,6 +186,53 @@ function Navbar({ id }) {
               >
                 {slot.label}
               </button>
+            );
+          }
+
+          if (slot.type === 'ai') {
+            return (
+              <div key="nav-ai" className="nav-ai-wrap" ref={aiNavWrapRef}>
+                <button
+                  ref={aiButtonRef}
+                  type="button"
+                  className={isAiSectionActive() ? 'top-nav-btn top-nav-btn--active' : 'top-nav-btn'}
+                  aria-expanded={aiMenuOpen}
+                  aria-haspopup="true"
+                  aria-label="AI tools menu"
+                  onClick={() => setAiMenuOpen((o) => !o)}
+                >
+                  AI
+                  <span className="nav-ai-chevron" aria-hidden>
+                    ▾
+                  </span>
+                </button>
+                {aiMenuOpen
+                  ? createPortal(
+                      <div
+                        ref={aiDropdownRef}
+                        className="navbar-dropdown nav-ai-dropdown nav-ai-dropdown-portal"
+                        style={{ top: aiMenuPos.top, left: aiMenuPos.left }}
+                        role="menu"
+                      >
+                        {AI_NAV_LINKS.map((item) => (
+                          <button
+                            key={item.path}
+                            type="button"
+                            role="menuitem"
+                            className={`dropdown-link${location.pathname === item.path ? ' dropdown-link-active' : ''}`}
+                            onClick={() => {
+                              setAiMenuOpen(false);
+                              goTo(item.path);
+                            }}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>,
+                      document.body
+                    )
+                  : null}
+              </div>
             );
           }
 

@@ -9,6 +9,7 @@ import {
   getChallengeFriends,
 } from '../Services/challengeService';
 import Navbar from './NavBar';
+import GameNavbar from './GameNavbar';
 import './ChallengeHub.css';
 
 function ChallengeHub() {
@@ -159,6 +160,7 @@ function ChallengeHub() {
   return (
     <div className="ch-page">
       <Navbar id={id} />
+      <GameNavbar />
       <div className="ch-page-content">
       <div className="ch-container">
         <div className="ch-header">
@@ -288,9 +290,6 @@ function ChallengeHub() {
           )}
         </div>
 
-        <div className="ch-back-wrap">
-          <button type="button" className="back-to-dashboard" onClick={handleBackToGames}>Games</button>
-        </div>
       </div>
       </div>
     </div>

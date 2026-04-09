@@ -5,14 +5,13 @@ import { createSearchParams, useSearchParams, useNavigate } from 'react-router-d
 import './GameSelect.css';
 import { handleGetUserStatsApi } from '../Services/gameSelectionService';
 import Navbar from './NavBar';
+import GameNavbar from './GameNavbar';
 import { handleGetUserQuestsApi, handleGetTeamQuestsApi } from '../Services/questService';
 import { handleGetMyTeamApi } from '../Services/teamService';
 import { handleGetAllBadgesWithProgressApi } from '../Services/badgeService';
 import { getUserChallenges } from '../Services/challengeService';
 import { getImageUrl } from '../Services/uploadImageService';
-
-const XP_PER_LEVEL = 500; // Must match the value in gameRoutes.js
-
+import { XP_PER_LEVEL } from '../config/gameRuntime.js';
 
 function GameSelect() {
   const [search] = useSearchParams();
@@ -148,8 +147,8 @@ function GameSelect() {
   return (
     <div className="game-selection-page">
       <Navbar id={id} />
+      <GameNavbar />
       <div className="gs-content">
-      <button className="back-to-dashboard gs-back" onClick={() => navigate({ pathname: '/Dashboard', search: createSearchParams({ id }).toString() })}>Dashboard</button>
 
       {/* ── Profile / Level Banner ── */}
       <div className="profile-banner">
@@ -167,7 +166,7 @@ function GameSelect() {
           </div>
  
         <div className="profile-details">
-          <p className="profile-level">Level: {level}</p>
+          <p className="profile-level">{username} - Level: {level}</p>
         </div>
  
         <div className="xp-bar-container">
@@ -178,23 +177,6 @@ function GameSelect() {
         </div>
       </div>
 
-      <div className="gs-hub-row">
-        <button
-          type="button"
-          className="gs-hub-btn"
-          onClick={() => navigate({ pathname: '/Challenges', search: createSearchParams({ id }).toString() })}
-        >
-          1v1 Challenges
-        </button>
-        <button
-          type="button"
-          className="gs-hub-btn gs-hub-btn-secondary"
-          onClick={() => navigate({ pathname: '/TeamLobby', search: createSearchParams({ id }).toString() })}
-        >
-          Teams
-        </button>
-      </div>
- 
       {/* ── Active Challenges ── */}
       {activeChallenges.length > 0 && (
         <div className="gs-challenges-section">

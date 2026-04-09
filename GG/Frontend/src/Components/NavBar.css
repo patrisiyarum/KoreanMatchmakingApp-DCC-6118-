@@ -303,3 +303,28 @@
   color: var(--dl-primary) !important;
   background: rgba(99, 68, 166, 0.1);
 }
+
+.nav-ai-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.nav-ai-chevron {
+  margin-left: 6px;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.nav-ai-dropdown {
+  left: 0;
+  right: auto;
+  top: calc(100% + 8px);
+  min-width: 200px;
+}
+
+/* Portaled menu: escapes .app-top-nav-links overflow clipping (overflow-x: auto forces vertical clip). */
+.nav-ai-dropdown-portal {
+  position: fixed !important;
+  z-index: 10060;
+  margin: 0;
+}

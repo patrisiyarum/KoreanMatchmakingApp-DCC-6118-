@@ -951,10 +951,12 @@ function normalizeMeetingTime(t) {
   if (t == null || t === "") return t;
   const s = String(t).trim();
   const parts = s.split(":").map((p) => p.trim());
-  if (parts.length === 2) {
-    const h = parts[0].padStart(2, "0");
+  if (parts.length >= 2) {
+    const h = (parts[0] || "0").padStart(2, "0");
     const m = (parts[1] || "0").slice(0, 2).padStart(2, "0");
-    return `${h}:${m}:00`;
+    const sec =
+      parts.length >= 3 ? (parts[2] || "0").replace(/\D/g, "").slice(0, 2).padStart(2, "0") : "00";
+    return `${h}:${m}:${sec}`;
   }
   return s;
 }
@@ -968,6 +970,12 @@ let createMeeting = async (req, res) => {
     if (!u1 || !u2 || !day_of_week || start_time == null || end_time == null || `${start_time}` === "" || `${end_time}` === "") {
       return res.status(400).json({
         message: "Missing required fields (user1_id, user2_id, day_of_week, start_time, end_time)",
+      });
+    }
+    if (u1 === u2) {
+      return res.status(400).json({
+        message: "Cannot schedule a meeting with yourself. Pick a friend.",
+        code: "MEETING_SAME_USER",
       });
     }
 
@@ -1002,6 +1010,13 @@ let createMeeting = async (req, res) => {
     console.error("Error creating meeting:", error);
     const raw = error?.message || String(error);
     let message = "Failed to create meeting";
+    if (/Duplicate|1062|ER_DUP_ENTRY/i.test(raw)) {
+      return res.status(409).json({
+        message: "A meeting already exists for that time slot.",
+        code: "MEETING_DUPLICATE",
+        error: raw,
+      });
+    }
     if (/foreign key|ER_NO_REFERENCED|Cannot add or update a child row|1452/i.test(raw)) {
       message =
         "Cannot save meeting (database constraint). Both accounts need a UserProfile; run migrations if the meetings table is missing.";

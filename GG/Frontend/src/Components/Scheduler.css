@@ -6,6 +6,15 @@
   font-family: var(--dl-font);
 }
 
+/* Room for fixed booking dock so calendar rows aren’t hidden behind it */
+.sched-page--dock-open {
+  padding-bottom: min(42vh, 320px);
+}
+
+.sched-page--dock-open .sched-center {
+  box-sizing: border-box;
+}
+
 .sched-center {
   display: flex;
   flex-direction: column;
@@ -330,4 +339,41 @@
 
 .sched-btn-secondary:hover {
   background: #f3f0fa;
+}
+
+/* Fixed bottom bar: schedule without scrolling back to the top */
+.sched-booking-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1040;
+  background: linear-gradient(to top, #ffffff 85%, rgba(255, 255, 255, 0.96));
+  border-top: 1px solid #e9e4f7;
+  box-shadow: 0 -8px 28px rgba(54, 70, 89, 0.12);
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+.sched-booking-dock-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 10px 14px 14px;
+  box-sizing: border-box;
+}
+
+.sched-slot-panel--dock {
+  margin-bottom: 0;
+  max-height: min(38vh, 280px);
+  overflow-y: auto;
+}
+
+.sched-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #f3f0fa;
 }

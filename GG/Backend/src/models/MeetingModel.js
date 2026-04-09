@@ -59,9 +59,8 @@ export default (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: 'Meeting',
-      // Must match migration 08create-MeetingModel.js (`MeetingModel`). Lowercase `meetingmodel`
-      // breaks on Linux/MySQL when the actual table is `MeetingModel`.
-      tableName: 'MeetingModel',
+      // Default matches migration `MeetingModel`. If production DB has a different casing/name, set MEETING_TABLE_NAME in .env.
+      tableName: process.env.MEETING_TABLE_NAME || "MeetingModel",
       timestamps: true,     // createdAt + updatedAt
       underscored: true
     }

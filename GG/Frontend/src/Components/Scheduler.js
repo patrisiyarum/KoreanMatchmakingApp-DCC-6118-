@@ -27,7 +27,7 @@ const Scheduler = () => {
   const [suggestedSlots, setSuggestedSlots] = useState([]);
 
   const getFriendName = (userId) => {
-    const friend = friends.find(f => f.id === userId);
+    const friend = friends.find((f) => Number(f.id) === Number(userId));
     if (!friend) return "Unknown User";
     return `${friend.firstName} ${friend.lastName}`;
   };
@@ -118,14 +118,14 @@ const Scheduler = () => {
 
       setSuggestedSlots([]);
       await handleCreateMeeting(
-        id,
-        scheduleFriendId,
+        Number(id),
+        Number(scheduleFriendId),
         selectedSlotData.dayOfWeek,
         selectedSlotData.startTime,
         selectedSlotData.endTime
       );
 
-      const friend = friends.find((f) => f.id === Number(scheduleFriendId));
+      const friend = friends.find((f) => Number(f.id) === Number(scheduleFriendId));
       alert(`Meeting scheduled with ${friend?.firstName || "friend"}!`);
 
       const res = await handleGetMeetings(id);
@@ -175,32 +175,56 @@ const Scheduler = () => {
     }
   };
 
+  const closeBookingDock = () => {
+    setSelectedSlotData(null);
+    setScheduleFriendId("");
+    setScheduleError("");
+    setSuggestedSlots([]);
+  };
+
   return (
-    <div className="sched-page">
+    <div className={`sched-page${selectedSlotData ? " sched-page--dock-open" : ""}`}>
       <Navbar id={id} />
 
-      <div className="sched-center">
+      <div className={`sched-center${selectedSlotData ? " sched-center--dock-open" : ""}`}>
         <div className="sched-card sched-card-calendar">
           <h2 className="sched-card-title">Scheduled Meetings</h2>
           {meetings.length === 0 && !selectedSlotData && (
-            <p className="sched-subtitle">Click an empty time slot to schedule a meeting</p>
+            <p className="sched-subtitle">Click an empty time slot — controls stay at the bottom of the screen</p>
           )}
 
-          {selectedSlotData && (
-            <div className="sched-slot-panel">
+          <MeetingCalendar
+            meetings={meetings}
+            getFriendName={getFriendName}
+            currentUserId={id}
+            onMeetingClick={handleCancelMeeting}
+            onSlotClick={setSelectedSlotData}
+          />
+
+          <div className="sched-footer">
+            <button className="back-to-dashboard" onClick={handleBack}>Dashboard</button>
+            <button
+              className="sched-btn-secondary"
+              onClick={() => navigate({ pathname: '/AvailabilityPicker', search: createSearchParams({ id, returnTo: 'Scheduler' }).toString() })}
+            >
+              Set My Availability
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {selectedSlotData && (
+        <div className="sched-booking-dock" role="dialog" aria-label="Schedule meeting" aria-modal="false">
+          <div className="sched-booking-dock-inner">
+            <div className="sched-slot-panel sched-slot-panel--dock">
               <div className="sched-slot-panel-header">
                 <span className="sched-slot-panel-title">
-                  Schedule for {formatSlotLabel(selectedSlotData)}
+                  Schedule · {formatSlotLabel(selectedSlotData)}
                 </span>
                 <button
                   type="button"
                   className="sched-slot-panel-close"
-                  onClick={() => {
-                    setSelectedSlotData(null);
-                    setScheduleFriendId("");
-                    setScheduleError("");
-                    setSuggestedSlots([]);
-                  }}
+                  onClick={closeBookingDock}
                   aria-label="Close"
                 >
                   ×
@@ -268,12 +292,7 @@ const Scheduler = () => {
                     <button
                       type="button"
                       className="sched-btn-secondary"
-                      onClick={() => {
-                        setSelectedSlotData(null);
-                        setScheduleFriendId("");
-                        setScheduleError("");
-                        setSuggestedSlots([]);
-                      }}
+                      onClick={closeBookingDock}
                     >
                       Cancel
                     </button>
@@ -289,27 +308,9 @@ const Scheduler = () => {
                 </>
               )}
             </div>
-          )}
-
-          <MeetingCalendar
-            meetings={meetings}
-            getFriendName={getFriendName}
-            currentUserId={id}
-            onMeetingClick={handleCancelMeeting}
-            onSlotClick={setSelectedSlotData}
-          />
-
-          <div className="sched-footer">
-            <button className="back-to-dashboard" onClick={handleBack}>Dashboard</button>
-            <button
-              className="sched-btn-secondary"
-              onClick={() => navigate({ pathname: '/AvailabilityPicker', search: createSearchParams({ id, returnTo: 'Scheduler' }).toString() })}
-            >
-              Set My Availability
-            </button>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

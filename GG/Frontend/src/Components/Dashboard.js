@@ -302,40 +302,6 @@ useEffect(() => {
 
       {id && (
         <div className="dashboard-home-tiles">
-          <section className="dashboard-card dashboard-tile dash-tile-games dash-games-card">
-            <div className="dash-games-card-inner dash-games-card-inner--stack dash-tile-fill">
-              <div className="dash-games-copy">
-                <h3 className="dash-games-title">Games & teams</h3>
-                <p className="dash-games-desc">
-                  Practice vocabulary, grammar, and pronunciation, challenge a friend to 1v1, or join your team lobby.
-                </p>
-              </div>
-              <div className="dash-games-actions dash-games-actions--centered">
-                <button
-                  type="button"
-                  className="dash-games-btn dash-games-btn-primary"
-                  onClick={() => goTo('/GameSelection')}
-                >
-                  Play games
-                </button>
-                <button
-                  type="button"
-                  className="dash-games-btn dash-games-btn-secondary"
-                  onClick={() => goTo('/Challenges')}
-                >
-                  1v1 challenges
-                </button>
-                <button
-                  type="button"
-                  className="dash-games-btn dash-games-btn-secondary"
-                  onClick={() => goTo('/TeamLobby')}
-                >
-                  Teams
-                </button>
-              </div>
-            </div>
-          </section>
-
           <section className="dashboard-card dashboard-tile dash-tile-profile">
             <div className="profile-card dash-profile-tile">
               <div className="profile-avatar">
@@ -369,6 +335,40 @@ useEffect(() => {
                     Edit Profile
                   </button>
                 </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="dashboard-card dashboard-tile dash-tile-games dash-games-card">
+            <div className="dash-games-card-inner dash-games-card-inner--stack dash-tile-fill">
+              <div className="dash-games-copy">
+                <h3 className="dash-games-title">Games & teams</h3>
+                <p className="dash-games-desc">
+                  Practice vocabulary, grammar, and pronunciation, challenge a friend to 1v1, or join your team lobby.
+                </p>
+              </div>
+              <div className="dash-games-actions dash-games-actions--centered">
+                <button
+                  type="button"
+                  className="dash-games-btn dash-games-btn-primary"
+                  onClick={() => goTo('/GameSelection')}
+                >
+                  Play games
+                </button>
+                <button
+                  type="button"
+                  className="dash-games-btn dash-games-btn-secondary"
+                  onClick={() => goTo('/Challenges')}
+                >
+                  1v1 challenges
+                </button>
+                <button
+                  type="button"
+                  className="dash-games-btn dash-games-btn-secondary"
+                  onClick={() => goTo('/TeamLobby')}
+                >
+                  Teams
+                </button>
               </div>
             </div>
           </section>

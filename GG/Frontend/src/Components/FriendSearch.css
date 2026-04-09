@@ -19,6 +19,54 @@
   gap: 20px;
 }
 
+/* Find Friends: filters beside results on wide screens */
+.fs-center.fs-center--discover {
+  align-items: stretch;
+  max-width: 1180px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.fs-discover-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  width: 100%;
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .fs-discover-layout:not(.fs-discover-layout--embedded) {
+    grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  }
+
+  .fs-discover-layout:not(.fs-discover-layout--embedded) .fs-discover-sidebar {
+    position: sticky;
+    top: 16px;
+  }
+}
+
+.fs-discover-layout--embedded {
+  grid-template-columns: 1fr;
+}
+
+.fs-discover-layout--embedded .fs-discover-sidebar {
+  position: static;
+}
+
+.fs-discover-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.fs-discover-main .fs-results-card.fs-results-card--discover {
+  max-width: none;
+}
+
 .fs-card {
   width: 100%;
   max-width: 560px;
@@ -221,25 +269,17 @@
 
 .fs-shop-filters-header {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 14px 16px 12px;
+  align-items: center;
+  padding: 12px 16px;
   background: #fff;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .fs-shop-filters-title {
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: #111827;
-  font-family: var(--dl-font);
-}
-
-.fs-shop-filters-hint {
-  font-size: 12px;
-  color: #6b7280;
   font-family: var(--dl-font);
 }
 
@@ -713,6 +753,34 @@
 .fs-discover-commit-hint {
   font-size: 13px;
   color: #64748b;
+}
+
+.fs-discover-badges-line {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #334155;
+}
+
+.fs-discover-badge-suffix {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.fs-badge-emoji {
+  font-size: 17px;
+  line-height: 1;
+  margin-right: 4px;
+}
+
+.fs-discover-body > .fs-discover-line + .fs-discover-badges-line,
+.fs-discover-body > .fs-discover-commit + .fs-discover-badges-line {
+  margin-top: 0.5rem;
+}
+
+.fs-empty-clear-schedule {
+  align-self: center;
+  margin-top: 4px;
 }
 
 .fs-user-row {

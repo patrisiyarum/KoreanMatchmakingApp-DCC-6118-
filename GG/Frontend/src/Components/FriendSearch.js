@@ -140,6 +140,9 @@ const FILTER_TABS = [
   'Match profile',
 ];
 
+/** Must match FILTER_TABS order (used when deep-linking e.g. from Availability picker) */
+const FILTER_IDX = { guide: 0, personality: 1, schedule: 2, match: 3 };
+
 const COMMITMENT_FLEX_OPTIONS = [
   { value: 0, label: 'Exact level' },
   { value: 1, label: '±1 level' },
@@ -317,7 +320,7 @@ const FriendSearch = ({ embedded = false }) => {
         const parsed = JSON.parse(availabilityParam);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setSelectedAvailability(parsed);
-          setActiveFilter(3);
+          setActiveFilter(FILTER_IDX.schedule);
         }
       } catch {
         /* ignore */
@@ -326,6 +329,14 @@ const FriendSearch = ({ embedded = false }) => {
   }, [search]);
 
   const flash = (msg) => { setSuccessMessage(msg); setTimeout(() => setSuccessMessage(''), 2500); };
+
+  const scrollDiscoverResultsIntoView = () => {
+    if (typeof window === 'undefined') return;
+    if (!window.matchMedia('(max-width: 959px)').matches) return;
+    requestAnimationFrame(() => {
+      document.getElementById('fs-discover-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   const getRequestStatusForUser = (userId) => {
     const incoming = friendRequests.incoming.find(r => Number(r.requesterId) === Number(userId));
@@ -461,6 +472,7 @@ const FriendSearch = ({ embedded = false }) => {
       setError(e);
     } finally {
       setLoading(false);
+      scrollDiscoverResultsIntoView();
     }
   };
 
@@ -476,6 +488,7 @@ const FriendSearch = ({ embedded = false }) => {
       setError(e);
     } finally {
       setLoading(false);
+      scrollDiscoverResultsIntoView();
     }
   };
 
@@ -493,6 +506,7 @@ const FriendSearch = ({ embedded = false }) => {
       setError(e);
     } finally {
       setLoading(false);
+      scrollDiscoverResultsIntoView();
     }
   };
 
@@ -522,6 +536,7 @@ const FriendSearch = ({ embedded = false }) => {
       /* keep list */
     } finally {
       setLoading(false);
+      scrollDiscoverResultsIntoView();
     }
   };
 
@@ -566,7 +581,9 @@ const FriendSearch = ({ embedded = false }) => {
     <div className={`fs-page${embedded ? ' fs-page-embedded' : ''}`}>
       {!embedded && <Navbar id={id} />}
 
-      <div className="fs-center">
+      <div className={`fs-center fs-center--discover${embedded ? ' fs-center--discover-embedded' : ''}`}>
+        <div className={`fs-discover-layout${embedded ? ' fs-discover-layout--embedded' : ''}`}>
+          <div className="fs-discover-sidebar">
         <div className="fs-card fs-card--discover-filters">
           {!embedded && (
             <button className="back-to-dashboard" onClick={() => navigate({ pathname: '/Dashboard', search: createSearchParams({ id }).toString() })}>Dashboard</button>
@@ -591,8 +608,7 @@ const FriendSearch = ({ embedded = false }) => {
           {/* Filters — shopping-style accordion */}
           <div className="fs-shop-filters" aria-label="Discover filters">
             <div className="fs-shop-filters-header">
-              <span className="fs-shop-filters-title">Narrow results</span>
-              <span className="fs-shop-filters-hint">Open a section to set filters</span>
+              <span className="fs-shop-filters-title">Filters</span>
             </div>
             {FILTER_TABS.map((tab, i) => (
               <div
@@ -778,7 +794,9 @@ const FriendSearch = ({ embedded = false }) => {
             ))}
           </div>
         </div>
+          </div>
 
+          <div className="fs-discover-main">
         {/* Incoming requests card */}
         {friendRequests.incoming.length > 0 && (
           <div className="fs-card">
@@ -812,7 +830,7 @@ const FriendSearch = ({ embedded = false }) => {
         )}
 
         {/* Results card */}
-        <div className="fs-card fs-results-card">
+        <div id="fs-discover-results" className="fs-card fs-results-card fs-results-card--discover">
             <div className={`fs-results-header${displayedUsers.length === 0 ? ' fs-results-header--empty' : ''}`}>
             {displayedUsers.length > 0 ? (
               <span className="fs-results-count">
@@ -861,7 +879,16 @@ const FriendSearch = ({ embedded = false }) => {
                 selectedAvailability,
                 currentUser?.default_time_zone || getUserData()?.default_time_zone || 'UTC'
               ).length > 0 ? (
-                <p className="fs-empty-hint">Try adjusting your schedule filter.</p>
+                <>
+                  <p className="fs-empty-hint">No one overlaps those hours. Try different times or clear the schedule filter.</p>
+                  <button
+                    type="button"
+                    className="fs-btn-secondary fs-empty-clear-schedule"
+                    onClick={() => setSelectedAvailability(null)}
+                  >
+                    Clear schedule filter
+                  </button>
+                </>
               ) : (
                 <p className="fs-empty-hint">Adjust filters or search to see people here.</p>
               )}
@@ -920,9 +947,15 @@ const FriendSearch = ({ embedded = false }) => {
                 const hasLearningBlock = Boolean(
                   showLearningStyle && (learnLine || hasCommitment)
                 );
+                const badgeCount = user.badgeCount != null ? Number(user.badgeCount) : 0;
+                const badgeIcons = typeof user.badgeIcons === 'string' && user.badgeIcons.trim()
+                  ? user.badgeIcons.trim().split(/\s+/).filter(Boolean)
+                  : [];
+                const showBadges = badgeCount > 0 || badgeIcons.length > 0;
                 const hasBodyContent = Boolean(
                   profileMerged
                   || hasLearningBlock
+                  || showBadges
                 );
 
                 return (
@@ -996,6 +1029,18 @@ const FriendSearch = ({ embedded = false }) => {
                             ) : null}
                           </>
                         ) : null}
+                        {showBadges ? (
+                          <p className="fs-discover-badges-line">
+                            {badgeIcons.map((icon, j) => (
+                              <span key={j} className="fs-badge-emoji" title="Badge">{icon}</span>
+                            ))}
+                            {badgeCount > 0 ? (
+                              <span className="fs-discover-badge-suffix">
+                                {badgeIcons.length ? ' · ' : ''}{badgeCount} earned
+                              </span>
+                            ) : null}
+                          </p>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>
@@ -1003,6 +1048,8 @@ const FriendSearch = ({ embedded = false }) => {
               })}
             </div>
           )}
+        </div>
+          </div>
         </div>
       </div>
 

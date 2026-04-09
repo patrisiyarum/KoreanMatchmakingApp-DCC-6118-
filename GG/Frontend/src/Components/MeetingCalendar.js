@@ -34,7 +34,7 @@ const formatTime = (timeStr) => {
 // Format hour to "HH:00:00"
 const toTimeStr = (hour) => `${String(hour).padStart(2, '0')}:00:00`;
 
-function MeetingCalendar({ meetings, getFriendName, currentUserId, onMeetingClick, onSlotClick, friends }) {
+function MeetingCalendar({ meetings, getFriendName, currentUserId, onMeetingClick, onSlotClick }) {
   const [weekStart, setWeekStart] = useState(() => {
     const now = DateTime.local();
     return now.startOf('week'); // Sunday
@@ -120,7 +120,9 @@ function MeetingCalendar({ meetings, getFriendName, currentUserId, onMeetingClic
               );
 
               const hasMeeting = isFirstHour && slotMeetings.length > 0;
-              const isEmpty = !hasMeeting && onSlotClick && friends?.length > 0;
+              // Do not require friends here — if the friends API fails or the list is empty, cells
+              // were non-clickable and the calendar felt broken. The slot panel handles no friends.
+              const isEmpty = !hasMeeting && onSlotClick;
 
               return (
                 <div

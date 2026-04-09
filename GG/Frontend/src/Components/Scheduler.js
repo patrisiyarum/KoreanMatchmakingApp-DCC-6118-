@@ -296,7 +296,6 @@ const Scheduler = () => {
             currentUserId={id}
             onMeetingClick={handleCancelMeeting}
             onSlotClick={setSelectedSlotData}
-            friends={friends}
           />
 
           <div className="sched-footer">

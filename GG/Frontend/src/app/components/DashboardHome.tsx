@@ -6,6 +6,11 @@ export function DashboardHome() {
   const { t } = useLanguage();
   const cards = [
     {
+      to: '/profile',
+      title: t('Profile & photo', '프로필 · 사진'),
+      sub: t('Bio, languages, profile picture', '소개, 언어, 프로필 사진'),
+    },
+    {
       to: '/discover',
       title: t('Discover partners', '파트너 찾기'),
       sub: t('Swipe and match', '스와이프로 매칭'),

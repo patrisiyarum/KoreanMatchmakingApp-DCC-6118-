@@ -1,15 +1,18 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Calendar, Clock, Plus, Users } from 'lucide-react';
+import { Calendar, Clock, Loader2, Plus, Users } from 'lucide-react';
+import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import { initialMatches } from '../data/mockData';
-
-interface TimeSlot {
-  id: string;
-  day: string;
-  time: string;
-  available: boolean;
-}
+import { getFriendsList, type FriendRow } from '@/api/friendsApi';
+import { getUserAvailability, replaceUserAvailability } from '@/api/availabilityApi';
+import {
+  GRID_DAYS,
+  GRID_HOURS,
+  apiSlotsToGridKeys,
+  gridKeysToApiSlots,
+} from '@/lib/scheduleAvailability';
 
 interface Meeting {
   id: string;
@@ -21,9 +24,7 @@ interface Meeting {
   topic: string;
 }
 
-const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const daysOfWeekKo = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
-const timeSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
 
 function formatMeetingDate(isoDate: string, lang: 'en' | 'ko') {
   const d = new Date(`${isoDate}T12:00:00`);
@@ -34,9 +35,16 @@ function formatMeetingDate(isoDate: string, lang: 'en' | 'ko') {
 }
 
 export function Schedule() {
+  const { userId } = useAuth();
   const { t, language } = useLanguage();
   const [view, setView] = useState<'availability' | 'meetings'>('availability');
-  const [availability, setAvailability] = useState<TimeSlot[]>([]);
+  const [myKeys, setMyKeys] = useState<Set<string>>(new Set());
+  const [partnerKeys, setPartnerKeys] = useState<Set<string>>(new Set());
+  const [friends, setFriends] = useState<FriendRow[]>([]);
+  const [overlayPartnerId, setOverlayPartnerId] = useState<string>('');
+  const [loadAvail, setLoadAvail] = useState(false);
+  const [savingAvail, setSavingAvail] = useState(false);
+
   const [meetings, setMeetings] = useState<Meeting[]>([
     {
       id: '1',
@@ -46,24 +54,92 @@ export function Schedule() {
       time: '14:00',
       duration: '60 min',
       topic: 'Conversation practice',
-    }
+    },
   ]);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
 
-  const toggleAvailability = (day: string, time: string) => {
-    const slotId = `${day}-${time}`;
-    const existing = availability.find(slot => slot.id === slotId);
+  const loadMine = useCallback(async () => {
+    if (!userId) return;
+    setLoadAvail(true);
+    try {
+      const slots = await getUserAvailability(userId);
+      setMyKeys(apiSlotsToGridKeys(slots));
+    } catch {
+      toast.error(t('Could not load your availability', '내 일정을 불러오지 못했습니다'));
+    } finally {
+      setLoadAvail(false);
+    }
+  }, [userId, t]);
 
-    if (existing) {
-      setAvailability(prev => prev.filter(slot => slot.id !== slotId));
-    } else {
-      setAvailability(prev => [...prev, { id: slotId, day, time, available: true }]);
+  const loadFriends = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const list = await getFriendsList(userId);
+      setFriends(list);
+    } catch {
+      setFriends([]);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    loadMine();
+    loadFriends();
+  }, [loadMine, loadFriends]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!overlayPartnerId) {
+        setPartnerKeys(new Set());
+        return;
+      }
+      const slots = await getUserAvailability(overlayPartnerId);
+      if (!cancelled) setPartnerKeys(apiSlotsToGridKeys(slots));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [overlayPartnerId]);
+
+  const toggleMySlot = (day: string, time: string) => {
+    const key = `${day}-${time}`;
+    setMyKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const saveAvailability = async () => {
+    if (!userId) return;
+    setSavingAvail(true);
+    try {
+      const slots = gridKeysToApiSlots(myKeys);
+      await replaceUserAvailability(userId, slots);
+      toast.success(t('Availability saved', '가능 시간이 저장되었습니다'));
+    } catch {
+      toast.error(t('Save failed', '저장 실패'));
+    } finally {
+      setSavingAvail(false);
     }
   };
 
-  const isSlotAvailable = (day: string, time: string) => {
-    return availability.some(slot => slot.day === day && slot.time === time);
+  const cellClass = (day: string, time: string) => {
+    const key = `${day}-${time}`;
+    const mine = myKeys.has(key);
+    const theirs = partnerKeys.has(key);
+    if (mine && theirs) return 'bg-teal-600 hover:bg-teal-700 ring-2 ring-teal-800 ring-inset';
+    if (mine) return 'bg-emerald-500 hover:bg-emerald-600';
+    if (theirs) return 'bg-amber-400 hover:bg-amber-500';
+    return 'bg-neutral-100 hover:bg-neutral-200';
   };
+
+  const partnerLabel = useMemo(() => {
+    const f = friends.find((x) => String(x.id) === overlayPartnerId);
+    if (!f) return '';
+    return [f.firstName, f.lastName].filter(Boolean).join(' ') || f.email || '';
+  }, [friends, overlayPartnerId]);
 
   return (
     <div className="size-full overflow-y-auto bg-neutral-50">
@@ -114,62 +190,115 @@ export function Schedule() {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-2xl border border-neutral-200 p-6"
           >
+            <div className="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+              <div>
+                <h3 className="font-semibold text-neutral-900 mb-1">
+                  {t('Set Your Available Times', '가능한 시간 설정')}
+                </h3>
+                <p className="text-sm text-neutral-600">
+                  {t(
+                    'Green = you. Amber = partner (read-only overlay). Teal = both free — great meeting times.',
+                    '초록 = 나. 호박색 = 파트너(참고). 청록 = 둘 다 가능 — 미팅 추천 시간.'
+                  )}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={savingAvail || loadAvail || !userId}
+                  onClick={saveAvailability}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 inline-flex items-center gap-2"
+                >
+                  {savingAvail ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  {t('Save my availability', '내 시간 저장')}
+                </button>
+              </div>
+            </div>
+
             <div className="mb-4">
-              <h3 className="font-semibold text-neutral-900 mb-1">
-                {t('Set Your Available Times', '가능한 시간 설정')}
-              </h3>
-              <p className="text-sm text-neutral-600">
-                {t('Click on time slots to mark when you\'re available', '가능한 시간을 클릭하세요')}
-              </p>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
+                {t('Show partner availability', '파트너 일정 겹쳐 보기')}
+              </label>
+              <select
+                value={overlayPartnerId}
+                onChange={(e) => setOverlayPartnerId(e.target.value)}
+                className="w-full max-w-md px-3 py-2 rounded-lg border border-neutral-300 text-sm"
+              >
+                <option value="">
+                  {t('— None —', '— 없음 —')}
+                </option>
+                {friends.map((f) => (
+                  <option key={f.id} value={String(f.id)}>
+                    {[f.firstName, f.lastName].filter(Boolean).join(' ') || f.email || `User ${f.id}`}
+                  </option>
+                ))}
+              </select>
+              {overlayPartnerId && !partnerLabel ? (
+                <p className="text-xs text-amber-700 mt-1">
+                  {t('No slots returned — they may not have saved availability yet.', '일정이 없습니다. 상대가 저장했는지 확인하세요.')}
+                </p>
+              ) : null}
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr>
-                    <th className="p-2 text-left text-sm font-medium text-neutral-700 border-b">
-                      {t('Time', '시간')}
-                    </th>
-                    {daysOfWeek.map((day, index) => (
-                      <th key={day} className="p-2 text-center text-sm font-medium text-neutral-700 border-b">
-                        {language === 'ko' ? daysOfWeekKo[index] : day.slice(0, 3)}
+              {loadAvail ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                </div>
+              ) : (
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="p-2 text-left text-sm font-medium text-neutral-700 border-b">
+                        {t('Time', '시간')}
                       </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {timeSlots.map(time => (
-                    <tr key={time}>
-                      <td className="p-2 text-sm text-neutral-600 border-b">{time}</td>
-                      {daysOfWeek.map(day => {
-                        const available = isSlotAvailable(day, time);
-                        return (
+                      {GRID_DAYS.map((day, index) => (
+                        <th
+                          key={day}
+                          className="p-2 text-center text-sm font-medium text-neutral-700 border-b"
+                        >
+                          {language === 'ko' ? daysOfWeekKo[index] : day.slice(0, 3)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {GRID_HOURS.map((time) => (
+                      <tr key={time}>
+                        <td className="p-2 text-sm text-neutral-600 border-b">{time}</td>
+                        {GRID_DAYS.map((day) => (
                           <td key={`${day}-${time}`} className="p-1 border-b">
                             <button
-                              onClick={() => toggleAvailability(day, time)}
-                              className={`w-full h-10 rounded-md transition-colors ${
-                                available
-                                  ? 'bg-emerald-500 hover:bg-emerald-600'
-                                  : 'bg-neutral-100 hover:bg-neutral-200'
-                              }`}
+                              type="button"
+                              title={`${day} ${time}`}
+                              onClick={() => toggleMySlot(day, time)}
+                              className={`w-full h-10 rounded-md transition-colors ${cellClass(day, time)}`}
                             />
                           </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
 
-            <div className="mt-4 flex items-center gap-4 text-sm">
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-emerald-500 rounded" />
-                <span className="text-neutral-600">{t('Available', '가능')}</span>
+                <span className="text-neutral-600">{t('You', '나')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-neutral-100 rounded" />
-                <span className="text-neutral-600">{t('Not available', '불가능')}</span>
+                <div className="w-4 h-4 bg-amber-400 rounded" />
+                <span className="text-neutral-600">{t('Partner', '파트너')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-teal-600 rounded" />
+                <span className="text-neutral-600">{t('Both free', '둘 다 가능')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-neutral-100 rounded border border-neutral-200" />
+                <span className="text-neutral-600">{t('Not available', '불가')}</span>
               </div>
             </div>
           </motion.div>
@@ -182,6 +311,7 @@ export function Schedule() {
             className="space-y-4"
           >
             <button
+              type="button"
               onClick={() => setShowScheduleModal(true)}
               className="w-full bg-blue-600 text-white py-4 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2"
             >
@@ -189,16 +319,14 @@ export function Schedule() {
               {t('Schedule New Meeting', '새 미팅 예약')}
             </button>
 
-            {meetings.map(meeting => (
+            {meetings.map((meeting) => (
               <div
                 key={meeting.id}
                 className="bg-white rounded-2xl border border-neutral-200 p-6"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className="font-semibold text-neutral-900 mb-1">
-                      {meeting.partnerName}
-                    </h3>
+                    <h3 className="font-semibold text-neutral-900 mb-1">{meeting.partnerName}</h3>
                     <p className="text-sm text-neutral-600">{meeting.topic}</p>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-blue-600">
@@ -213,7 +341,9 @@ export function Schedule() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4" />
-                    <span>{meeting.time} ({meeting.duration})</span>
+                    <span>
+                      {meeting.time} ({meeting.duration})
+                    </span>
                   </div>
                 </div>
               </div>
@@ -246,7 +376,7 @@ export function Schedule() {
                     {t('Partner', '파트너')}
                   </label>
                   <select className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    {initialMatches.map(match => (
+                    {initialMatches.map((match) => (
                       <option key={match.user.id}>{match.user.name}</option>
                     ))}
                   </select>
@@ -265,7 +395,7 @@ export function Schedule() {
                     {t('Time', '시간')}
                   </label>
                   <select className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    {timeSlots.map(time => (
+                    {GRID_HOURS.map((time) => (
                       <option key={time}>{time}</option>
                     ))}
                   </select>
@@ -283,12 +413,14 @@ export function Schedule() {
               </div>
               <div className="flex gap-3 mt-6">
                 <button
+                  type="button"
                   onClick={() => setShowScheduleModal(false)}
                   className="flex-1 bg-neutral-200 text-neutral-900 py-3 rounded-lg font-medium hover:bg-neutral-300"
                 >
                   {t('Cancel', '취소')}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setShowScheduleModal(false)}
                   className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700"
                 >

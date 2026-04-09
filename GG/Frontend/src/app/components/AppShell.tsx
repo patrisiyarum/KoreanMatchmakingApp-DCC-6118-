@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router';
-import { Home, Search, Gamepad2, MessageSquare, Calendar, Languages, Bot, LogOut } from 'lucide-react';
+import { Home, Search, Gamepad2, MessageSquare, Calendar, Languages, Bot, LogOut, UserCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslator } from '../context/TranslatorContext';
 import { useAIAssistant } from '../context/AIAssistantContext';
@@ -51,14 +51,23 @@ export function AppShell({ guestMode = false }: AppShellProps) {
               <Languages className="w-5 h-5 text-neutral-700" />
             </button>
             {!guestMode && (
-              <button
-                type="button"
-                onClick={() => setIsAssistantOpen(true)}
-                className="p-2 rounded-lg hover:bg-neutral-100 transition-colors"
-                title={t('AI Assistant', 'AI 도우미')}
-              >
-                <Bot className="w-5 h-5 text-neutral-700" />
-              </button>
+              <>
+                <Link
+                  to="/profile"
+                  className="p-2 rounded-lg hover:bg-neutral-100 transition-colors"
+                  title={t('My profile', '내 프로필')}
+                >
+                  <UserCircle className="w-5 h-5 text-neutral-700" />
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setIsAssistantOpen(true)}
+                  className="p-2 rounded-lg hover:bg-neutral-100 transition-colors"
+                  title={t('AI Assistant', 'AI 도우미')}
+                >
+                  <Bot className="w-5 h-5 text-neutral-700" />
+                </button>
+              </>
             )}
             <button
               type="button"

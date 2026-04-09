@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, ArrowRight, RotateCcw, Swords, Users, Plus, Crown, Gamepad2, BookOpen } from 'lucide-react';
+import { Trophy, ArrowRight, RotateCcw, Swords, Users, Plus, Crown, Gamepad2, BookOpen, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import { initialMatches } from '../data/mockData';
+import { createTeam, fetchMyTeam, type TeamRow } from '@/api/teamsApi';
 
 interface VocabQuestion {
   korean: string;
@@ -17,14 +20,6 @@ interface Challenge {
   status: 'pending' | 'active' | 'completed';
   myScore?: number;
   opponentScore?: number;
-}
-
-interface Team {
-  id: string;
-  name: string;
-  members: string[];
-  wins: number;
-  losses: number;
 }
 
 const vocabQuestions: VocabQuestion[] = [
@@ -57,6 +52,7 @@ const vocabQuestions: VocabQuestion[] = [
 
 export function Games() {
   const { t } = useLanguage();
+  const { userId } = useAuth();
   const [view, setView] = useState<'menu' | 'solo' | 'challenge' | 'teams'>('menu');
   const [gameMode, setGameMode] = useState<'menu' | 'vocab' | 'results'>('menu');
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -77,16 +73,30 @@ export function Games() {
 
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [showTeamModal, setShowTeamModal] = useState(false);
+  const [newTeamName, setNewTeamName] = useState('');
+  const [apiTeam, setApiTeam] = useState<TeamRow | null>(null);
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [creatingTeam, setCreatingTeam] = useState(false);
 
-  const [teams, setTeams] = useState<Team[]>([
-    {
-      id: '1',
-      name: 'Korean Kings 👑',
-      members: ['You', '지우 (Jiwoo)'],
-      wins: 5,
-      losses: 2,
+  const refreshTeam = useCallback(async () => {
+    if (!userId) {
+      setApiTeam(null);
+      return;
     }
-  ]);
+    setTeamLoading(true);
+    try {
+      const res = await fetchMyTeam(userId);
+      setApiTeam(res?.team ?? null);
+    } catch {
+      setApiTeam(null);
+    } finally {
+      setTeamLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    if (view === 'teams') refreshTeam();
+  }, [view, refreshTeam]);
 
   const question = vocabQuestions[currentQuestion];
 
@@ -335,10 +345,27 @@ export function Games() {
   }
 
   if (view === 'teams') {
+    const memberLabels =
+      apiTeam?.members?.map((m) => {
+        if (userId && Number(m.userId) === Number(userId)) {
+          const u = m.user;
+          if (u?.firstName || u?.lastName) {
+            return `${[u.firstName, u.lastName].filter(Boolean).join(' ')} (${t('you', '나')})`;
+          }
+          return t('You', '나');
+        }
+        const u = m.user;
+        if (u?.firstName || u?.lastName) {
+          return [u.firstName, u.lastName].filter(Boolean).join(' ');
+        }
+        return t('Member', '멤버');
+      }) ?? [];
+
     return (
       <div className="size-full overflow-y-auto bg-gradient-to-b from-blue-50 to-neutral-50">
         <div className="max-w-2xl mx-auto p-6">
           <button
+            type="button"
             onClick={() => setView('menu')}
             className="mb-6 text-neutral-600 hover:text-neutral-900 flex items-center gap-2"
           >
@@ -354,61 +381,101 @@ export function Games() {
             </p>
           </div>
 
+          {!userId ? (
+            <p className="text-sm text-neutral-600 mb-4">
+              {t('Sign in to use teams.', '팀 기능을 쓰려면 로그인하세요.')}
+            </p>
+          ) : null}
+
           <button
-            onClick={() => setShowTeamModal(true)}
-            className="w-full bg-blue-600 text-white py-4 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2 mb-6"
+            type="button"
+            disabled={!userId || !!apiTeam}
+            onClick={() => {
+              setNewTeamName('');
+              setShowTeamModal(true);
+            }}
+            className="w-full bg-blue-600 text-white py-4 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2 mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-5 h-5" />
             {t('Create Team', '팀 만들기')}
           </button>
 
-          <div className="space-y-4">
-            {teams.map(team => (
-              <div
-                key={team.id}
-                className="bg-white rounded-2xl border border-neutral-200 p-6"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-neutral-900 mb-1">
-                      {team.name}
-                    </h3>
-                    <div className="flex items-center gap-2 text-sm text-neutral-600">
-                      <Users className="w-4 h-4" />
-                      <span>{team.members.length} {t('members', '멤버')}</span>
+          {teamLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {apiTeam ? (
+                <div className="bg-white rounded-2xl border border-neutral-200 p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-neutral-900 mb-1 flex items-center gap-2">
+                        <span>{apiTeam.logo || '🏆'}</span>
+                        {apiTeam.name}
+                      </h3>
+                      <div className="flex items-center gap-2 text-sm text-neutral-600">
+                        <Users className="w-4 h-4" />
+                        <span>
+                          {memberLabels.length} {t('members', '멤버')}
+                        </span>
+                      </div>
+                      {apiTeam.inviteCode ? (
+                        <p className="text-xs text-neutral-500 mt-2 font-mono">
+                          {t('Invite code', '초대 코드')}: {apiTeam.inviteCode}
+                        </p>
+                      ) : null}
+                    </div>
+                    <Crown className="w-6 h-6 text-yellow-500 shrink-0" />
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {memberLabels.map((label, index) => (
+                      <span
+                        key={`${label}-${index}`}
+                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium"
+                      >
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">{apiTeam.totalXP ?? 0}</div>
+                      <div className="text-xs text-neutral-600">{t('Team XP', '팀 XP')}</div>
+                    </div>
+                    <div className="text-center p-3 bg-red-50 rounded-lg">
+                      <div className="text-2xl font-bold text-red-600">{memberLabels.length}</div>
+                      <div className="text-xs text-neutral-600">{t('Roster', '로스터')}</div>
                     </div>
                   </div>
-                  <Crown className="w-6 h-6 text-yellow-500" />
-                </div>
 
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {team.members.map((member, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium"
-                    >
-                      {member}
-                    </span>
-                  ))}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      toast.message(t('Finding opponents…', '상대 찾는 중…'), {
+                        description: t(
+                          'Team matchmaking will pair you when another team is ready. Play solo or 1v1 while you wait.',
+                          '다른 팀이 준비되면 매칭됩니다. 그동안 혼자 또는 1대1을 즐겨 보세요.'
+                        ),
+                      })
+                    }
+                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700"
+                  >
+                    {t('Find Match', '매치 찾기')}
+                  </button>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="text-center p-3 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{team.wins}</div>
-                    <div className="text-xs text-neutral-600">{t('Wins', '승')}</div>
-                  </div>
-                  <div className="text-center p-3 bg-red-50 rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">{team.losses}</div>
-                    <div className="text-xs text-neutral-600">{t('Losses', '패')}</div>
-                  </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-neutral-300 bg-white/80 p-8 text-center text-neutral-600 text-sm">
+                  {t(
+                    'You are not in a team yet. Create one with a unique name, then share the invite code with friends.',
+                    '아직 팀이 없습니다. 팀 이름을 정하고 친구에게 초대 코드를 공유하세요.'
+                  )}
                 </div>
-
-                <button className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700">
-                  {t('Find Match', '매치 찾기')}
-                </button>
-              </div>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
 
           {showTeamModal && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
@@ -427,34 +494,55 @@ export function Games() {
                     </label>
                     <input
                       type="text"
+                      value={newTeamName}
+                      onChange={(e) => setNewTeamName(e.target.value)}
                       placeholder={t('Enter team name', '팀 이름 입력')}
                       className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      {t('Invite Partners', '파트너 초대')}
-                    </label>
-                    {initialMatches.map(match => (
-                      <div key={match.user.id} className="flex items-center gap-3 p-3 hover:bg-neutral-50 rounded-lg">
-                        <input type="checkbox" className="w-4 h-4" />
-                        <div className="text-2xl">{match.user.avatar}</div>
-                        <span className="text-sm">{match.user.name}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-xs text-neutral-500">
+                    {t(
+                      'After creating, use the invite code on this screen to add friends (they must leave any old team first).',
+                      '생성 후 초대 코드로 친구를 추가하세요. (기존 팀에서 나와야 할 수 있습니다.)'
+                    )}
+                  </p>
                 </div>
                 <div className="flex gap-3">
                   <button
+                    type="button"
                     onClick={() => setShowTeamModal(false)}
                     className="flex-1 bg-neutral-200 text-neutral-900 py-3 rounded-lg font-medium"
                   >
                     {t('Cancel', '취소')}
                   </button>
                   <button
-                    onClick={() => setShowTeamModal(false)}
-                    className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium"
+                    type="button"
+                    disabled={creatingTeam || !userId || !newTeamName.trim()}
+                    onClick={async () => {
+                      if (!userId) return;
+                      setCreatingTeam(true);
+                      try {
+                        const { inviteCode } = await createTeam(userId, newTeamName.trim());
+                        toast.success(
+                          t('Team created!', '팀이 만들어졌습니다!') +
+                            (inviteCode ? ` Code: ${inviteCode}` : '')
+                        );
+                        setShowTeamModal(false);
+                        await refreshTeam();
+                      } catch (err: unknown) {
+                        const ax = err as { response?: { data?: { error?: string } }; message?: string };
+                        toast.error(
+                          ax.response?.data?.error ||
+                            ax.message ||
+                            t('Could not create team', '팀을 만들 수 없습니다')
+                        );
+                      } finally {
+                        setCreatingTeam(false);
+                      }
+                    }}
+                    className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 inline-flex items-center justify-center gap-2"
                   >
+                    {creatingTeam ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                     {t('Create', '만들기')}
                   </button>
                 </div>

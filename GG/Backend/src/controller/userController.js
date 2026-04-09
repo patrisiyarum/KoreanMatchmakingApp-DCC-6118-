@@ -97,7 +97,15 @@ let handleProfileCreation = async (req, res) => {
         let learning_goal = req.body.learning_goal;
         let communication_style = req.body.communication_style;
         let commitment_level = req.body.commitment_level;
+        let bio = req.body.bio;
         let id = req.body.id;
+        if (bio != null && String(bio).length > 2000) {
+            return res.status(400).json({
+                errorCode: 2,
+                message: 'bio must be 2000 characters or less',
+                validationErrors: ['bio too long'],
+            });
+        }
         const pv = validateProfileCustomizationFields(
             { learning_goal, communication_style, commitment_level },
             { requireAll: true }
@@ -125,6 +133,7 @@ let handleProfileCreation = async (req, res) => {
             learning_goal,
             communication_style,
             commitment_level,
+            bio,
             save
         );
         return res.status(200).json({

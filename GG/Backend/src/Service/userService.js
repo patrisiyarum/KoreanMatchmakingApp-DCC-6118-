@@ -120,7 +120,7 @@ let checkUserEmail = (userEmail) => {
     })
 }
 
-let handleProfileCreation = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, learning_goal, communication_style, commitment_level, save) => {
+let handleProfileCreation = (id, native_language, target_language, target_language_proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, learning_goal, communication_style, commitment_level, bio, save) => {
     return new Promise(async (resolve, reject) => {
         try{
             let userData = {};
@@ -147,6 +147,9 @@ let handleProfileCreation = (id, native_language, target_language, target_langua
             };
             if (lg != null) profileFields.learning_goal = lg;
             if (cs != null) profileFields.communication_style = cs;
+            if (bio != null && String(bio).trim() !== '') {
+                profileFields.bio = String(bio).trim().slice(0, 2000);
+            }
             let userProfile = await db.UserProfile.build(profileFields);
             if(save) {
                 await userProfile.save()
@@ -253,7 +256,7 @@ let handleDataPopulation = (fName, lName, email, pass, native, target, age, gend
             let account = await handleUserRegister(fName, lName, email, pass, true)
             let id = account.id
             console.log("id from account is: ", id)
-            let profile = await handleProfileCreation(id, native, target, proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, undefined, undefined, undefined, true)
+            let profile = await handleProfileCreation(id, native, target, proficiency, age, gender, profession, mbti, zodiac, default_time_zone, visibility, undefined, undefined, undefined, undefined, true)
             console.log("hi");
             userData.errCode = 0;
             userData.errMessage = 'Data Successfully Populated!';

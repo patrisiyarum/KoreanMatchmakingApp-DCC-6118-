@@ -3,6 +3,7 @@
 //   app.use('/api/teams', teamRoutes);
  
 import express from 'express';
+import { Op } from 'sequelize';
 import db from '../models/index.js';
  
 const router = express.Router();
@@ -224,7 +225,6 @@ router.get('/search', async (req, res) => {
     const { name } = req.query;
     if (!name) return res.status(400).json({ error: 'name query param required' });
  
-    const { Op } = (await import('sequelize')).default ?? await import('sequelize');
     const teams = await db.Team.findAll({
       where: { name: { [Op.like]: `%${name}%` } },
       attributes: ['id', 'name', 'logo', 'totalXP', 'inviteCode'],

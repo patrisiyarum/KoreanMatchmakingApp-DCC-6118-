@@ -1,7 +1,7 @@
 .dashboard-page {
   min-height: 100vh;
-  background: var(--dl-page-bg);
-  font-family: var(--dl-font);
+  background: var(--lm-bg, #f4f7ff);
+  font-family: var(--lm-font, var(--dl-font));
 }
 
 .dashboard-welcome {

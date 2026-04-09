@@ -1,5 +1,5 @@
-// Import Google Fonts — Nunito + Noto Sans KR (Korean UI copy)
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&family=DM+Serif+Display&family=HK+Sentiments&display=swap');
+// LangMatch UI: Inter + Nunito + Noto Sans KR
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
 
 // Design tokens — neutral surfaces + blue primary + Korean accent hints (obangsaek-inspired reds/blues)
 :root {
@@ -30,8 +30,13 @@
   --dl-radius-xl: 28px;
   --dl-shadow: 0 4px 0 0 rgba(0,0,0,0.1);
   --dl-shadow-hover: 0 6px 0 0 rgba(0,0,0,0.12);
-  --dl-font: 'Nunito', 'HK Sentiments', -apple-system, sans-serif;
-  --dl-page-bg: #fafafa;
+  --dl-font: 'Inter', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+  --lm-font: 'Inter', 'Nunito', system-ui, sans-serif;
+  --dl-page-bg: #f4f7ff;
+  --lm-bg: #f4f7ff;
+  --lm-gradient: linear-gradient(135deg, #4a90e2 0%, #9b51e0 100%);
+  --lm-pink: #ff4b63;
+  --lm-text-muted: #828282;
 }
 
 // Reset and Base Styles
@@ -43,18 +48,11 @@ body {
   font-family: var(--dl-font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: var(--dl-dark);
-  background-color: var(--dl-page-bg);
+  color: #1a1a2e;
+  background-color: var(--lm-bg);
   background-image:
-    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(37, 99, 235, 0.06), transparent 50%),
-    radial-gradient(ellipse 80% 50% at 100% 50%, rgba(185, 28, 28, 0.04), transparent 45%),
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 24px,
-      rgba(0, 0, 0, 0.012) 24px,
-      rgba(0, 0, 0, 0.012) 25px
-    );
+    radial-gradient(ellipse 100% 80% at 50% -10%, rgba(74, 144, 226, 0.12), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(155, 81, 224, 0.06), transparent 50%);
   background-attachment: fixed;
 }
 

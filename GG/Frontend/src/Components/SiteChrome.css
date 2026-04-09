@@ -19,52 +19,73 @@ iframe.skiptranslate,
 
 .site-chrome {
   position: fixed;
-  bottom: 1rem;
+  bottom: calc(1rem + 76px);
   right: 1rem;
-  z-index: 9990;
+  z-index: 10030;
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  align-items: stretch;
+  gap: 0.5rem;
+  align-items: flex-end;
 }
 
-.site-chrome-btn {
-  border: none;
-  border-radius: 999px;
-  padding: 0.45rem 0.85rem;
-  font-size: 0.82rem;
-  font-weight: 700;
+body:not(.lm-has-bottom-nav) .site-chrome {
+  bottom: 1rem;
+}
+
+.site-chrome-lang {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #fff;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 800;
   cursor: pointer;
-  font-family: inherit;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  font-family: var(--dl-font-ko, inherit);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
-.site-chrome-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.16);
+.site-chrome-lang:hover {
+  border-color: rgba(37, 99, 235, 0.35);
+  color: #2563eb;
 }
 
-.site-chrome-btn--lang {
-  background: linear-gradient(135deg, #fff7ed, #ffedd5);
-  color: #9a3412;
-  border: 1px solid #fdba74;
+.site-chrome-fab {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: #111827;
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-family: var(--lm-font, system-ui);
 }
 
-.site-chrome-btn--feedback {
-  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
-  color: #3730a3;
-  border: 1px solid #a5b4fc;
+.site-chrome-fab:hover {
+  background: #1f2937;
+  transform: scale(1.04);
 }
 
 @media (max-width: 480px) {
   .site-chrome {
-    bottom: 0.65rem;
+    bottom: calc(0.65rem + 76px);
     right: 0.65rem;
   }
 
-  .site-chrome-btn {
-    font-size: 0.78rem;
-    padding: 0.4rem 0.75rem;
+  body:not(.lm-has-bottom-nav) .site-chrome {
+    bottom: 0.65rem;
   }
 }

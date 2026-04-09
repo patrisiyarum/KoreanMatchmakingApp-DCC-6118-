@@ -145,10 +145,21 @@ function GameSelect() {
   if (error)   return <div className="error-state">{error}</div>;
  
   return (
-    <div className="game-selection-page">
+    <div className="game-selection-page lm-game-page">
       <Navbar id={id} />
       <GameNavbar />
       <div className="gs-content">
+
+      <header className="lm-games-hero">
+        <div className="lm-games-hero-icon" aria-hidden>
+          🎮
+        </div>
+        <h1 className="lm-games-title">
+          Language Games{' '}
+          <span className="lm-games-title-ko" lang="ko">언어 게임</span>
+        </h1>
+        <p className="lm-games-tagline">Practice and improve your skills</p>
+      </header>
 
       {/* ── Profile / Level Banner ── */}
       <div className="profile-banner">
@@ -200,17 +211,41 @@ function GameSelect() {
       {/* ── Games + Quests ── */}
       <div className="game-selection-body">
 
-        {/* Left: Game buttons */}
-        <div className="games-column">
-          <button className="game-button" onClick={goToTermMatching}>
-            Term Matching
+        {/* Game cards — mockup-style list */}
+        <div className="games-column lm-game-cards">
+          <button type="button" className="lm-game-card" onClick={goToTermMatching}>
+            <div className="lm-game-card-main">
+              <span className="lm-game-card-title">
+                Vocabulary Quiz <span lang="ko" className="lm-game-card-ko">어휘 퀴즈</span>
+              </span>
+              <span className="lm-game-card-sub">Test your Korean vocabulary knowledge.</span>
+            </div>
+            <span className="lm-game-card-arrow" aria-hidden>›</span>
           </button>
-          <button className="game-button" onClick={goToGrammarQuiz}>
-            Grammar Quiz
+          <button type="button" className="lm-game-card" onClick={goToGrammarQuiz}>
+            <div className="lm-game-card-main">
+              <span className="lm-game-card-title">
+                Grammar Quiz <span lang="ko" className="lm-game-card-ko">문법 퀴즈</span>
+              </span>
+              <span className="lm-game-card-sub">Sentence patterns and particles.</span>
+            </div>
+            <span className="lm-game-card-arrow" aria-hidden>›</span>
           </button>
-          <button className="game-button" onClick={goToPronunciationDrill}>
-            Pronunciation Drill
+          <button type="button" className="lm-game-card" onClick={goToPronunciationDrill}>
+            <div className="lm-game-card-main">
+              <span className="lm-game-card-title">
+                Speaking drill <span lang="ko" className="lm-game-card-ko">발음 연습</span>
+              </span>
+              <span className="lm-game-card-sub">Pronunciation with instant feedback.</span>
+            </div>
+            <span className="lm-game-card-arrow" aria-hidden>›</span>
           </button>
+          <div className="lm-game-card lm-game-card--disabled" aria-disabled="true">
+            <div className="lm-game-card-main">
+              <span className="lm-game-card-title">Translation Challenge</span>
+              <span className="lm-game-card-sub lm-game-card-soon">Coming soon!</span>
+            </div>
+          </div>
         </div>
  
         {/* Right: Quests panel */}

@@ -1,3 +1,130 @@
+.lm-game-page {
+  background: var(--lm-bg, #f4f7ff) !important;
+}
+
+.lm-games-hero {
+  text-align: center;
+  margin-bottom: 20px;
+  width: 100%;
+  max-width: 560px;
+}
+
+.lm-games-hero-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  margin-bottom: 8px;
+  filter: grayscale(0.2);
+}
+
+.lm-games-title {
+  margin: 0 0 6px;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+
+.lm-games-title-ko {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #7c3aed;
+  font-family: var(--dl-font-ko), sans-serif;
+}
+
+.lm-games-tagline {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--lm-text-muted, #828282);
+}
+
+.lm-game-cards {
+  gap: 12px !important;
+}
+
+.lm-game-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--lm-font, var(--dl-font));
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.lm-game-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.1);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+.lm-game-card--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.lm-game-card--disabled:hover {
+  transform: none;
+}
+
+.lm-game-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.lm-game-card-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.lm-game-card-ko {
+  font-family: var(--dl-font-ko), sans-serif;
+  font-weight: 700;
+  font-size: 0.95em;
+  color: #7c3aed;
+  margin-left: 4px;
+}
+
+.lm-game-card-sub {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.lm-game-card-soon {
+  font-style: italic;
+  color: #94a3b8;
+}
+
+.lm-game-card-arrow {
+  flex-shrink: 0;
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: #cbd5e1;
+  line-height: 1;
+}
+
+.lm-games-hub .gs-hub-btn {
+  border-radius: 999px !important;
+  border-width: 2px !important;
+  box-shadow: none !important;
+  padding: 10px 18px !important;
+  font-size: 14px !important;
+}
+
 .game-selection-page {
   min-height: 100vh;
   background: var(--dl-page-bg);
@@ -460,4 +587,15 @@
   background: var(--dl-green);
   padding: 4px 14px;
   border-radius: var(--dl-radius);
+}
+
+@media (max-width: 720px) {
+  .game-selection-body {
+    flex-direction: column;
+  }
+
+  .quests-panel {
+    width: 100% !important;
+    max-height: 280px;
+  }
 }

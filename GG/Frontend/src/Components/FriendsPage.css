@@ -1,6 +1,6 @@
 .friends-page {
   min-height: 100vh;
-  background: var(--dl-page-bg, #f5f3ff);
+  background: var(--lm-bg, #f4f7ff);
   display: flex;
   flex-direction: column;
 }
@@ -25,14 +25,14 @@
 
 .friends-page-tab {
   flex: 1;
-  font-family: var(--dl-font, 'Nunito', sans-serif);
-  font-size: 15px;
-  font-weight: 800;
+  font-family: var(--lm-font, var(--dl-font), 'Nunito', sans-serif);
+  font-size: 14px;
+  font-weight: 700;
   padding: 12px 16px;
-  border: 3px solid var(--dl-gray-light, #e5e5e5);
-  border-radius: var(--dl-radius-sm, 8px);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 999px;
   background: var(--dl-white, #fff);
-  color: var(--dl-dark, #364659);
+  color: #64748b;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
@@ -43,9 +43,10 @@
 }
 
 .friends-page-tab-active {
-  background: var(--dl-primary, var(--dl-primary));
-  color: var(--dl-white, #fff);
-  border-color: var(--dl-primary, var(--dl-primary));
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+  border-color: rgba(37, 99, 235, 0.35);
+  font-weight: 800;
 }
 
 .friends-page-panel {

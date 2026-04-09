@@ -24,7 +24,7 @@ function GameNavbar() {
   const searchString = id ? createSearchParams({ id }).toString() : '';
 
   return (
-    <div className="gs-hub-row" style={{ justifyContent: 'center', marginTop: '20px' }}>
+    <div className="gs-hub-row lm-games-hub" style={{ justifyContent: 'center', marginTop: '12px' }}>
       {NAV_ITEMS.map((item) => (
         <button
           key={item.key}

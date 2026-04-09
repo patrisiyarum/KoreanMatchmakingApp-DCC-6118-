@@ -101,6 +101,11 @@
   gap: 8px;
 }
 
+.fs-empty-block--minimal {
+  gap: 6px;
+  padding-top: 8px;
+}
+
 .fs-empty-hint {
   margin: 0;
   font-size: 13px;
@@ -339,6 +344,14 @@
   font-weight: 600;
   color: rgba(54, 70, 89, 0.75);
   padding-top: 4px;
+}
+
+.fs-results-header--empty {
+  justify-content: flex-end;
+}
+
+.fs-results-count--placeholder {
+  display: none;
 }
 
 .fs-sort-group {
@@ -699,6 +712,19 @@
   color: rgba(54, 70, 89, 0.6);
   font-size: 13px;
   padding: 32px 0;
+}
+
+.fs-empty-block--minimal .fs-empty {
+  padding: 20px 0 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(54, 70, 89, 0.75);
+}
+
+.fs-empty-block--minimal .fs-empty-hint {
+  text-align: center;
+  font-size: 12px;
+  color: #94a3b8;
 }
 
 /* ── Success toast ── */

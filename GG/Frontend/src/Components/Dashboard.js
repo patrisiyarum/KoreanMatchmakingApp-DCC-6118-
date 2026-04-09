@@ -231,89 +231,82 @@ useEffect(() => {
         <h1>Welcome back, {firstName} {lastName || ''}</h1>
       </div>
 
-      {id && progressLoaded && userStats && challengeStats && (
-        <div className="dashboard-progress-wrap">
-          <div className="dashboard-progress-card dash-progress-vp dash-progress-vp--quiet">
-            <h2 className="dash-progress-main-title">Points, games, and challenges</h2>
-
-            <div className="dash-progress-xp-shell">
-              <div className="dash-progress-level-row">
-                <span className="dash-progress-level-text">Level {userStats.level ?? 1}</span>
-                <span className="dash-progress-xp-caption">
-                  {userStats.xp ?? 0} / {userStats.xpToNext ?? XP_PER_LEVEL} XP this level
-                </span>
-              </div>
-              <div className="dash-progress-xp-track">
+      {id && progressLoaded && userStats && challengeStats && (() => {
+        const lv = userStats.level ?? 1;
+        const xpNow = userStats.xp ?? 0;
+        const xpCap = userStats.xpToNext ?? XP_PER_LEVEL;
+        const xpPct = Math.min(100, (xpNow / Math.max(1, xpCap)) * 100);
+        const ga = userStats.gameActivity;
+        const ch = challengeStats;
+        const gamesPlayed = ga?.gamesPlayed ?? 0;
+        const wins = ch?.wins ?? 0;
+        const losses = ch?.losses ?? 0;
+        const finished = ch?.totalChallenges ?? 0;
+        const sess = ch?.completedGameSessions ?? 0;
+        const xpSess = ch?.xpFromSessions ?? 0;
+        return (
+          <div className="dashboard-progress-wrap">
+            <div className="dashboard-progress-card dash-duo-card">
+              <h2 className="dash-duo-title">Your progress</h2>
+              <div className="dash-duo-hero">
                 <div
-                  className="dash-progress-xp-fill"
-                  style={{
-                    width: `${Math.min(
-                      100,
-                      ((userStats.xp ?? 0) / Math.max(1, userStats.xpToNext ?? XP_PER_LEVEL)) * 100
-                    )}%`,
-                  }}
-                />
+                  className="dash-duo-ring"
+                  style={{ '--xp-pct': String(xpPct) }}
+                  aria-label={`Level ${lv}. ${Math.round(xpPct)} percent of the way to the next level.`}
+                >
+                  <div className="dash-duo-ring-inner">
+                    <span className="dash-duo-level-num">{lv}</span>
+                  </div>
+                </div>
+                <div className="dash-duo-xp-block">
+                  <span className="dash-duo-xp-label">This level</span>
+                  <span className="dash-duo-xp-nums">{xpNow} / {xpCap} XP</span>
+                  <div className="dash-duo-bar-track">
+                    <div className="dash-duo-bar-fill" style={{ width: `${xpPct}%` }} />
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div className="dash-progress-split">
-              <section className="dash-quiet-block">
-                <h3 className="dash-quiet-heading">Challenge record</h3>
-                <p className="dash-quiet-stats" aria-label="Challenge statistics">
-                  <span>Wins <strong>{challengeStats.wins ?? 0}</strong></span>
-                  <span className="dash-quiet-dot" aria-hidden="true">·</span>
-                  <span>Losses <strong>{challengeStats.losses ?? 0}</strong></span>
-                  <span className="dash-quiet-dot" aria-hidden="true">·</span>
-                  <span>Draws <strong>{challengeStats.draws ?? 0}</strong></span>
-                  <span className="dash-quiet-dot" aria-hidden="true">·</span>
-                  <span>Win rate <strong>{challengeStats.winRate ?? 0}%</strong></span>
-                  <span className="dash-quiet-dot" aria-hidden="true">·</span>
-                  <span>Finished <strong>{challengeStats.totalChallenges ?? 0}</strong></span>
+              <div className="dash-duo-stat-grid">
+                <div className="dash-duo-stat">
+                  <span className="dash-duo-stat-emoji" aria-hidden="true">🎮</span>
+                  <span className="dash-duo-stat-num">{gamesPlayed}</span>
+                  <span className="dash-duo-stat-cap">Games</span>
+                </div>
+                <div className="dash-duo-stat">
+                  <span className="dash-duo-stat-emoji" aria-hidden="true">⚔️</span>
+                  <span className="dash-duo-stat-num">{wins}–{losses}</span>
+                  <span className="dash-duo-stat-cap">1v1</span>
+                </div>
+                <div className="dash-duo-stat">
+                  <span className="dash-duo-stat-emoji" aria-hidden="true">🏁</span>
+                  <span className="dash-duo-stat-num">{finished}</span>
+                  <span className="dash-duo-stat-cap">Challenges</span>
+                </div>
+              </div>
+
+              {(sess > 0 || xpSess > 0) && (
+                <p className="dash-duo-foot">
+                  {sess} practice · {xpSess} XP from games
                 </p>
-                {((challengeStats.completedGameSessions ?? 0) > 0 || (challengeStats.xpFromSessions ?? 0) > 0) && (
-                  <p className="dash-progress-footnote">
-                    {challengeStats.completedGameSessions ?? 0} practice sessions completed
-                    {(challengeStats.xpFromSessions ?? 0) > 0
-                      ? ` · ${challengeStats.xpFromSessions} XP from games`
-                      : ''}
-                  </p>
-                )}
-              </section>
+              )}
 
-              {userStats.gameActivity && (
-                <section className="dash-quiet-block">
-                  <h3 className="dash-quiet-heading">Game activity</h3>
-                  <p className="dash-quiet-stats" aria-label="Game activity counts">
-                    <span>Term matching <strong>{userStats.gameActivity.termMatching}</strong></span>
-                    <span className="dash-quiet-dot" aria-hidden="true">·</span>
-                    <span>Grammar <strong>{userStats.gameActivity.grammarQuiz}</strong></span>
-                    <span className="dash-quiet-dot" aria-hidden="true">·</span>
-                    <span>Pronunciation <strong>{userStats.gameActivity.pronunciation}</strong></span>
-                    <span className="dash-quiet-dot" aria-hidden="true">·</span>
-                    <span>Perfect rounds <strong>{userStats.gameActivity.perfectRounds}</strong></span>
-                    <span className="dash-quiet-dot" aria-hidden="true">·</span>
-                    <span>Total games <strong>{userStats.gameActivity.gamesPlayed}</strong></span>
-                  </p>
-                </section>
+              {badges.length > 0 && (
+                <div className="dash-duo-badges-wrap">
+                  <span className="dash-duo-badges-label">Badges</span>
+                  <div className="dash-duo-badges">
+                    {badges.map((b) => (
+                      <span key={b.id} className="dash-duo-badge" title={b.description}>
+                        {b.icon ? `${b.icon} ` : ''}{b.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-
-            {badges.length > 0 && (
-              <section className="dash-quiet-block dash-quiet-block--badges">
-                <h3 className="dash-quiet-heading">Badges ({badges.length})</h3>
-                <p className="dash-quiet-badges">
-                  {badges.map((b) => (
-                    <span key={b.id} className="dash-quiet-badge-item" title={b.description}>
-                      {b.icon ? `${b.icon} ` : ''}
-                      {b.name}
-                    </span>
-                  ))}
-                </p>
-              </section>
-            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {id && (
         <div className="dashboard-home-tiles">

@@ -33,8 +33,8 @@
   box-sizing: border-box;
 }
 
-/* Points / games / challenges — quiet: minimal chrome, inline stats (no stat grid boxes) */
-.dashboard-progress-wrap .dash-progress-vp--quiet {
+/* Progress card — Duolingo-style: level ring, XP bar, stat tiles */
+.dashboard-progress-wrap .dashboard-progress-card.dash-duo-card {
   margin-top: 0;
   display: flex;
   flex-direction: column;
@@ -42,148 +42,204 @@
   text-align: left;
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
-  padding: 14px 16px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  padding: 18px 20px 16px;
   box-sizing: border-box;
 }
 
-.dashboard-progress-wrap .dash-progress-vp--quiet .dash-progress-main-title {
-  margin: 0 0 12px 0;
-  font-size: 15px;
+.dashboard-progress-wrap .dash-duo-title {
+  margin: 0 0 14px 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  font-family: var(--dl-font);
+  letter-spacing: -0.03em;
+}
+
+.dashboard-progress-wrap .dash-duo-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.dashboard-progress-wrap .dash-duo-ring {
+  --xp-pct: 0;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: conic-gradient(#58cc02 calc(var(--xp-pct) * 1%), #e8e8e8 0);
+  display: grid;
+  place-items: center;
+}
+
+.dashboard-progress-wrap .dash-duo-ring-inner {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 2px #f1f5f9;
+}
+
+.dashboard-progress-wrap .dash-duo-level-num {
+  font-size: 32px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #58cc02;
+  font-family: var(--dl-font);
+  line-height: 1;
+}
+
+.dashboard-progress-wrap .dash-duo-xp-block {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dashboard-progress-wrap .dash-duo-xp-label {
+  font-size: 11px;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  font-family: var(--dl-font);
+}
+
+.dashboard-progress-wrap .dash-duo-xp-nums {
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
   color: #0f172a;
   font-family: var(--dl-font);
   letter-spacing: -0.02em;
 }
 
-.dashboard-progress-wrap .dash-progress-xp-shell {
-  padding: 10px 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  margin-bottom: 0;
+.dashboard-progress-wrap .dash-duo-bar-track {
+  height: 14px;
+  background: #e8e8e8;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 2px solid #e8e8e8;
+  box-sizing: border-box;
 }
 
-.dashboard-progress-wrap .dash-progress-level-row {
+.dashboard-progress-wrap .dash-duo-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #58cc02, #89e219);
+  transition: width 0.4s ease;
+}
+
+.dashboard-progress-wrap .dash-duo-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.dashboard-progress-wrap .dash-duo-stat {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 8px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 8px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  text-align: center;
 }
 
-.dashboard-progress-wrap .dash-progress-level-text {
-  font-size: 13px;
-  font-weight: 600;
-  color: #334155;
+.dashboard-progress-wrap .dash-duo-stat-emoji {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.dashboard-progress-wrap .dash-duo-stat-num {
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #0f172a;
+  font-family: var(--dl-font);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.dashboard-progress-wrap .dash-duo-stat-cap {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
   font-family: var(--dl-font);
 }
 
-.dashboard-progress-wrap .dash-progress-xp-caption {
+.dashboard-progress-wrap .dash-duo-foot {
+  margin: 12px 0 0 0;
   font-size: 12px;
-  font-weight: 500;
-  color: #64748b;
-  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  color: #94a3b8;
+  text-align: center;
 }
 
-.dashboard-progress-wrap .dash-progress-xp-track {
-  height: 6px;
-  background: #e2e8f0;
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.dashboard-progress-wrap .dash-progress-xp-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: #6344a6;
-  transition: width 0.35s ease;
-}
-
-.dashboard-progress-wrap .dash-progress-split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px 28px;
-  align-items: start;
-  margin-top: 12px;
+.dashboard-progress-wrap .dash-duo-badges-wrap {
+  margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid #f1f5f9;
 }
 
-.dashboard-progress-wrap .dash-progress-split > *:only-child {
-  grid-column: 1 / -1;
+.dashboard-progress-wrap .dash-duo-badges-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  font-family: var(--dl-font);
 }
 
-@media (max-width: 720px) {
-  .dashboard-progress-wrap .dash-progress-split {
+.dashboard-progress-wrap .dash-duo-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dashboard-progress-wrap .dash-duo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  font-family: var(--dl-font);
+}
+
+@media (max-width: 560px) {
+  .dashboard-progress-wrap .dash-duo-stat-grid {
     grid-template-columns: 1fr;
   }
-}
 
-.dashboard-progress-wrap .dash-quiet-block {
-  margin: 0;
-  min-width: 0;
-}
+  .dashboard-progress-wrap .dash-duo-stat {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    text-align: left;
+  }
 
-.dashboard-progress-wrap .dash-quiet-block--badges {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid #f1f5f9;
-}
-
-.dashboard-progress-wrap .dash-quiet-heading {
-  margin: 0 0 6px 0;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #94a3b8;
-  font-family: var(--dl-font);
-}
-
-.dashboard-progress-wrap .dash-quiet-stats {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.55;
-  color: #64748b;
-  font-family: var(--dl-font);
-}
-
-.dashboard-progress-wrap .dash-quiet-stats strong {
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.dashboard-progress-wrap .dash-quiet-dot {
-  color: #cbd5e1;
-  user-select: none;
-}
-
-.dashboard-progress-wrap .dash-progress-footnote {
-  margin: 6px 0 0 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: #94a3b8;
-  text-align: left;
-}
-
-.dashboard-progress-wrap .dash-quiet-badges {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
-  color: #475569;
-  font-family: var(--dl-font);
-}
-
-.dashboard-progress-wrap .dash-quiet-badge-item {
-  display: inline;
-}
-
-.dashboard-progress-wrap .dash-quiet-badge-item + .dash-quiet-badge-item::before {
-  content: ' · ';
-  color: #cbd5e1;
+  .dashboard-progress-wrap .dash-duo-stat-emoji {
+    font-size: 26px;
+  }
 }
 
 /* Home: 2×2 tiles (Games, Profile, Friends, Schedule) below progress card */

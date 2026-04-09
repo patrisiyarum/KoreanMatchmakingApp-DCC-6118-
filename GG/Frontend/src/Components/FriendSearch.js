@@ -786,10 +786,14 @@ const FriendSearch = ({ embedded = false }) => {
 
         {/* Results card */}
         <div className="fs-card fs-results-card">
-            <div className="fs-results-header">
-            <span className="fs-results-count">
-              {displayedUsers.length} {displayedUsers.length === 1 ? 'person' : 'people'}
-            </span>
+            <div className={`fs-results-header${displayedUsers.length === 0 ? ' fs-results-header--empty' : ''}`}>
+            {displayedUsers.length > 0 ? (
+              <span className="fs-results-count">
+                {displayedUsers.length} {displayedUsers.length === 1 ? 'person' : 'people'}
+              </span>
+            ) : (
+              <span className="fs-results-count fs-results-count--placeholder" aria-hidden="true" />
+            )}
             <div className="fs-sort-group">
               <div className="fs-sort-toggle" role="group" aria-label="Sort discovery results">
                 <button
@@ -811,30 +815,28 @@ const FriendSearch = ({ embedded = false }) => {
               </div>
             </div>
           </div>
-          <p className="fs-results-sort-hint">
-            {sortDiscover === 'best_match' ? (
-              <>
-                Sorted by how well each person’s <strong>goal, style, and commitment</strong> match your profile.
-              </>
-            ) : (
-              <>Sorted alphabetically by first name.</>
-            )}
-          </p>
+          {displayedUsers.length > 0 ? (
+            <p className="fs-results-sort-hint">
+              {sortDiscover === 'best_match' ? (
+                <>
+                  Sorted by how well each person’s <strong>goal, style, and commitment</strong> match your profile.
+                </>
+              ) : (
+                <>Sorted alphabetically by first name.</>
+              )}
+            </p>
+          ) : null}
 
           {displayedUsers.length === 0 ? (
-            <div className="fs-empty-block">
-              <p className="fs-empty">No one matches yet.</p>
+            <div className="fs-empty-block fs-empty-block--minimal">
+              <p className="fs-empty">No matches yet</p>
               {normalizeSelectedAvailabilitySlots(
                 selectedAvailability,
                 currentUser?.default_time_zone || getUserData()?.default_time_zone || 'UTC'
               ).length > 0 ? (
-                <p className="fs-empty-hint">
-                  No one with overlapping hours for those times. Try clearing the Schedule filter, or pick more time slots.
-                </p>
+                <p className="fs-empty-hint">Try adjusting your schedule filter.</p>
               ) : (
-                <p className="fs-empty-hint">
-                  Try clearing filters, searching a shorter name, or switching sort to Name A–Z.
-                </p>
+                <p className="fs-empty-hint">Adjust filters or search to see people here.</p>
               )}
             </div>
           ) : (

@@ -1,15 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { DateTime } from 'luxon';
 import './MeetingCalendar.css';
 
 const DAY_ORDER = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAY_ABBREV = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+const parseMinutes = (timeStr) => {
+  if (!timeStr) return 0;
+  const parts = String(timeStr).trim().split(':');
+  const h = parseInt(parts[0], 10) || 0;
+  const m = parseInt(parts[1], 10) || 0;
+  return h * 60 + m;
+};
+
+const minutesToSqlTime = (totalMin) => {
+  const t = Math.max(0, Math.min(totalMin, 24 * 60 - 1));
+  const h = Math.floor(t / 60);
+  const m = t % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+};
+
 // Normalize day name (e.g. "Sun" -> "Sunday")
 const normalizeDay = (day) => {
   if (!day) return null;
   const d = String(day).trim();
-  const match = DAY_ORDER.find(full => full.toLowerCase().startsWith(d.toLowerCase()));
+  const match = DAY_ORDER.find((full) => full.toLowerCase().startsWith(d.toLowerCase()));
   return match || d;
 };
 
@@ -34,11 +49,22 @@ const formatTime = (timeStr) => {
 // Format hour to "HH:00:00"
 const toTimeStr = (hour) => `${String(hour).padStart(2, '0')}:00:00`;
 
-function MeetingCalendar({ meetings, getFriendName, currentUserId, onMeetingClick, onSlotClick }) {
+function MeetingCalendar({
+  meetings,
+  getFriendName,
+  currentUserId,
+  onMeetingClick,
+  onSlotClick,
+  onMeetingMove,
+}) {
   const [weekStart, setWeekStart] = useState(() => {
     const now = DateTime.local();
     return now.startOf('week'); // Sunday
   });
+
+  const [dragOverKey, setDragOverKey] = useState(null);
+  const [draggingId, setDraggingId] = useState(null);
+  const suppressSlotClickRef = useRef(false);
 
   const weekDates = Array.from({ length: 7 }, (_, i) =>
     weekStart.plus({ days: i })
@@ -48,11 +74,23 @@ function MeetingCalendar({ meetings, getFriendName, currentUserId, onMeetingClic
   const endHour = 21;
   const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
 
-  // Get day index (0=Sun, 1=Mon, ...)
   const getDayIndex = (dayName) => {
     const normalized = normalizeDay(dayName);
-    const idx = DAY_ORDER.findIndex(d => d.toLowerCase() === normalized?.toLowerCase());
+    const idx = DAY_ORDER.findIndex((d) => d.toLowerCase() === normalized?.toLowerCase());
     return idx >= 0 ? idx : 0;
+  };
+
+  const dayNameEqual = (a, b) => getDayIndex(a) === getDayIndex(b);
+
+  const meetingsOverlapExclude = (excludeId, dayName, startM, endM) => {
+    for (const o of meetings) {
+      if (Number(o.id) === Number(excludeId)) continue;
+      if (!dayNameEqual(o.day_of_week, dayName)) continue;
+      const os = parseMinutes(o.start_time);
+      const oe = parseMinutes(o.end_time);
+      if (startM < oe && os < endM) return true;
+    }
+    return false;
   };
 
   // Get meetings for a specific day and hour slot
@@ -71,8 +109,80 @@ function MeetingCalendar({ meetings, getFriendName, currentUserId, onMeetingClic
 
   const weekLabel = `${weekDates[0].toFormat('MMM d')} – ${weekDates[6].toFormat('MMM d, yyyy')}`;
 
+  const cellKey = (dayIdx, hour) => `${dayIdx}-${hour}`;
+
+  const handleDragOverCell = (e, dayIdx, hour) => {
+    if (!onMeetingMove || !draggingId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverKey(cellKey(dayIdx, hour));
+  };
+
+  const handleDragLeaveCell = (e, dayIdx, hour) => {
+    if (!onMeetingMove) return;
+    const related = e.relatedTarget;
+    if (related && e.currentTarget.contains(related)) return;
+    setDragOverKey((k) => (k === cellKey(dayIdx, hour) ? null : k));
+  };
+
+  const handleDropOnCell = (e, dayIdx, hour) => {
+    if (!onMeetingMove) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverKey(null);
+    setDraggingId(null);
+
+    let payload;
+    try {
+      payload = JSON.parse(e.dataTransfer.getData('application/json') || '{}');
+    } catch {
+      return;
+    }
+    const meeting = payload.meeting;
+    if (!meeting?.id) return;
+
+    const newDay = DAY_ORDER[dayIdx];
+    const newStartM = hour * 60;
+    const dur = Math.max(
+      1,
+      parseMinutes(meeting.end_time) - parseMinutes(meeting.start_time)
+    );
+    const newEndM = newStartM + dur;
+
+    if (newEndM > 24 * 60) {
+      window.alert('That would end after midnight. Try an earlier start time.');
+      return;
+    }
+
+    if (
+      dayNameEqual(meeting.day_of_week, newDay) &&
+      parseMinutes(meeting.start_time) === newStartM
+    ) {
+      return;
+    }
+
+    if (meetingsOverlapExclude(meeting.id, newDay, newStartM, newEndM)) {
+      window.alert('That slot overlaps another meeting.');
+      return;
+    }
+
+    const newStart = minutesToSqlTime(newStartM);
+    const newEnd = minutesToSqlTime(newEndM);
+
+    suppressSlotClickRef.current = true;
+    window.setTimeout(() => {
+      suppressSlotClickRef.current = false;
+    }, 400);
+
+    onMeetingMove(meeting, {
+      dayOfWeek: newDay,
+      startTime: newStart,
+      endTime: newEnd,
+    });
+  };
+
   return (
-    <div className="meeting-calendar">
+    <div className={`meeting-calendar${draggingId ? ' meeting-calendar--dragging' : ''}`}>
       <div className="meeting-calendar-header">
         <button type="button" className="meeting-calendar-nav" onClick={goPrevWeek}>
           ‹
@@ -120,31 +230,43 @@ function MeetingCalendar({ meetings, getFriendName, currentUserId, onMeetingClic
               );
 
               const hasMeeting = isFirstHour && slotMeetings.length > 0;
-              // Do not require friends here — if the friends API fails or the list is empty, cells
-              // were non-clickable and the calendar felt broken. The slot panel handles no friends.
               const isEmpty = !hasMeeting && onSlotClick;
+              const dropActive = onMeetingMove && draggingId;
+              const isDropHover = dropActive && dragOverKey === cellKey(dayIdx, hour);
 
               return (
                 <div
                   key={dayIdx}
-                  className={`meeting-calendar-cell ${isToday ? 'today' : ''} ${isEmpty ? 'meeting-calendar-cell-clickable' : ''}`}
-                  onClick={isEmpty ? () => {
-                    const dayOfWeek = DAY_ORDER[dayIdx];
-                    const startTime = toTimeStr(hour);
-                    const endTime = toTimeStr(hour + 1);
-                    onSlotClick({ dayOfWeek, startTime, endTime });
-                  } : undefined}
+                  className={`meeting-calendar-cell ${isToday ? 'today' : ''} ${isEmpty ? 'meeting-calendar-cell-clickable' : ''}${isDropHover ? ' meeting-calendar-cell--drop-hover' : ''}`}
+                  onDragOver={(e) => handleDragOverCell(e, dayIdx, hour)}
+                  onDragLeave={(e) => handleDragLeaveCell(e, dayIdx, hour)}
+                  onDrop={(e) => handleDropOnCell(e, dayIdx, hour)}
+                  onClick={
+                    isEmpty
+                      ? () => {
+                          if (suppressSlotClickRef.current) return;
+                          const dayOfWeek = DAY_ORDER[dayIdx];
+                          const startTime = toTimeStr(hour);
+                          const endTime = toTimeStr(hour + 1);
+                          onSlotClick({ dayOfWeek, startTime, endTime });
+                        }
+                      : undefined
+                  }
                   role={isEmpty ? 'button' : undefined}
                   tabIndex={isEmpty ? 0 : undefined}
-                  onKeyDown={isEmpty ? (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      const dayOfWeek = DAY_ORDER[dayIdx];
-                      const startTime = toTimeStr(hour);
-                      const endTime = toTimeStr(hour + 1);
-                      onSlotClick({ dayOfWeek, startTime, endTime });
-                    }
-                  } : undefined}
+                  onKeyDown={
+                    isEmpty
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            const dayOfWeek = DAY_ORDER[dayIdx];
+                            const startTime = toTimeStr(hour);
+                            const endTime = toTimeStr(hour + 1);
+                            onSlotClick({ dayOfWeek, startTime, endTime });
+                          }
+                        }
+                      : undefined
+                  }
                 >
                   {isFirstHour &&
                     slotMeetings.map((m) => {
@@ -161,6 +283,21 @@ function MeetingCalendar({ meetings, getFriendName, currentUserId, onMeetingClic
                           className="meeting-calendar-event"
                           style={{
                             height: `calc(${duration * 100}% - 4px)`,
+                          }}
+                          draggable={Boolean(onMeetingMove)}
+                          onDragStart={(e) => {
+                            if (!onMeetingMove) return;
+                            e.stopPropagation();
+                            setDraggingId(m.id);
+                            e.dataTransfer.setData(
+                              'application/json',
+                              JSON.stringify({ meeting: m })
+                            );
+                            e.dataTransfer.effectAllowed = 'move';
+                          }}
+                          onDragEnd={() => {
+                            setDraggingId(null);
+                            setDragOverKey(null);
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -192,7 +329,11 @@ function MeetingCalendar({ meetings, getFriendName, currentUserId, onMeetingClic
       </div>
 
       {meetings.length > 0 && (
-        <p className="meeting-calendar-hint">Click a meeting to cancel it</p>
+        <p className="meeting-calendar-hint">
+          {onMeetingMove
+            ? 'Drag a meeting to another day or time, or click to cancel it'
+            : 'Click a meeting to cancel it'}
+        </p>
       )}
     </div>
   );

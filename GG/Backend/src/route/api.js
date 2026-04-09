@@ -106,6 +106,7 @@ const initAPIRoute = (app) => {
 
     router.post('/createMeeting', APIController.createMeeting);
     router.delete('/deleteMeeting', APIController.deleteMeeting);
+    router.put('/moveMeeting', APIController.moveMeeting);
 
     router.get('/interests', interestController.listInterests);
     router.post('/interests', interestController.createInterest);

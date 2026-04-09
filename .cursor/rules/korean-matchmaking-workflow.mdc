@@ -1,0 +1,14 @@
+---
+description: Commit/push and frontend rebuild workflow for this repo
+alwaysApply: true
+---
+
+# Korean Matchmaking — agent workflow
+
+After **meaningful code changes** in this repository:
+
+1. **Git:** Stage, commit, and **push** to the active branch (usually `main`), unless the user opts out. Never commit secrets, `.env`, or generated bundles unless asked.
+
+2. **Frontend (`GG/Frontend/src/` or config):** From **`GG/Frontend`**, run **`npm run build`** or **`npm run build:zip`** so `build/` and `build.zip` stay current. Remind the user that Plesk/static hosting still needs an **upload** of those artifacts.
+
+3. **Backend-only changes** do not require a frontend build unless shared types or API contracts require a client update.

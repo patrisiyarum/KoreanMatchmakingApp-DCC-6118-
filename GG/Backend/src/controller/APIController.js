@@ -1068,10 +1068,64 @@ let deleteMeeting = async (req, res) => {
     });
   }
 };
+
+/** Reschedule an existing meeting (drag-and-drop on calendar). Caller must be user1 or user2. */
+let moveMeeting = async (req, res) => {
+  try {
+    const { meetingId, userId, day_of_week, start_time, end_time } = req.body;
+    const mid = Number(meetingId);
+    const uid = Number(userId);
+    if (!mid || !uid || !day_of_week || start_time == null || end_time == null || `${start_time}` === "" || `${end_time}` === "") {
+      return res.status(400).json({
+        message: "Missing required fields (meetingId, userId, day_of_week, start_time, end_time)",
+      });
+    }
+
+    const row = await db.Meeting.findByPk(mid);
+    if (!row) {
+      return res.status(404).json({ message: "Meeting not found" });
+    }
+    if (row.user1_id !== uid && row.user2_id !== uid) {
+      return res.status(403).json({
+        message: "You can only reschedule your own meetings.",
+        code: "MEETING_FORBIDDEN",
+      });
+    }
+
+    const st = normalizeMeetingTime(start_time);
+    const et = normalizeMeetingTime(end_time);
+
+    await row.update({
+      day_of_week: String(day_of_week),
+      start_time: st,
+      end_time: et,
+    });
+
+    return res.status(200).json({
+      message: "Meeting rescheduled",
+      id: mid,
+    });
+  } catch (error) {
+    console.error("Error moving meeting:", error);
+    const raw = error?.message || String(error);
+    if (/Duplicate|1062|ER_DUP_ENTRY/i.test(raw)) {
+      return res.status(409).json({
+        message: "That time slot is already taken.",
+        code: "MEETING_DUPLICATE",
+        error: raw,
+      });
+    }
+    return res.status(500).json({
+      message: "Failed to reschedule meeting",
+      error: raw,
+    });
+  }
+};
+
 const APIController = {
     addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getDiscoverUsers, getUserPreferences, getUserProfile, getProfileCustomizationOptions, updateRating,
     addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList, removeFriend, addTrueFriend, removeTrueFriend,
-    getTrueFriendsList, getUserAvailability, createMeeting, deleteMeeting,
+    getTrueFriendsList, getUserAvailability, createMeeting, deleteMeeting, moveMeeting,
     getFriendRequests, acceptFriendRequest, rejectFriendRequest
 };
 export default APIController;

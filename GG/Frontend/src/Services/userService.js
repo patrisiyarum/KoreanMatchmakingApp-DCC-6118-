@@ -238,6 +238,15 @@ export const handleDeleteMeeting = (
     data: { user1_id, user2_id, day_of_week, start_time, end_time },
   });
 };
+
+export const handleMoveMeeting = (userId, meetingId, day_of_week, start_time, end_time) =>
+  axios.put("/api/v1/moveMeeting", {
+    userId,
+    meetingId,
+    day_of_week,
+    start_time,
+    end_time,
+  });
 export {
         handleLoginApi, handleRegisterApi, handleProfileCreationAPI, handleProfileUpdateAPI, handleChatApi, 
         handleGetUser, getMessages, addMessage, handleTranslator, handleMatch, handleGetProfile,

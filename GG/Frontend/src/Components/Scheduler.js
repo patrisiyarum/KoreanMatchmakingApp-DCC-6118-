@@ -9,7 +9,8 @@ import {
   handleCreateMeeting, 
   handleGetTrueUserAvailability,
   handleGetMeetings,
-  handleDeleteMeeting      
+  handleDeleteMeeting,
+  handleMoveMeeting,
 } from '../Services/userService';
 
 const Scheduler = () => {
@@ -147,6 +148,27 @@ const Scheduler = () => {
     }
   };
 
+  const rescheduleMeeting = async (meeting, { dayOfWeek, startTime, endTime }) => {
+    if (!id) return;
+    try {
+      await handleMoveMeeting(
+        Number(id),
+        meeting.id,
+        dayOfWeek,
+        startTime,
+        endTime
+      );
+      const res = await handleGetMeetings(id);
+      const list = res?.data || res;
+      setMeetings(Array.isArray(list) ? list : []);
+    } catch (err) {
+      const d = err?.response?.data;
+      window.alert(
+        d?.message || d?.error || err?.message || "Could not move meeting."
+      );
+    }
+  };
+
   const handleCancelMeeting = async (meeting) => {
     try {
       const currentUserId = Number(id);
@@ -199,6 +221,7 @@ const Scheduler = () => {
             currentUserId={id}
             onMeetingClick={handleCancelMeeting}
             onSlotClick={setSelectedSlotData}
+            onMeetingMove={rescheduleMeeting}
           />
 
           <div className="sched-footer">

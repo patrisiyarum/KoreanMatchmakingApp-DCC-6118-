@@ -137,6 +137,16 @@
   background: rgba(99, 68, 166, 0.08);
 }
 
+.meeting-calendar-cell--drop-hover {
+  background: rgba(99, 68, 166, 0.14) !important;
+  outline: 2px dashed #6344A6;
+  outline-offset: -2px;
+}
+
+.meeting-calendar--dragging .meeting-calendar-cell-clickable:hover {
+  background: rgba(99, 68, 166, 0.05);
+}
+
 .meeting-calendar-cell:last-child {
   border-right: none;
 }
@@ -169,6 +179,18 @@
 .meeting-calendar-event:hover {
   box-shadow: 0 2px 8px rgba(99, 68, 166, 0.4);
   transform: translateY(-1px);
+}
+
+.meeting-calendar-event[draggable="true"] {
+  cursor: grab;
+}
+
+.meeting-calendar-event[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.meeting-calendar--dragging .meeting-calendar-event {
+  opacity: 0.85;
 }
 
 .meeting-calendar-event-name {

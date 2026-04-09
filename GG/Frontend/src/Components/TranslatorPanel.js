@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import translate from 'translate';
 import { useTranslator } from '../context/TranslatorContext';
+import { useAssistant } from '../context/AssistantContext';
 import './TranslatorPanel.css';
 
 const DIR_EN_TO_KO = 'en-ko';
@@ -8,10 +9,28 @@ const DIR_KO_TO_EN = 'ko-en';
 
 function TranslatorPanel() {
   const { isOpen, closeTranslator } = useTranslator();
+  const { isOpen: isAssistantOpen } = useAssistant();
   const [inputText, setInputText] = useState('');
   const [translatedText, setTranslatedText] = useState('');
   const [translating, setTranslating] = useState(false);
   const [direction, setDirection] = useState(DIR_EN_TO_KO);
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      closeTranslator();
+      setIsClosing(false);
+    }, 250);
+  };
+
+  // Close when Assistant opens
+  useEffect(() => {
+    if (isAssistantOpen && isOpen) {
+      handleClose();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAssistantOpen]);
 
   const handleTranslate = async () => {
     if (!inputText.trim()) return;
@@ -42,7 +61,7 @@ function TranslatorPanel() {
     setTranslatedText(inputText);
   };
 
-  if (!isOpen) return null;
+  if (!isOpen && !isClosing) return null;
 
   const isEnToKo = direction === DIR_EN_TO_KO;
   const fromLabel = isEnToKo ? 'English' : 'Korean';
@@ -50,13 +69,10 @@ function TranslatorPanel() {
 
   return (
     <>
-      <div className="translator-panel-backdrop" onClick={closeTranslator} aria-hidden="true" />
-      <div className="translator-panel" role="dialog" aria-label="Translator">
+      <div className={`translator-panel-backdrop${isClosing ? ' translator-panel-backdrop--closing' : ''}`} onClick={handleClose} aria-hidden="true" />
+      <div className={`translator-panel${isClosing ? ' translator-panel--closing' : ''}`} role="dialog" aria-label="Translator">
         <div className="translator-panel-header">
           <h3 className="translator-panel-title">Translator</h3>
-          <button className="translator-panel-close" onClick={closeTranslator} aria-label="Close translator">
-            ×
-          </button>
         </div>
         <div className="translator-panel-body">
           <div className="translator-panel-direction">

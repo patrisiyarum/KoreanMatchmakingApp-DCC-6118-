@@ -4,6 +4,7 @@ import { useNavigate, createSearchParams, useLocation } from 'react-router-dom';
 import { getUserChallenges } from '../Services/challengeService';
 import { handleGetTeamInvitesApi } from '../Services/teamService';
 import { useTranslator } from '../context/TranslatorContext';
+import { useAssistant } from '../context/AssistantContext';
 import './NavBar.css';
 
 const GAMES_RELATED_PATHS = new Set([
@@ -29,9 +30,7 @@ const NAV_SLOTS = [
   { type: 'games' },
   { type: 'simple', label: 'Friends', path: '/Friends' },
   { type: 'simple', label: 'Calls', path: '/Videocall' },
-  { type: 'simple', label: 'Translator', path: '/Translator' },
   { type: 'simple', label: 'Scheduler', path: '/Scheduler' },
-  { type: 'ai' },
   { type: 'simple', label: 'Profile', path: '/ViewProfile' },
 ];
 
@@ -43,18 +42,7 @@ function Navbar({ id }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { toggleTranslator } = useTranslator();
-  const [aiMenuOpen, setAiMenuOpen] = useState(false);
-  const [aiMenuPos, setAiMenuPos] = useState({ top: 0, left: 0 });
-  const aiNavWrapRef = useRef(null);
-  const aiButtonRef = useRef(null);
-  const aiDropdownRef = useRef(null);
-
-  const updateAiMenuPosition = useCallback(() => {
-    const el = aiButtonRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    setAiMenuPos({ top: r.bottom + 8, left: r.left });
-  }, []);
+  const { toggleAssistant } = useAssistant();
 
   const [pendingChallenges, setPendingChallenges] = useState(0);
   const [yourTurnChallenges, setYourTurnChallenges] = useState(0);
@@ -263,6 +251,9 @@ function Navbar({ id }) {
       </div>
 
       <div className="app-top-nav-right">
+        <button type="button" className="nav-assistant-btn" onClick={() => toggleAssistant(id)}>
+          Ask AI
+        </button>
         <button type="button" className="nav-translator-btn" onClick={toggleTranslator}>
           Translator
         </button>

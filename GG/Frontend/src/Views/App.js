@@ -18,6 +18,8 @@ import HelpPage from '../Components/HelpPage';
 import Translator from "../Components/Translator";
 import TranslatorPanel from "../Components/TranslatorPanel";
 import { TranslatorProvider } from "../context/TranslatorContext";
+import AssistantPanel from "../Components/AssistantPanel";
+import { AssistantProvider } from "../context/AssistantContext";
 import Videocall from "../Components/Videocall";
 import PostVideocall from '../Components/PostVideocall';
 import FriendsPage from '../Components/FriendsPage';
@@ -49,6 +51,7 @@ const App = () => {
   return (
     <div className="App">
       <TranslatorProvider>
+      <AssistantProvider>
       <Router>
        <Routes>
           <Route path ="/" element ={<Home />}/>
@@ -80,8 +83,10 @@ const App = () => {
           <Route path="/TeamPage"   element={<TeamPage />} />
           <Route path="/ViewProfile" element={<ViewProfile />} />
        </Routes>
+       <TranslatorPanel />
+       <AssistantPanel />
       </Router>
-      <TranslatorPanel />
+      </AssistantProvider>
       </TranslatorProvider>
     </div>
   );

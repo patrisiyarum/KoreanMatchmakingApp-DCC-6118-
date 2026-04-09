@@ -117,6 +117,16 @@ This document maps **User Stories 1–4** from the project spec to concrete **fr
 | Public profile API | `APIController.getUserProfile` / `updateRating` etc. | Serves profile payloads to the app. |
 | Customization options | `getProfileCustomizationOptions` (exposed via API) | Supplies selectable lists for the frontend. |
 
+### Profile validation — rules (shared module)
+
+| Topic | Location | What it enforces |
+|-------|----------|------------------|
+| **Profile validation** | `GG/Backend/src/Service/profileValidation.js` — `validateProfileCustomizationFields()` | Shared validation for **`learning_goal`**, **`communication_style`**, and **`commitment_level`**. Used on **profile create** (`handleProfileCreation` with `{ requireAll: true }`), **profile update** (`handleProfileUpdate`), and **discover filters** (`APIController.getDiscoverUsers` when any of those filters are present). |
+| **Allowed values (lists + numeric range)** | `GG/Backend/config/profile-matching.json` (loaded by `profileValidation.js`) | **`learning_goal`** must be **exactly one** of the strings in `learningGoals` (e.g. *Conversational fluency*, *Cultural appreciation*, …). **`communication_style`** must be **exactly one** of `communicationStyles` (e.g. *Text-heavy*, *Mixed*, …). **`commitment_level`** must be an **integer** between **`commitmentLevel.min`** and **`commitmentLevel.max`** (currently **1–5**; default **3** for normalization helpers). |
+| **Create vs update behavior** | Same `validateProfileCustomizationFields` | **Create (`requireAll: true`):** all three fields are **required** (non-empty `learning_goal` / `communication_style`, and `commitment_level` present). **Update / discover filters:** empty strings mean “omit”; if a field **is** sent, it must still match allowed lists / integer range. |
+| **Invalid values** | Controllers above | Returns **400** with `validationErrors` array (messages such as *learning_goal must be one of the allowed values*, *commitment_level must be between 1 and 5*, etc.). |
+| **Discover-only** | `GG/Backend/src/controller/APIController.js` — `getDiscoverUsers` | Optional query filters `learningGoal`, `communicationStyle`, `commitmentLevel` are validated with the **same** function before building SQL. `commitmentFlex` is clamped to **0–2** for “near my commitment” matching. |
+
 ### Database
 
 | Migration | Change |

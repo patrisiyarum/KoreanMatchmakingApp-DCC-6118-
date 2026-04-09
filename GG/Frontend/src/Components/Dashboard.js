@@ -235,11 +235,19 @@ useEffect(() => {
       {id && progressLoaded && userStats && challengeStats && (
         <div className="dashboard-progress-wrap">
           <div className="dashboard-progress-card dash-progress-vp">
-            <h2 className="dash-progress-main-title">Points, games, and challenges</h2>
+            <header className="dash-progress-card-header">
+              <div className="dash-progress-card-header-text">
+                <h2 className="dash-progress-main-title">Points, games, and challenges</h2>
+                <p className="dash-progress-subtitle">Track XP, 1v1 record, practice games, and badges in one place.</p>
+              </div>
+            </header>
 
             <div className="dash-progress-xp-shell">
               <div className="dash-progress-level-row">
-                <span className="dash-progress-level-pill">Level {userStats.level ?? 1}</span>
+                <span className="dash-progress-level-pill">
+                  <span className="dash-progress-level-star" aria-hidden="true">★</span>
+                  Level {userStats.level ?? 1}
+                </span>
                 <span className="dash-progress-xp-caption">
                   {userStats.xp ?? 0} / {userStats.xpToNext ?? XP_PER_LEVEL} XP this level
                 </span>
@@ -259,7 +267,10 @@ useEffect(() => {
 
             <div className="dash-progress-split">
               <section className="vp-section dash-progress-section dash-progress-section--flush">
-                <h3 className="vp-section-title">Challenge record</h3>
+                <h3 className="vp-section-title dash-section-title">
+                  <span className="dash-section-icon dash-section-icon--challenge" aria-hidden="true" />
+                  Challenge record
+                </h3>
                 <div className="vp-grid dash-challenge-stat-grid">
                   <div className="vp-info-card">
                     <span className="vp-field-label">Wins</span>
@@ -294,7 +305,10 @@ useEffect(() => {
 
               {userStats.gameActivity && (
                 <section className="vp-section dash-progress-section dash-progress-section--flush">
-                  <h3 className="vp-section-title">Game activity</h3>
+                  <h3 className="vp-section-title dash-section-title">
+                    <span className="dash-section-icon dash-section-icon--games" aria-hidden="true" />
+                    Game activity
+                  </h3>
                   <div className="vp-grid dash-activity-stat-grid">
                     <div className="vp-info-card">
                       <span className="vp-field-label">Term matching</span>
@@ -323,7 +337,10 @@ useEffect(() => {
 
             {badges.length > 0 && (
               <section className="vp-section dash-progress-section dash-progress-section--badges">
-                <h3 className="vp-section-title">Badges ({badges.length})</h3>
+                <h3 className="vp-section-title dash-section-title">
+                  <span className="dash-section-icon dash-section-icon--badges" aria-hidden="true" />
+                  Badges ({badges.length})
+                </h3>
                 <div className="vp-tags dash-progress-badge-tags">
                   {badges.map((b) => (
                     <span key={b.id} className="vp-tag dash-progress-badge-tag" title={b.description}>

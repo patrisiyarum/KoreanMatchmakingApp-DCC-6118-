@@ -43,6 +43,19 @@ let handleRegister = async (req, res) => {
                 message: "Missing username or/and password",
             });
         }
+        if (
+            firstName === undefined ||
+            firstName === null ||
+            String(firstName).trim() === "" ||
+            lastName === undefined ||
+            lastName === null ||
+            String(lastName).trim() === ""
+        ) {
+            return res.status(400).json({
+                errorCode: 1,
+                message: "First name and last name are required.",
+            });
+        }
         let save = true;
         let userData = await userService.handleUserRegister(
             firstName,

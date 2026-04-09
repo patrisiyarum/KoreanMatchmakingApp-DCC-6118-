@@ -37,21 +37,45 @@ function Registration() {
       const registerResp = await handleRegisterApi(firstName, lastName, email, password);
       console.log('Register response:', registerResp);
 
-      if (registerResp && registerResp.errorCode !== 0) {
+      const raw = registerResp;
+      if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) {
         setSubmitted(true);
         setError(true);
-        setErrMsg(registerResp.message || 'Registration failed.');
+        setErrMsg(
+          'Invalid response from server. If you are previewing a static build, ensure the backend is running and API requests go to it (see public/config.js API_BASE_URL).'
+        );
+        return;
+      }
+
+      const code = raw.errorCode ?? raw.errCode;
+      if (code != null && Number(code) !== 0) {
+        setSubmitted(true);
+        setError(true);
+        setErrMsg(
+          raw.message ||
+            raw.errMessage ||
+            (Number(code) === 1 ? 'An account with this email already exists.' : 'Registration failed.')
+        );
+        return;
+      }
+
+      if (code == null && raw.id == null) {
+        setSubmitted(true);
+        setError(true);
+        setErrMsg(
+          'Could not read server response. You may be viewing the app from a static file server while the API is on another origin — set window.__APP_CONFIG__.API_BASE_URL in public/config.js (e.g. http://localhost:8080).'
+        );
         return;
       }
 
       // Auto-login after successful registration.
       const loginResp = await handleLoginApi(email, password);
       const base = process.env.PUBLIC_URL || '';
-      if (loginResp && loginResp.errorCode === 0) {
+      if (loginResp && Number(loginResp.errorCode) === 0) {
         const qs = createSearchParams({ id: loginResp.id }).toString();
         window.location.assign(`${base}/CreateProfile?${qs}`);
       } else {
-        const qs = createSearchParams({ id: registerResp.id }).toString();
+        const qs = createSearchParams({ id: raw.id }).toString();
         window.location.assign(`${base}/CreateProfile?${qs}`);
       }
     } catch (error) {

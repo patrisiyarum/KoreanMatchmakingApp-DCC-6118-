@@ -88,3 +88,28 @@ export function keysFromLegacySlots(
   }
   return set;
 }
+
+/** Map grid label `HH:00` to API `HH:MM:00`. */
+export function gridTimeToApi(time: string): string {
+  const [h, m] = time.split(':').map((x) => parseInt(x, 10));
+  return `${String(h).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}:00`;
+}
+
+/** One-hour meeting end from start grid label. */
+export function gridTimeEndApi(startTime: string): string {
+  const [h] = startTime.split(':').map((x) => parseInt(x, 10));
+  return `${String(h + 1).padStart(2, '0')}:00:00`;
+}
+
+/** Next calendar date (ISO yyyy-mm-dd) for a weekday name in GRID_DAYS (Monday-first). */
+export function nextDateIsoForWeekday(dayName: string): string {
+  const idx = GRID_DAYS.indexOf(dayName as (typeof GRID_DAYS)[number]);
+  if (idx < 0) return new Date().toISOString().slice(0, 10);
+  const jsDow = idx === 6 ? 0 : idx + 1;
+  const today = new Date();
+  const cur = today.getDay();
+  const add = (jsDow - cur + 7) % 7;
+  const d = new Date(today);
+  d.setDate(d.getDate() + add);
+  return d.toISOString().slice(0, 10);
+}

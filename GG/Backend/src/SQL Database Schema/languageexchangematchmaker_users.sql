@@ -1,3 +1,6 @@
+-- OBSOLETE (2022-era `users` table). Do not import for the current app.
+-- Use: GG/Backend/database/schema.mysql.sql
+--
 -- MySQL dump 10.13  Distrib 8.0.26, for Win64 (x86_64)
 --
 -- Host: localhost    Database: languageexchangematchmaker

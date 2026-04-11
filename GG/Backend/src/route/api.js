@@ -8,6 +8,8 @@ import userInterestController from "../controller/userInterestController.js";
 import availabilityController from "../controller/availabilityController.js";
 import transcriptController from "../controller/transcriptController.js";
 import chatController from "../controller/chatController.js";
+import messageController from "../controller/messageController.js";
+import dashboardService from "../Service/dashboardService.js";
 import * as assistantController from "../controller/assistantController.js";
 import * as aiAssistantController from "../controller/aiAssistantController.js";
 import recordingController from "../controller/recordingController.js"; // Add this
@@ -128,6 +130,58 @@ const initAPIRoute = (app) => {
   
     router.put('/chats/:chatId/privacy', chatController.updatePrivacy);
     router.put('/createChat/:senderId/:receiverId', chatController.createChat);
+
+    /**
+     * Chat & messages under /api/v1 (same handlers as legacy /Chats, /Chat, /Message on web.js).
+     * Use these when the host only proxies /api/v1 to Node (e.g. Plesk).
+     */
+    router.get('/chats/:userId', chatController.findChats);
+    router.get('/conversation/:senderId/:receiverId', chatController.findChat);
+    router.post('/messages', messageController.addMessage);
+    router.get('/messages/:chatId', messageController.findMessages);
+
+    /** Dashboard summary — mirrors POST /Dashboard body `{ id }` from web.js */
+    router.get('/dashboard/:userId', async (req, res) => {
+      try {
+        const id = Number(req.params.userId);
+        if (!Number.isFinite(id) || id <= 0) {
+          return res.status(400).json({ errorCode: 1, message: 'Invalid user id' });
+        }
+        const userData = await dashboardService.handleUserDashBoard(id);
+        return res.status(200).json({
+          errorCode: userData.errCode,
+          message: userData.errMessage,
+          user: userData.user ? userData.user : {},
+        });
+      } catch (e) {
+        return res.status(500).json({
+          errorCode: 1,
+          message: e?.message || 'Server error',
+        });
+      }
+    });
+
+    /** Quick map of API surfaces for deployment checks (home / ops). */
+    router.get('/meta', (_req, res) => {
+      res.json({
+        app: 'language-matchmaker',
+        apiVersion: 1,
+        endpoints: {
+          health: '/api/health',
+          dbHealth: '/api/db-health',
+          discoverUsers: 'GET /api/v1/discover-users?requesterId=',
+          dashboard: 'GET /api/v1/dashboard/:userId',
+          chats: 'GET /api/v1/chats/:userId',
+          conversation: 'GET /api/v1/conversation/:senderId/:receiverId',
+          messages: 'GET /api/v1/messages/:chatId',
+          postMessage: 'POST /api/v1/messages (body: chatId, senderId, text)',
+          createChat: 'PUT /api/v1/createChat/:senderId/:receiverId',
+          games: '/api/games',
+          teams: '/api/teams',
+          aiAssistant: 'POST /api/v1/ai-assistant/chat',
+        },
+      });
+    });
 
     router.post('/assistant/parse/:chatId', assistantController.parseConversation);
     router.post('/ai-assistant/parse/:chatId', assistantController.parseConversation);

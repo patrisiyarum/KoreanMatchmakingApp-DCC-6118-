@@ -36,6 +36,7 @@ export function CreateProfile() {
     learningLanguage: 'Korean',
     interests: [] as string[],
     level: 'Beginner',
+    bio: '',
   });
 
   const load = useCallback(async () => {
@@ -99,7 +100,7 @@ export function CreateProfile() {
         learningLanguage: profile.learningLanguage,
         proficiency: profile.level,
         interestNames: profile.interests,
-        bio: '',
+        bio: profile.bio.trim() || '',
       });
       if (!res.ok) {
         toast.error(res.message || 'Could not save your profile');
@@ -220,6 +221,20 @@ export function CreateProfile() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-2">
+              Bio <span className="text-neutral-500">{t('(optional)', '(선택)')}</span>
+            </label>
+            <textarea
+              value={profile.bio}
+              onChange={(e) => setProfile((prev) => ({ ...prev, bio: e.target.value }))}
+              rows={2}
+              maxLength={2000}
+              placeholder={t('Short intro…', '짧은 소개…')}
+              className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+            />
           </div>
 
           <button

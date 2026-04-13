@@ -1,18 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { Camera, Loader2 } from 'lucide-react';
+import { ChevronRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { getApiBase } from '@/api/apiBase';
 import {
   createProfile,
   fetchProfileOptions,
   fetchUserAccount,
   fetchUserProfilePayload,
-  removeProfileImage,
   updateProfile,
-  uploadProfileImage,
   type ProfileOptions,
   type ProfileRow,
 } from '@/api/profileApi';
@@ -29,16 +26,9 @@ function profilePayloadHasBioKey(profile: Record<string, unknown> | null | undef
 
 const PROFICIENCIES = ['Beginner', 'Elementary', 'Intermediate', 'Proficient', 'Fluent'];
 
-function imageUrl(path: string | null | undefined): string | null {
-  if (!path) return null;
-  if (path.startsWith('http')) return path;
-  return `${getApiBase()}${path}`;
-}
-
 export function Profile() {
   const { userId } = useAuth();
   const { t } = useLanguage();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
@@ -46,7 +36,6 @@ export function Profile() {
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [bio, setBio] = useState('');
   const [nativeLanguage, setNativeLanguage] = useState('English');
   const [targetLanguage, setTargetLanguage] = useState('Korean');
@@ -89,7 +78,6 @@ export function Profile() {
       if (account) {
         setFirstName(account.firstName || '');
         setLastName(account.lastName || '');
-        setProfileImage(account.profileImage ?? null);
       }
       if (profile && profile.id != null) {
         setHasProfile(true);
@@ -127,30 +115,6 @@ export function Profile() {
   useEffect(() => {
     load();
   }, [load]);
-
-  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !userId) return;
-    try {
-      const { profileImage: path } = await uploadProfileImage(userId, file);
-      setProfileImage(path);
-      toast.success(t('Photo updated', '사진이 업데이트되었습니다'));
-    } catch {
-      toast.error(t('Upload failed', '업로드 실패'));
-    }
-    e.target.value = '';
-  };
-
-  const handleRemovePhoto = async () => {
-    if (!userId) return;
-    try {
-      await removeProfileImage(userId);
-      setProfileImage(null);
-      toast.success(t('Photo removed', '사진이 제거되었습니다'));
-    } catch {
-      toast.error(t('Could not remove photo', '사진을 제거하지 못했습니다'));
-    }
-  };
 
   const handleSave = async () => {
     if (!userId) return;
@@ -291,150 +255,112 @@ export function Profile() {
     );
   }
 
-  const photoSrc = imageUrl(profileImage);
-
   const saveLabel = hasProfile ? t('Save changes', '변경 저장') : t('Create profile', '프로필 만들기');
   const saveDisabled = saving || interests.filter((n) => n.trim()).length === 0;
-  const primarySaveClass =
-    'rounded-xl bg-blue-600 text-white py-2 px-4 text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 shrink-0';
-  const statsItems = [
-    { label: t('Partners', '파트너'), value: 1 },
-    { label: t('Games Played', '플레이한 게임'), value: 5 },
-    { label: t('Days Active', '활동 일수'), value: 12 },
-  ];
+  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
 
   return (
-    <div className="flex min-h-0 max-h-[calc(100dvh-10rem)] sm:max-h-[calc(100dvh-11rem)] max-w-lg mx-auto w-full flex-col px-3 pt-2 pb-2 gap-2">
-      <div className="shrink-0 flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl font-bold text-neutral-900 leading-tight">{t('My profile', '내 프로필')}</h1>
-          <p className="text-[11px] sm:text-xs text-neutral-600 mt-0.5">
-            {t('Photo, bio, interests, and languages', '사진, 소개, 관심사, 언어')}
+    <div className="size-full flex items-center justify-center p-6">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="text-6xl mb-4">🇰🇷 🇺🇸</div>
+          <h2 className="text-3xl font-bold text-neutral-900 mb-2">
+            {t('Welcome to LangMatch', 'LangMatch에 오신 것을 환영합니다')}
+          </h2>
+          <p className="text-lg text-blue-600 mb-1">{t('환영합니다', '환영합니다')}</p>
+          <p className="text-neutral-600">
+            {t('Connect with language partners worldwide', '전 세계 언어 파트너와 연결하세요')}
           </p>
         </div>
-        <button type="button" disabled={saveDisabled} onClick={handleSave} className={primarySaveClass}>
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-          {saveLabel}
-        </button>
-      </div>
 
-      <div className="flex-1 min-h-0 flex flex-col rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-4">
-        <div className="rounded-2xl bg-gradient-to-r from-blue-500 to-violet-500 px-4 py-4 sm:px-5 sm:py-5 text-white">
-          <p className="text-sm sm:text-base font-semibold mb-3">{t('Your Stats', '내 통계')}</p>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            {statsItems.map((item) => (
-              <div key={item.label}>
-                <div className="text-3xl sm:text-4xl font-bold leading-none">{item.value}</div>
-                <div className="mt-1 text-xs sm:text-sm text-white/95">{item.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center gap-2">
-          <div className="relative">
-            {photoSrc ? (
-              <img
-                src={photoSrc}
-                alt=""
-                className="w-24 h-24 rounded-full object-cover border-2 border-neutral-100"
-              />
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-neutral-200 flex items-center justify-center text-2xl text-neutral-500">
-                {(firstName[0] || '?').toUpperCase()}
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md hover:bg-blue-700"
-              title={t('Change photo', '사진 변경')}
-            >
-              <Camera className="w-4 h-4" />
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp"
-              className="hidden"
-              onChange={handlePhoto}
-            />
-          </div>
-          {photoSrc ? (
-            <button
-              type="button"
-              onClick={handleRemovePhoto}
-              className="text-xs text-red-600 hover:underline"
-            >
-              {t('Remove photo', '사진 제거')}
-            </button>
-          ) : null}
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
+        <div className="bg-white rounded-2xl border border-neutral-200 p-6 space-y-6">
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">
-              {t('First name', '이름')}
+            <label className="block text-sm font-medium text-neutral-700 mb-2">
+              {t('Your Name', '이름')} <span className="text-neutral-500">{t('이름', '이름')}</span>
             </label>
             <input
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-sm"
+              type="text"
+              value={fullName}
+              onChange={(e) => {
+                const parts = e.target.value.trim().split(/\s+/);
+                setFirstName(parts[0] || '');
+                setLastName(parts.slice(1).join(' '));
+              }}
+              placeholder={t('Enter your name • 이름을 입력하세요', '이름을 입력하세요')}
+              className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">
-              {t('Last name', '성')}
-            </label>
-            <input
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-sm"
-            />
-          </div>
-        </div>
 
-        <div>
-          <label className="block text-xs font-medium text-neutral-700 mb-1">
-            {t('Bio', '소개')}
-          </label>
-          <textarea
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            rows={3}
-            maxLength={2000}
-            placeholder={t('Tell partners about yourself…', '파트너에게 자신을 소개해 보세요…')}
-            className="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-sm resize-none min-h-[72px]"
-          />
-          <p className="text-[11px] text-neutral-400 mt-0.5">{bio.length}/2000</p>
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-neutral-700 mb-1.5">
-            {t('Interests', '관심사')}{' '}
-            <span className="text-neutral-500 font-normal">({t('at least one', '하나 이상')})</span>
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-            {PROFILE_INTEREST_OPTIONS.map((interest) => (
-              <button
-                key={interest}
-                type="button"
-                onClick={() => toggleInterest(interest)}
-                className={`px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium transition-colors ${
-                  interests.includes(interest)
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                }`}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                {t('I speak', '모국어')} <span className="text-neutral-500">{t('모국어', '모국어')}</span>
+              </label>
+              <select
+                value={nativeLanguage}
+                onChange={(e) => setNativeLanguage(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {interest}
-              </button>
-            ))}
+                <option>English</option>
+                <option>Korean 한국어</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                {t("I'm learning", '배우는 언어')} <span className="text-neutral-500">{t('배우는 언어', '배우는 언어')}</span>
+              </label>
+              <select
+                value={targetLanguage}
+                onChange={(e) => setTargetLanguage(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option>Korean 한국어</option>
+                <option>English</option>
+              </select>
+            </div>
           </div>
-          {extraInterests.length > 0 ? (
-            <div className="mt-3">
-              <p className="text-xs text-neutral-500 mb-1.5">{t('Other interests', '기타 관심사')}</p>
-              <div className="flex flex-wrap gap-2">
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-2">
+              {t('My Level', '레벨')} <span className="text-neutral-500">{t('레벨', '레벨')}</span>
+            </label>
+            <select
+              value={proficiency}
+              onChange={(e) => setProficiency(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {PROFICIENCIES.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-3">
+              {t('Interests', '관심사')} <span className="text-neutral-500">{t('관심사', '관심사')}</span>{' '}
+              <span className="text-xs text-neutral-500">({t('select at least one', '하나 이상 선택')})</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {PROFILE_INTEREST_OPTIONS.map((interest) => (
+                <button
+                  key={interest}
+                  type="button"
+                  onClick={() => toggleInterest(interest)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    interests.includes(interest)
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                  }`}
+                >
+                  {interest}
+                </button>
+              ))}
+            </div>
+            {extraInterests.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-2">
                 {extraInterests.map((name) => (
                   <span
                     key={name}
@@ -452,134 +378,33 @@ export function Profile() {
                   </span>
                 ))}
               </div>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">
-              {t('I speak', '모국어')}
-            </label>
-            <select
-              value={nativeLanguage}
-              onChange={(e) => setNativeLanguage(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
-            >
-              <option>English</option>
-              <option>Korean</option>
-            </select>
+            ) : null}
           </div>
-          <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">
-              {t('Learning', '배우는 언어')}
-            </label>
-            <select
-              value={targetLanguage}
-              onChange={(e) => setTargetLanguage(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
-            >
-              <option>Korean</option>
-              <option>English</option>
-            </select>
-          </div>
-        </div>
 
-        <div>
-          <label className="block text-xs font-medium text-neutral-700 mb-1">
-            {t('Level', '레벨')}
-          </label>
-          <select
-            value={proficiency}
-            onChange={(e) => setProficiency(e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-2">
+              Bio <span className="text-neutral-500">{t('(optional)', '(선택)')}</span>
+            </label>
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              rows={2}
+              maxLength={2000}
+              placeholder={t('Short intro…', '짧은 소개…')}
+              className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+            />
+          </div>
+
+          <button
+            type="button"
+            disabled={saveDisabled}
+            onClick={handleSave}
+            className="w-full bg-blue-600 text-white py-4 rounded-lg font-medium hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
           >
-            {PROFICIENCIES.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {!hasProfile ? (
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Age</label>
-              <input
-                type="number"
-                min={13}
-                max={120}
-                value={age}
-                onChange={(e) => setAge(Number(e.target.value))}
-                className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Gender</label>
-              <select
-                value={gender}
-                onChange={(e) => setGender(e.target.value)}
-                className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
-              >
-                <option>Male</option>
-                <option>Female</option>
-                <option>Other</option>
-              </select>
-            </div>
-          </div>
-        ) : null}
-
-        {opts ? (
-          <>
-            <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">
-                {t('Learning goal', '학습 목표')}
-              </label>
-              <select
-                value={learningGoal}
-                onChange={(e) => setLearningGoal(e.target.value)}
-                className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
-              >
-                {opts.learningGoals.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">
-                {t('Communication style', '소통 스타일')}
-              </label>
-              <select
-                value={communicationStyle}
-                onChange={(e) => setCommunicationStyle(e.target.value)}
-                className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
-              >
-                {opts.communicationStyles.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">
-                {t('Commitment (1–5)', '참여도 (1–5)')}
-              </label>
-              <input
-                type="range"
-                min={opts.commitmentLevel.min}
-                max={opts.commitmentLevel.max}
-                value={commitmentLevel}
-                onChange={(e) => setCommitmentLevel(Number(e.target.value))}
-                className="w-full"
-              />
-              <p className="text-[11px] text-neutral-500">{commitmentLevel}</p>
-            </div>
-          </>
-        ) : null}
+            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+            <span>{saveLabel}</span>
+            {!saving ? <ChevronRight className="w-5 h-5" /> : null}
+          </button>
         </div>
       </div>
     </div>

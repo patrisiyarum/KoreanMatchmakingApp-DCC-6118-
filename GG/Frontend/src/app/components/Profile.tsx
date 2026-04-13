@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { ChevronRight, Loader2 } from 'lucide-react';
+import { Camera, ChevronRight, Loader2, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { publicAssetUrl } from '../utils/profileImage';
 import {
   createProfile,
   fetchProfileOptions,
   fetchUserAccount,
   fetchUserProfilePayload,
+  uploadProfileImage,
   updateProfile,
   type ProfileOptions,
   type ProfileRow,
@@ -36,6 +38,7 @@ export function Profile() {
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [bio, setBio] = useState('');
   const [nativeLanguage, setNativeLanguage] = useState('English');
   const [targetLanguage, setTargetLanguage] = useState('Korean');
@@ -78,6 +81,7 @@ export function Profile() {
       if (account) {
         setFirstName(account.firstName || '');
         setLastName(account.lastName || '');
+        setProfileImage(account.profileImage ?? null);
       }
       if (profile && profile.id != null) {
         setHasProfile(true);
@@ -258,22 +262,52 @@ export function Profile() {
   const saveLabel = hasProfile ? t('Save changes', '변경 저장') : t('Create profile', '프로필 만들기');
   const saveDisabled = saving || interests.filter((n) => n.trim()).length === 0;
   const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+  const photoSrc = publicAssetUrl(profileImage);
 
   return (
-    <div className="size-full flex items-center justify-center p-6">
+    <div className="size-full flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="text-6xl mb-4">🇰🇷 🇺🇸</div>
-          <h2 className="text-3xl font-bold text-neutral-900 mb-2">
-            {t('Welcome to LangMatch', 'LangMatch에 오신 것을 환영합니다')}
-          </h2>
-          <p className="text-lg text-blue-600 mb-1">{t('환영합니다', '환영합니다')}</p>
-          <p className="text-neutral-600">
-            {t('Connect with language partners worldwide', '전 세계 언어 파트너와 연결하세요')}
-          </p>
-        </div>
+        <div className="bg-white rounded-2xl border border-neutral-200 p-5 space-y-5">
+          <div className="flex flex-col items-center text-center">
+            <button
+              type="button"
+              onClick={async () => {
+                if (!userId) return;
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = async () => {
+                  const file = input.files?.[0];
+                  if (!file) return;
+                  try {
+                    const res = await uploadProfileImage(userId, file);
+                    setProfileImage(res.profileImage ?? null);
+                    toast.success(t('Photo updated', '사진이 업데이트되었습니다'));
+                  } catch {
+                    toast.error(t('Upload failed', '업로드 실패'));
+                  }
+                };
+                input.click();
+              }}
+              className="relative"
+              aria-label={t('Upload profile photo', '프로필 사진 업로드')}
+            >
+              <span className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-neutral-200 bg-neutral-100 shadow-sm">
+                {photoSrc ? (
+                  <img src={photoSrc} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <UserRound className="h-10 w-10 text-neutral-500" />
+                )}
+              </span>
+              <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-white shadow-sm">
+                <Camera className="h-3.5 w-3.5" />
+              </span>
+            </button>
+            <p className="mt-2 text-xs text-neutral-500">
+              {t('Profile photo (optional)', '프로필 사진 (선택)')}
+            </p>
+          </div>
 
-        <div className="bg-white rounded-2xl border border-neutral-200 p-6 space-y-6">
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
               {t('Your Name', '이름')} <span className="text-neutral-500">{t('이름', '이름')}</span>
@@ -294,7 +328,7 @@ export function Profile() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-2">
-                {t('I speak', '모국어')} <span className="text-neutral-500">{t('모국어', '모국어')}</span>
+                {t('Native', '모국어')} <span className="text-neutral-500">{t('모국어', '모국어')}</span>
               </label>
               <select
                 value={nativeLanguage}
@@ -402,7 +436,7 @@ export function Profile() {
             className="w-full bg-blue-600 text-white py-4 rounded-lg font-medium hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
           >
             {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-            <span>{saveLabel}</span>
+            <span>{t('Save profile', '프로필 저장')}</span>
             {!saving ? <ChevronRight className="w-5 h-5" /> : null}
           </button>
         </div>

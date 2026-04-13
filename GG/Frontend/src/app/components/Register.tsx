@@ -59,8 +59,8 @@ export function Register() {
 
   return (
     <div className="h-full min-h-0 overflow-y-auto bg-gradient-to-b from-violet-100/80 via-white to-sky-50/90">
-      <div className="mx-auto flex min-h-full max-w-lg flex-col justify-center px-4 py-10 sm:px-6 sm:py-12">
-        <div className="overflow-hidden rounded-3xl border border-neutral-200/80 bg-white shadow-xl shadow-violet-900/10">
+      <div className="mx-auto flex min-h-full max-w-xl flex-col justify-center px-4 py-10 sm:px-6 sm:py-12">
+        <div className="min-h-[44rem] overflow-hidden rounded-3xl border border-neutral-200/80 bg-white shadow-xl shadow-violet-900/10">
           <div className="bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 px-6 pb-8 pt-10 text-center sm:px-8 sm:pb-10 sm:pt-12">
             <div className="mb-5 flex items-center justify-center gap-3 sm:gap-4" aria-hidden>
               <span className="select-none text-5xl leading-none drop-shadow-md sm:text-6xl">🇺🇸</span>
@@ -72,6 +72,12 @@ export function Register() {
             <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
               LangMatch <span className="font-semibold text-white/90">언어교환</span>
             </h1>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-white/90">
+              {t(
+                'Find Korean and English language partners to practice together.',
+                '한국어와 영어 언어교환 파트너를 찾는 앱입니다.'
+              )}
+            </p>
           </div>
 
           <div className="px-6 py-8 text-center sm:px-8">

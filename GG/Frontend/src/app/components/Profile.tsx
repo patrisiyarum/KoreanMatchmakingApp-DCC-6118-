@@ -307,15 +307,15 @@ export function Profile() {
     [firstName, lastName].filter(Boolean).join(' ').trim() || t('My profile', '내 프로필');
 
   const inputClass =
-    'w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500';
+    'w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500';
   const selectClass =
-    'w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500';
+    'w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500';
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-lg max-h-[calc(100dvh-10rem)] flex-col px-4 py-4 sm:max-h-[calc(100dvh-11rem)] sm:px-6 sm:py-6">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-2xl max-h-[calc(100dvh-8rem)] flex-col px-4 py-3 sm:max-h-[calc(100dvh-9rem)] sm:px-5 sm:py-4">
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-lg">
-        <div className="shrink-0 bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 px-6 pb-8 pt-8 text-center sm:px-8 sm:pb-10 sm:pt-10">
-          <div className="mb-4 flex justify-center">
+        <div className="shrink-0 bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 px-5 pb-5 pt-5 text-center sm:px-6 sm:pb-6 sm:pt-6">
+          <div className="mb-2 flex justify-center">
             <div className="relative">
               <button
                 type="button"
@@ -323,18 +323,18 @@ export function Profile() {
                 className="relative block"
                 title={t('Change photo', '사진 변경')}
               >
-                <span className="block h-24 w-24 overflow-hidden rounded-full border-4 border-white/40 shadow-md sm:h-28 sm:w-28">
+                <span className="block h-20 w-20 overflow-hidden rounded-full border-4 border-white/40 shadow-md sm:h-24 sm:w-24">
                   {photoSrc ? (
                     <img src={photoSrc} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <span className="flex h-full w-full items-center justify-center bg-white/10 text-3xl font-semibold text-white">
+                    <span className="flex h-full w-full items-center justify-center bg-white/10 text-2xl font-semibold text-white">
                       {(firstName[0] || '?').toUpperCase()}
                     </span>
                   )}
                 </span>
                 {!photoSrc ? (
-                  <span className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-white text-violet-700 shadow-md hover:bg-violet-50">
-                    <Camera className="h-4 w-4" />
+                  <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-white text-violet-700 shadow-md hover:bg-violet-50">
+                    <Camera className="h-3.5 w-3.5" />
                   </span>
                 ) : null}
               </button>
@@ -347,9 +347,9 @@ export function Profile() {
               />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-white">{t('My profile', '내 프로필')}</h1>
-          <p className="mt-1 text-lg font-semibold text-white/95">{displayName}</p>
-          <div className="mt-3 flex items-center justify-center gap-2 text-sm text-white/90">
+          <h1 className="text-xl font-bold text-white sm:text-2xl">{t('My profile', '내 프로필')}</h1>
+          <p className="mt-0.5 text-base font-semibold text-white/95 sm:text-lg">{displayName}</p>
+          <div className="mt-1.5 flex items-center justify-center gap-2 text-xs text-white/90 sm:text-sm">
             <span>{nativeLanguage}</span>
             <span aria-hidden>↔</span>
             <span>{targetLanguage}</span>
@@ -365,8 +365,8 @@ export function Profile() {
           ) : null}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 space-y-5">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="min-h-0 flex-1 overflow-hidden p-4 pb-5 space-y-3 sm:p-5 sm:pb-6 sm:space-y-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               {fieldLabel(t('First name', '이름'))}
               <input
@@ -390,10 +390,10 @@ export function Profile() {
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              rows={4}
+              rows={2}
               maxLength={2000}
               placeholder={t('Tell partners about yourself…', '파트너에게 자신을 소개해 보세요…')}
-              className={`${inputClass} min-h-[100px] resize-y`}
+              className={`${inputClass} min-h-[56px] resize-none`}
             />
             <p className="mt-1 text-xs text-neutral-400">{bio.length}/2000</p>
           </div>
@@ -402,13 +402,13 @@ export function Profile() {
             {fieldLabel(
               `${t('Interests', '관심사')} · ${t('at least one', '하나 이상')}`
             )}
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-4 gap-1.5">
               {PROFILE_INTEREST_OPTIONS.map((interest) => (
                 <button
                   key={interest}
                   type="button"
                   onClick={() => toggleInterest(interest)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`rounded-full px-2 py-1.5 text-[11px] font-medium transition-colors ${
                     interests.includes(interest)
                       ? 'bg-violet-600 text-white shadow-sm'
                       : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
@@ -443,7 +443,7 @@ export function Profile() {
             ) : null}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               {fieldLabel(t('I speak', '모국어'))}
               <select
@@ -484,7 +484,7 @@ export function Profile() {
           </div>
 
           {!hasProfile ? (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 {fieldLabel('Age')}
                 <input
@@ -560,7 +560,7 @@ export function Profile() {
             type="button"
             disabled={saveDisabled}
             onClick={handleSave}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-3 text-sm font-semibold text-white shadow-md hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mb-1 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
             {saveLabel}

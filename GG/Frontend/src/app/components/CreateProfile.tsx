@@ -155,7 +155,7 @@ export function CreateProfile() {
     'w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30';
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-xl max-h-[calc(100dvh-9rem)] flex-col px-4 py-3 sm:max-h-[calc(100dvh-10rem)] sm:px-5 sm:py-4">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-2xl max-h-[calc(100dvh-8rem)] flex-col px-4 py-3 sm:max-h-[calc(100dvh-9rem)] sm:px-5 sm:py-4">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -207,7 +207,7 @@ export function CreateProfile() {
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-hidden p-4 space-y-3 sm:p-5 sm:space-y-4">
+        <div className="min-h-0 flex-1 overflow-hidden p-4 pb-5 space-y-3 sm:p-5 sm:pb-6 sm:space-y-4">
           <div>
             {fieldLabel(t('Name', '이름'))}
             <input
@@ -301,7 +301,7 @@ export function CreateProfile() {
             type="button"
             onClick={handleContinue}
             disabled={starting || !canContinue}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:shadow-none"
+            className="mb-1 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:shadow-none"
           >
             {starting ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
             <span>{t('Continue to Discover', '디스커버로 계속')}</span>

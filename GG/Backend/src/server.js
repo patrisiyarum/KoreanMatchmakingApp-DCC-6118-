@@ -10,7 +10,7 @@ import mysql from "mysql2/promise";
 import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs";
-import { sequelize } from "./models/index.js";
+import { sequelize, alignUserProfileBioWithDatabase } from "./models/index.js";
 
 dotenv.config();
 const app = express();
@@ -158,6 +158,11 @@ const runAfterListen = async () => {
         console.error("Database sync error:", err.message);
     }
     try {
+        await alignUserProfileBioWithDatabase();
+    } catch (err) {
+        console.warn("UserProfile bio alignment skipped:", err.message);
+    }
+    try {
         await syncBadgeDefinitions();
         console.log("Badge definitions synced.");
     } catch (err) {
@@ -165,10 +170,17 @@ const runAfterListen = async () => {
     }
 };
 
+// Sync DB before accepting traffic so Sequelize model matches schema (e.g. optional `bio` column).
 // Node on Passenger/Plesk must call listen(process.env.PORT). Do not skip listen.
-app.listen(port, async () => {
-    console.log(`Example app listening on port ${port}`);
-    await runAfterListen();
-});
+(async () => {
+    try {
+        await runAfterListen();
+    } catch (err) {
+        console.error("Startup sequence error:", err);
+    }
+    app.listen(port, () => {
+        console.log(`Example app listening on port ${port}`);
+    });
+})();
 
 export default app;

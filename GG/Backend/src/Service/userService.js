@@ -25,11 +25,16 @@ let userProfileBioColumnKnownTrue = false;
 async function userProfileBioColumnExists() {
     if (userProfileBioColumnKnownTrue) return true;
     try {
+        const tableRef = db.UserProfile.getTableName();
+        const tableName = typeof tableRef === 'string' ? tableRef : tableRef.tableName;
+        const variants = [...new Set([tableName, tableName.toLowerCase(), tableName.toUpperCase()])];
+        const ph = variants.map(() => '?').join(',');
         const [rows] = await sequelize.query(
             `SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.COLUMNS
              WHERE TABLE_SCHEMA = DATABASE()
-               AND TABLE_NAME IN ('UserProfile', 'userprofile')
-               AND COLUMN_NAME = 'bio'`
+               AND TABLE_NAME IN (${ph})
+               AND COLUMN_NAME = 'bio'`,
+            { replacements: variants }
         );
         const row = rows && rows[0];
         const c = row && (row.c ?? row.C);

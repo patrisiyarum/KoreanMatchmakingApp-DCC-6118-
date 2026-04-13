@@ -63,5 +63,55 @@ for (const modelName of Object.keys(db)) {
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
+/**
+ * If `UserProfile.bio` is not in the database, drop it from the Sequelize model so every
+ * SELECT/UPSERT avoids "Unknown column 'bio'". Run after sequelize.sync() so alter can add the column first.
+ */
+export async function alignUserProfileBioWithDatabase() {
+  const UserProfile = db.UserProfile;
+  if (!UserProfile || typeof UserProfile.removeAttribute !== 'function') return;
+
+  const dialect = sequelize.getDialect();
+  const tableRef = UserProfile.getTableName();
+  const tableName = typeof tableRef === 'string' ? tableRef : tableRef.tableName;
+
+  try {
+    let count = 0;
+    if (dialect === 'mysql') {
+      const variants = [...new Set([tableName, tableName.toLowerCase(), tableName.toUpperCase()])];
+      const placeholders = variants.map(() => '?').join(',');
+      const [rows] = await sequelize.query(
+        `SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME IN (${placeholders})
+           AND COLUMN_NAME = 'bio'`,
+        { replacements: variants }
+      );
+      const row = rows && rows[0];
+      count = Number(row?.c ?? row?.C ?? 0);
+    } else if (dialect === 'postgres') {
+      const [rows] = await sequelize.query(
+        `SELECT COUNT(*)::int AS c FROM information_schema.columns
+         WHERE table_schema = current_schema()
+           AND table_name = :tn
+           AND column_name = 'bio'`,
+        { replacements: { tn: String(tableName).toLowerCase() } }
+      );
+      count = Number(rows?.[0]?.c ?? 0);
+    } else {
+      return;
+    }
+
+    if (count === 0) {
+      UserProfile.removeAttribute('bio');
+      console.warn(
+        '[DB] UserProfile has no `bio` column; Sequelize omits it. Add the column (migration 22add-bio-to-userprofile.js or schema.mysql.sql) and restart to enable bio.'
+      );
+    }
+  } catch (err) {
+    console.warn('[DB] Could not verify UserProfile.bio column:', err.message);
+  }
+}
+
 export { sequelize };
 export default db;

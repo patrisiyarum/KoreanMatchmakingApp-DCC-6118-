@@ -24,7 +24,7 @@ function profileMeetsDiscoverMinimum(p: Awaited<ReturnType<typeof fetchUserProfi
 
 function fieldLabel(text: string) {
   return (
-    <div className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5">
+    <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-neutral-500">
       {text}
     </div>
   );
@@ -150,37 +150,37 @@ export function CreateProfile() {
   }
 
   const inputClass =
-    'w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500';
+    'w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30';
   const selectClass =
-    'w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500';
+    'w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30';
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-lg max-h-[calc(100dvh-10rem)] flex-col px-4 py-4 sm:max-h-[calc(100dvh-11rem)] sm:px-6 sm:py-6">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-xl max-h-[calc(100dvh-9rem)] flex-col px-4 py-3 sm:max-h-[calc(100dvh-10rem)] sm:px-5 sm:py-4">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-lg"
       >
-        <div className="shrink-0 bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 px-6 pb-8 pt-8 text-center sm:px-8 sm:pb-10 sm:pt-10">
-          <div className="mb-4 flex justify-center">
+        <div className="shrink-0 bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 px-5 pb-5 pt-5 text-center sm:px-6 sm:pb-6 sm:pt-6">
+          <div className="mb-2 flex justify-center">
             <button
               type="button"
               onClick={() => photoRef.current?.click()}
               className="relative"
               aria-label={t('Upload profile photo', '프로필 사진 업로드')}
             >
-              <span className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-4 border-white/40 shadow-md sm:h-32 sm:w-32">
+              <span className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-white/40 shadow-md sm:h-24 sm:w-24">
                 {displayedPhotoSrc ? (
                   <img src={displayedPhotoSrc} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <span className="flex h-full w-full items-center justify-center bg-white/15 text-white">
-                    <UserRound className="h-14 w-14 opacity-95 sm:h-16 sm:w-16" strokeWidth={1.25} />
+                    <UserRound className="h-10 w-10 opacity-95 sm:h-12 sm:w-12" strokeWidth={1.25} />
                   </span>
                 )}
               </span>
               {!displayedPhotoSrc ? (
-                <span className="absolute bottom-0.5 right-0.5 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-white text-violet-700 shadow-md hover:bg-violet-50">
-                  <Camera className="h-4 w-4" />
+                <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-white text-violet-700 shadow-md hover:bg-violet-50">
+                  <Camera className="h-3.5 w-3.5" />
                 </span>
               ) : null}
             </button>
@@ -198,16 +198,16 @@ export function CreateProfile() {
               }}
             />
           </div>
-          <h2 className="text-2xl font-bold text-white">{t('Create your profile', '프로필 만들기')}</h2>
-          <p className="mt-1 text-lg font-semibold text-white/95">{displayName}</p>
-          <div className="mt-3 flex items-center justify-center gap-2 text-sm text-white/90">
+          <h2 className="text-xl font-bold text-white sm:text-2xl">{t('Create your profile', '프로필 만들기')}</h2>
+          <p className="mt-0.5 text-base font-semibold text-white/95 sm:text-lg">{displayName}</p>
+          <div className="mt-1.5 flex items-center justify-center gap-2 text-xs text-white/90 sm:text-sm">
             <span>{profile.nativeLanguage}</span>
             <span aria-hidden>↔</span>
             <span>{profile.learningLanguage}</span>
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 space-y-5">
+        <div className="min-h-0 flex-1 overflow-hidden p-4 space-y-3 sm:p-5 sm:space-y-4">
           <div>
             {fieldLabel(t('Name', '이름'))}
             <input
@@ -219,7 +219,7 @@ export function CreateProfile() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               {fieldLabel(t('Native', '모국어'))}
               <select
@@ -261,13 +261,13 @@ export function CreateProfile() {
             {fieldLabel(
               `${t('Interests', '관심사')} · ${t('pick one or more', '하나 이상')}`
             )}
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-4 gap-1.5">
               {PROFILE_INTEREST_OPTIONS.map((interest) => (
                 <button
                   key={interest}
                   type="button"
                   onClick={() => toggleInterest(interest)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`rounded-full px-2 py-1.5 text-[11px] font-medium transition-colors ${
                     profile.interests.includes(interest)
                       ? 'bg-violet-600 text-white shadow-sm'
                       : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
@@ -284,15 +284,15 @@ export function CreateProfile() {
             <textarea
               value={profile.bio}
               onChange={(e) => setProfile((prev) => ({ ...prev, bio: e.target.value }))}
-              rows={3}
+              rows={2}
               maxLength={2000}
               placeholder={t('Short intro…', '짧은 소개…')}
-              className={`${inputClass} min-h-[88px] resize-none`}
+              className={`${inputClass} min-h-[56px] resize-none`}
             />
           </div>
 
           <p className="text-center">
-            <Link to="/home" className="text-sm font-medium text-violet-600 hover:text-violet-700 hover:underline">
+            <Link to="/home" className="text-xs font-medium text-violet-600 hover:text-violet-700 hover:underline">
               {t('Skip for now', '나중에 하기')}
             </Link>
           </p>
@@ -301,7 +301,7 @@ export function CreateProfile() {
             type="button"
             onClick={handleContinue}
             disabled={starting || !canContinue}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-3 text-sm font-semibold text-white shadow-md hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:shadow-none"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:shadow-none"
           >
             {starting ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
             <span>{t('Continue to Discover', '디스커버로 계속')}</span>

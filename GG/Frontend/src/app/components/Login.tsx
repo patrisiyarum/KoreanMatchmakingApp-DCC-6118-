@@ -20,7 +20,7 @@ export function Login() {
         return;
       }
       setUserId(String(data.id));
-      navigate('/home', { replace: true });
+      navigate('/create-profile', { replace: true });
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } }; message?: string };
       setErrMsg(
@@ -32,7 +32,7 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-full flex items-center justify-center bg-neutral-50 p-6">
+    <div className="h-full min-h-0 flex items-center justify-center bg-neutral-50 p-4 sm:p-6 overflow-y-auto">
       <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm">
         <h1 className="text-2xl font-bold text-neutral-900">Login</h1>
         <p className="mt-1 text-sm text-neutral-600">Welcome back to LangMatch.</p>
@@ -73,11 +73,6 @@ export function Login() {
           No account?{' '}
           <Link to="/register" className="font-medium text-blue-600 hover:underline">
             Register
-          </Link>
-        </p>
-        <p className="mt-2 text-center text-sm">
-          <Link to="/welcome" className="text-neutral-500 hover:underline">
-            Continue without account (demo)
           </Link>
         </p>
       </div>

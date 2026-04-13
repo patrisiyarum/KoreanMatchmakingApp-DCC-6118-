@@ -6,6 +6,11 @@ export function DashboardHome() {
   const { t } = useLanguage();
   const cards = [
     {
+      to: '/create-profile',
+      title: t('Create profile', '프로필 만들기'),
+      sub: t('Languages, interests, bio, photo for Discover', '디스커버용 언어 · 관심사 · 소개 · 사진'),
+    },
+    {
       to: '/profile',
       title: t('Profile & photo', '프로필 · 사진'),
       sub: t('Bio, languages, profile picture', '소개, 언어, 프로필 사진'),

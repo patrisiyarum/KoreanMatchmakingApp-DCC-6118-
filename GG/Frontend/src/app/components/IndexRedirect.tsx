@@ -6,5 +6,5 @@ export function IndexRedirect() {
   if (userId) {
     return <Navigate to="/home" replace />;
   }
-  return <Navigate to="/welcome" replace />;
+  return <Navigate to="/login" replace />;
 }

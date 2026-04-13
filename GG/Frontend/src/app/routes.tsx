@@ -1,8 +1,8 @@
 import { createBrowserRouter } from 'react-router';
 import { RootLayout } from './components/RootLayout';
 import { RequireAuthLayout } from './components/RequireAuthLayout';
-import { Layout, GuestShell } from './components/Layout';
-import { Home } from './components/Home';
+import { Layout } from './components/Layout';
+import { CreateProfile } from './components/CreateProfile';
 import { Discover } from './components/Discover';
 import { MyPartners } from './components/MyPartners';
 import { Games } from './components/Games';
@@ -20,11 +20,6 @@ export const router = createBrowserRouter([
     Component: RootLayout,
     children: [
       { index: true, Component: IndexRedirect },
-      {
-        path: 'welcome',
-        Component: GuestShell,
-        children: [{ index: true, Component: Home }],
-      },
       { path: 'login', Component: Login },
       { path: 'register', Component: Register },
       {
@@ -34,6 +29,7 @@ export const router = createBrowserRouter([
             Component: Layout,
             children: [
               { path: 'home', Component: DashboardHome },
+              { path: 'create-profile', Component: CreateProfile },
               { path: 'profile', Component: Profile },
               { path: 'discover', Component: Discover },
               { path: 'partners', Component: MyPartners },

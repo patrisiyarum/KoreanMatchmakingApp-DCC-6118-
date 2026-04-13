@@ -29,7 +29,7 @@ export function Register() {
         return;
       }
       setUserId(String(data.id));
-      navigate('/welcome', { replace: true });
+      navigate('/create-profile', { replace: true });
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && !err.response) {
         const base = getApiBase();
@@ -53,7 +53,7 @@ export function Register() {
   };
 
   return (
-    <div className="min-h-full flex items-center justify-center bg-neutral-50 p-6">
+    <div className="h-full min-h-0 flex items-center justify-center bg-neutral-50 p-4 sm:p-6 overflow-y-auto">
       <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm">
         <h1 className="text-2xl font-bold text-neutral-900">Create account</h1>
         <p className="mt-1 text-sm text-neutral-600">Join LangMatch 언어교환</p>

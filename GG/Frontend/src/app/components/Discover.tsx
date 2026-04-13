@@ -103,16 +103,16 @@ export function Discover() {
           <p className="text-neutral-800 font-medium">{loadError}</p>
           <p className="text-sm text-neutral-600">
             {t(
-              'Add languages, bio, interests, and a photo from Games (Team Battles) or your Profile, then come back.',
-              '게임(팀 대결) 또는 프로필에서 언어·소개·관심사·사진을 채운 뒤 다시 오세요.'
+              'Finish Create profile (languages, bio, interests, photo) or update Profile, then try again.',
+              '프로필 만들기에서 언어·소개·관심사·사진을 채우거나 프로필을 수정한 뒤 다시 시도하세요.'
             )}
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             <Link
-              to="/games"
+              to="/create-profile"
               className="inline-flex items-center justify-center rounded-lg bg-violet-600 text-white px-4 py-2 text-sm font-medium hover:bg-violet-700"
             >
-              {t('Games & team profile', '게임 · 팀 프로필')}
+              {t('Create profile', '프로필 만들기')}
             </Link>
             <Link
               to="/profile"

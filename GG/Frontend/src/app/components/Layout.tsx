@@ -1,1 +1,1 @@
-export { AuthenticatedShell as Layout, GuestShell } from './AppShell';
+export { AuthenticatedShell as Layout } from './AppShell';

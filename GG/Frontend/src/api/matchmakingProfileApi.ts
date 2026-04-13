@@ -102,7 +102,7 @@ export type WelcomeProfileInput = {
   bio: string;
 };
 
-/** Save languages + bio + interests from the welcome screen (creates or updates profile + account names). */
+/** Save languages + bio + interests from Create profile (creates or updates profile + account names). */
 export async function saveWelcomeProfile(input: WelcomeProfileInput): Promise<{ ok: boolean; message?: string }> {
   const trimmedInterests = input.interestNames.map((n) => n.trim()).filter(Boolean);
   if (trimmedInterests.length === 0) {

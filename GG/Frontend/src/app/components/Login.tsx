@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Languages } from 'lucide-react';
 import { loginApi } from '@/api/authApi';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -59,30 +58,17 @@ export function Login() {
                 🇰🇷
               </span>
             </div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white/95 backdrop-blur-sm">
-              <Languages className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              {t('Language exchange', '언어 교환')}
-            </div>
             <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
               LangMatch <span className="font-semibold text-white/90">언어교환</span>
             </h1>
-            <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-white/90">
-              {t(
-                'Meet partners to practice English and Korean — chat, study, and improve together.',
-                '영어와 한국어를 함께 연습할 파트너를 만나 보세요. 채팅하고 공부하며 함께 성장해요.'
-              )}
-            </p>
           </div>
 
-          <div className="px-6 py-8 sm:px-8">
-            <h2 className="text-lg font-semibold text-neutral-900 sm:text-xl">
+          <div className="px-6 py-8 text-center sm:px-8">
+            <h2 className="text-xl font-semibold text-neutral-900 sm:text-2xl">
               {t('Sign in', '로그인')}
             </h2>
-            <p className="mt-1 text-sm text-neutral-600">
-              {t('Welcome back. Continue your language journey.', '다시 오신 것을 환영합니다.')}
-            </p>
 
-            <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
+            <form className="mt-8 space-y-5 text-left" onSubmit={handleSubmit}>
               {errMsg ? (
                 <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-800">
                   {errMsg}
@@ -124,7 +110,7 @@ export function Login() {
               </button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-neutral-600">
+            <p className="mt-6 text-sm text-neutral-600">
               {t('No account?', '계정이 없으신가요?')}{' '}
               <Link
                 to="/register"

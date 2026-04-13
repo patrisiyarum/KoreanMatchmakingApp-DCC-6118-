@@ -4,8 +4,10 @@ import axios from 'axios';
 import { registerApi } from '@/api/authApi';
 import { getApiBase } from '@/api/apiBase';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export function Register() {
+  const { t } = useLanguage();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -52,70 +54,113 @@ export function Register() {
     }
   };
 
+  const inputClass =
+    'mt-1.5 w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-neutral-900 shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/25';
+
   return (
-    <div className="h-full min-h-0 flex items-center justify-center bg-neutral-50 p-4 sm:p-6 overflow-y-auto">
-      <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm">
-        <h1 className="text-2xl font-bold text-neutral-900">Create account</h1>
-        <p className="mt-1 text-sm text-neutral-600">Join LangMatch 언어교환</p>
-        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-          {errMsg ? (
-            <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errMsg}</div>
-          ) : null}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-neutral-700">First name</label>
-              <input
-                required
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+    <div className="h-full min-h-0 overflow-y-auto bg-gradient-to-b from-violet-100/80 via-white to-sky-50/90">
+      <div className="mx-auto flex min-h-full max-w-lg flex-col justify-center px-4 py-10 sm:px-6 sm:py-12">
+        <div className="overflow-hidden rounded-3xl border border-neutral-200/80 bg-white shadow-xl shadow-violet-900/10">
+          <div className="bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 px-6 pb-8 pt-10 text-center sm:px-8 sm:pb-10 sm:pt-12">
+            <div className="mb-5 flex items-center justify-center gap-3 sm:gap-4" aria-hidden>
+              <span className="select-none text-5xl leading-none drop-shadow-md sm:text-6xl">🇺🇸</span>
+              <span className="text-2xl font-light text-white/90 sm:text-3xl" aria-hidden>
+                ⇄
+              </span>
+              <span className="select-none text-5xl leading-none drop-shadow-md sm:text-6xl">🇰🇷</span>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-700">Last name</label>
-              <input
-                required
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              LangMatch <span className="font-semibold text-white/90">언어교환</span>
+            </h1>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700">Email</label>
-            <input
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+
+          <div className="px-6 py-8 text-center sm:px-8">
+            <h2 className="text-xl font-semibold text-neutral-900 sm:text-2xl">
+              {t('Create account', '회원가입')}
+            </h2>
+            <p className="mt-2 text-sm text-neutral-600 sm:text-base">
+              {t('Join LangMatch 언어교환', 'LangMatch 언어교환에 참여하세요')}
+            </p>
+
+            <form className="mt-8 space-y-5 text-left" onSubmit={handleSubmit}>
+              {errMsg ? (
+                <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-800">
+                  {errMsg}
+                </div>
+              ) : null}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-neutral-700" htmlFor="reg-first">
+                    {t('First name', '이름')}
+                  </label>
+                  <input
+                    id="reg-first"
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-neutral-700" htmlFor="reg-last">
+                    {t('Last name', '성')}
+                  </label>
+                  <input
+                    id="reg-last"
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-neutral-700" htmlFor="reg-email">
+                  {t('Email', '이메일')}
+                </label>
+                <input
+                  id="reg-email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-neutral-700" htmlFor="reg-password">
+                  {t('Password', '비밀번호')}
+                </label>
+                <input
+                  id="reg-password"
+                  type="password"
+                  required
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-semibold text-white shadow-md shadow-violet-500/25 transition hover:from-violet-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+              >
+                {t('Register', '회원가입')}
+              </button>
+            </form>
+
+            <p className="mt-6 text-sm text-neutral-600">
+              {t('Already have an account?', '이미 계정이 있으신가요?')}{' '}
+              <Link
+                to="/login"
+                className="font-semibold text-violet-600 hover:text-violet-700 hover:underline"
+              >
+                {t('Sign in', '로그인')}
+              </Link>
+            </p>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700">Password</label>
-            <input
-              type="password"
-              required
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700"
-          >
-            Register
-          </button>
-        </form>
-        <p className="mt-4 text-center text-sm text-neutral-600">
-          Already have an account?{' '}
-          <Link to="/login" className="font-medium text-blue-600 hover:underline">
-            Login
-          </Link>
-        </p>
+        </div>
       </div>
     </div>
   );

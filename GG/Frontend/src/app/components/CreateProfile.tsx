@@ -7,6 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { saveWelcomeProfile } from '@/api/matchmakingProfileApi';
 import { fetchUserAccount, fetchUserProfilePayload, uploadProfileImage } from '@/api/profileApi';
+import { publicAssetUrl } from '../utils/profileImage';
 
 function profileMeetsDiscoverMinimum(p: Awaited<ReturnType<typeof fetchUserProfilePayload>>): boolean {
   if (!p?.id) return false;
@@ -30,6 +31,8 @@ export function CreateProfile() {
   const photoRef = useRef<HTMLInputElement>(null);
   const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  /** Saved on server already (from Profile or a previous upload). */
+  const [serverPhotoPath, setServerPhotoPath] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [bootLoading, setBootLoading] = useState(true);
   const [profile, setProfile] = useState({
@@ -71,6 +74,9 @@ export function CreateProfile() {
       if (account) {
         const n = [account.firstName, account.lastName].filter(Boolean).join(' ').trim();
         if (n) setProfile((prev) => ({ ...prev, name: prev.name || n }));
+        setServerPhotoPath(account.profileImage && String(account.profileImage).trim() ? account.profileImage : null);
+      } else {
+        setServerPhotoPath(null);
       }
     } catch {
       /* stay on form */
@@ -128,6 +134,8 @@ export function CreateProfile() {
       setStarting(false);
     }
   };
+
+  const displayedPhotoSrc = photoPreview || publicAssetUrl(serverPhotoPath);
 
   if (bootLoading) {
     return (
@@ -253,14 +261,20 @@ export function CreateProfile() {
               {t('Profile photo', '프로필 사진')}{' '}
               <span className="text-neutral-500 font-normal text-xs">({t('optional', '선택')})</span>
             </label>
+            <p className="text-[11px] sm:text-xs text-neutral-500 mb-2">
+              {t(
+                'Shown on your Discover card and in the header Profile screen.',
+                '디스커버 카드와 상단 프로필 화면에 표시됩니다.'
+              )}
+            </p>
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => photoRef.current?.click()}
-                className="relative w-14 h-14 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 shrink-0"
+                className="relative w-14 h-14 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 shrink-0 overflow-hidden"
               >
-                {photoPreview ? (
-                  <img src={photoPreview} alt="" className="w-full h-full rounded-full object-cover" />
+                {displayedPhotoSrc ? (
+                  <img src={displayedPhotoSrc} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <Camera className="w-5 h-5" />
                 )}
@@ -279,7 +293,9 @@ export function CreateProfile() {
                 }}
               />
               <p className="text-xs text-neutral-600 leading-snug">
-                {t('Uploaded when you continue. You can change it later in Profile.', '계속할 때 업로드됩니다. 프로필에서 나중에 바꿀 수 있어요.')}
+                {pendingPhoto
+                  ? t('New photo uploads when you tap Continue.', '새 사진은 계속을 누르면 업로드됩니다.')
+                  : t('Tap the circle to choose a file. Change anytime under Profile.', '원을 눌러 파일을 고르세요. 프로필에서 언제든 바꿀 수 있어요.')}
               </p>
             </div>
           </div>

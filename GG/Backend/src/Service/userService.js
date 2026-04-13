@@ -150,10 +150,16 @@ let handleProfileCreation = (id, native_language, target_language, target_langua
             if (bio != null && String(bio).trim() !== '') {
                 profileFields.bio = String(bio).trim().slice(0, 2000);
             }
-            let userProfile = await db.UserProfile.build(profileFields);
-            if(save) {
-                await userProfile.save()
-            } 
+            let userProfile = await db.UserProfile.findByPk(id);
+            if (save) {
+                if (userProfile) {
+                    await userProfile.update(profileFields);
+                } else {
+                    userProfile = await db.UserProfile.create(profileFields);
+                }
+            } else if (!userProfile) {
+                userProfile = db.UserProfile.build(profileFields);
+            }
             console.log("Id passed to profile is: ", userProfile.id)
             console.log(userProfile);
             userData.errCode = 0;

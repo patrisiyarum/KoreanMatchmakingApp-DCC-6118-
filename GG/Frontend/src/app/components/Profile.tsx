@@ -144,7 +144,13 @@ export function Profile() {
         };
         const res = await createProfile(body);
         if (res.errorCode !== 0) {
-          toast.error(res.message || t('Save failed', '저장 실패'));
+          toast.error(
+            res.message ||
+              t(
+                'Save failed. Check required profile fields and try again.',
+                '저장 실패. 필수 프로필 항목을 확인한 뒤 다시 시도하세요.'
+              )
+          );
           return;
         }
         setHasProfile(true);
@@ -170,15 +176,26 @@ export function Profile() {
           visibility: 'Show',
         });
         if (res.errorCode !== 0) {
-          toast.error(res.message || t('Save failed', '저장 실패'));
+          toast.error(
+            res.message ||
+              t(
+                'Save failed. Check required profile fields and try again.',
+                '저장 실패. 필수 프로필 항목을 확인한 뒤 다시 시도하세요.'
+              )
+          );
           return;
         }
         toast.success(t('Profile saved', '프로필이 저장되었습니다'));
       }
       await load();
-    } catch (e) {
+    } catch (e: unknown) {
       console.error(e);
-      toast.error(t('Save failed', '저장 실패'));
+      const ax = e as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(
+        ax.response?.data?.message ||
+          ax.message ||
+          t('Save failed', '저장 실패')
+      );
     } finally {
       setSaving(false);
     }

@@ -39,7 +39,7 @@ export function Login() {
   return (
     <div className="h-full min-h-0 overflow-y-auto bg-gradient-to-b from-violet-100/80 via-white to-sky-50/90">
       <div className="mx-auto flex min-h-full max-w-xl flex-col justify-center px-4 py-10 sm:px-6 sm:py-12">
-        <div className="min-h-[44rem] overflow-hidden rounded-3xl border border-neutral-200/80 bg-white shadow-xl shadow-violet-900/10">
+        <div className="flex h-[44rem] flex-col overflow-hidden rounded-3xl border border-neutral-200/80 bg-white shadow-xl shadow-violet-900/10">
           <div className="bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 px-6 pb-8 pt-10 text-center sm:px-8 sm:pb-10 sm:pt-12">
             <div className="mb-5 flex items-center justify-center gap-3 sm:gap-4" aria-hidden>
               <span
@@ -69,7 +69,7 @@ export function Login() {
             </p>
           </div>
 
-          <div className="px-6 py-8 text-center sm:px-8">
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-8 text-center sm:px-8">
             <h2 className="text-xl font-semibold text-neutral-900 sm:text-2xl">
               {t('Sign in', '로그인')}
             </h2>

@@ -4,6 +4,11 @@ import { normalizeCommitmentLevel } from './profileValidation.js';
 
 let user_id = null
 const errorMessage = "Invalid username or password!";
+
+function isMissingBioColumnError(err) {
+    const msg = String(err?.message || err || '');
+    return /unknown column ['"]?bio['"]?|ER_BAD_FIELD_ERROR/i.test(msg);
+}
 let handleUserLogin = (email, password) => {
     return new Promise(async (resolve, reject) => {
         try{
@@ -152,10 +157,22 @@ let handleProfileCreation = (id, native_language, target_language, target_langua
             }
             let userProfile = await db.UserProfile.findByPk(id);
             if (save) {
-                if (userProfile) {
-                    await userProfile.update(profileFields);
-                } else {
-                    userProfile = await db.UserProfile.create(profileFields);
+                try {
+                    if (userProfile) {
+                        await userProfile.update(profileFields);
+                    } else {
+                        userProfile = await db.UserProfile.create(profileFields);
+                    }
+                } catch (e) {
+                    // Backward compatibility for DBs that don't have UserProfile.bio yet.
+                    if (!isMissingBioColumnError(e)) throw e;
+                    const fallbackFields = { ...profileFields };
+                    delete fallbackFields.bio;
+                    if (userProfile) {
+                        await userProfile.update(fallbackFields);
+                    } else {
+                        userProfile = await db.UserProfile.create(fallbackFields);
+                    }
                 }
             } else if (!userProfile) {
                 userProfile = db.UserProfile.build(profileFields);
@@ -200,7 +217,7 @@ let handleProfileUpdate = (id, native_language, target_language, target_language
                     ? keepIfEmptyNumber(commitment_level, existing?.commitment_level)
                     : normalizeCommitmentLevel(commitment_level, existing?.commitment_level ?? 3);
 
-            await db.UserProfile.upsert({
+            const upsertFields = {
                 id: id,
                 native_language: keepIfEmpty(native_language, existing?.native_language),
                 target_language: keepIfEmpty(target_language, existing?.target_language),
@@ -223,7 +240,16 @@ let handleProfileUpdate = (id, native_language, target_language, target_language
                         : String(bio).trim() === ''
                           ? null
                           : String(bio).trim().slice(0, 2000),
-            });
+            };
+
+            try {
+                await db.UserProfile.upsert(upsertFields);
+            } catch (e) {
+                if (!isMissingBioColumnError(e)) throw e;
+                const fallbackFields = { ...upsertFields };
+                delete fallbackFields.bio;
+                await db.UserProfile.upsert(fallbackFields);
+            }
 
             if (first_name !== undefined || last_name !== undefined) {
                 const account = await db.UserAccount.findByPk(id);

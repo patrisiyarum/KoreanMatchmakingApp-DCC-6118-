@@ -99,28 +99,13 @@ export function Discover() {
   if (profileGate) {
     return (
       <div className="size-full flex items-center justify-center p-6">
-        <div className="max-w-md text-center space-y-4">
-          <p className="text-neutral-800 font-medium">{loadError}</p>
-          <p className="text-sm text-neutral-600">
-            {t(
-              'Finish Create profile (languages, bio, interests, photo) or update Profile, then try again.',
-              '프로필 만들기에서 언어·소개·관심사·사진을 채우거나 프로필을 수정한 뒤 다시 시도하세요.'
-            )}
-          </p>
-          <div className="flex flex-wrap gap-3 justify-center">
-            <Link
-              to="/create-profile"
-              className="inline-flex items-center justify-center rounded-lg bg-violet-600 text-white px-4 py-2 text-sm font-medium hover:bg-violet-700"
-            >
-              {t('Create profile', '프로필 만들기')}
-            </Link>
-            <Link
-              to="/profile"
-              className="inline-flex items-center justify-center rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-50"
-            >
-              {t('Profile', '프로필')}
-            </Link>
-          </div>
+        <div className="max-w-md flex justify-center">
+          <Link
+            to="/create-profile"
+            className="inline-flex items-center justify-center rounded-lg bg-violet-600 text-white px-5 py-2.5 text-sm font-medium hover:bg-violet-700 shadow-sm"
+          >
+            {t('Create profile', '프로필 만들기')}
+          </Link>
         </div>
       </div>
     );

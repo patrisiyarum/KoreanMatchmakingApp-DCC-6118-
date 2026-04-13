@@ -53,7 +53,7 @@ export function CreateProfile() {
       ]);
       if (profileMeetsDiscoverMinimum(payload)) {
         skipSpinnerOff = true;
-        navigate('/home', { replace: true });
+        navigate('/profile', { replace: true });
         return;
       }
       if (account) {

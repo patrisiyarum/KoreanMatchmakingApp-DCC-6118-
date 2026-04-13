@@ -6,8 +6,39 @@ let user_id = null
 const errorMessage = "Invalid username or password!";
 
 function isMissingBioColumnError(err) {
-    const msg = String(err?.message || err || '');
-    return /unknown column ['"]?bio['"]?|ER_BAD_FIELD_ERROR/i.test(msg);
+    let e = err;
+    for (let i = 0; i < 8 && e; i++) {
+        const msg = String(e.message || e.sqlMessage || e.sql || '');
+        if (/\bbio\b/i.test(msg) && /unknown column|field list|ER_BAD_FIELD_ERROR|1054/i.test(msg)) {
+            return true;
+        }
+        if ((e.code === 'ER_BAD_FIELD_ERROR' || e.errno === 1054) && /\bbio\b/i.test(msg)) {
+            return true;
+        }
+        e = e.parent || e.original || e.cause;
+    }
+    return false;
+}
+
+/** If true, `UserProfile.bio` exists (cached). Absence of cache means “unknown / re-check”. */
+let userProfileBioColumnKnownTrue = false;
+async function userProfileBioColumnExists() {
+    if (userProfileBioColumnKnownTrue) return true;
+    try {
+        const [rows] = await sequelize.query(
+            `SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME IN ('UserProfile', 'userprofile')
+               AND COLUMN_NAME = 'bio'`
+        );
+        const row = rows && rows[0];
+        const c = row && (row.c ?? row.C);
+        const exists = Number(c) > 0;
+        if (exists) userProfileBioColumnKnownTrue = true;
+        return exists;
+    } catch {
+        return false;
+    }
 }
 let handleUserLogin = (email, password) => {
     return new Promise(async (resolve, reject) => {
@@ -155,6 +186,9 @@ let handleProfileCreation = (id, native_language, target_language, target_langua
             if (bio != null && String(bio).trim() !== '') {
                 profileFields.bio = String(bio).trim().slice(0, 2000);
             }
+            if (profileFields.bio != null && !(await userProfileBioColumnExists())) {
+                delete profileFields.bio;
+            }
             let userProfile = await db.UserProfile.findByPk(id);
             if (save) {
                 try {
@@ -241,6 +275,10 @@ let handleProfileUpdate = (id, native_language, target_language, target_language
                           ? null
                           : String(bio).trim().slice(0, 2000),
             };
+
+            if (upsertFields.bio != null && !(await userProfileBioColumnExists())) {
+                delete upsertFields.bio;
+            }
 
             try {
                 await db.UserProfile.upsert(upsertFields);

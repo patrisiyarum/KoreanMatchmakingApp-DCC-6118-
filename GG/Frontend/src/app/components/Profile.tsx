@@ -14,7 +14,12 @@ import {
   updateProfile,
   uploadProfileImage,
   type ProfileOptions,
+  type ProfileRow,
 } from '@/api/profileApi';
+
+function profilePayloadHasBioKey(profile: Record<string, unknown> | null | undefined): boolean {
+  return profile != null && Object.prototype.hasOwnProperty.call(profile, 'bio');
+}
 
 const PROFICIENCIES = ['Beginner', 'Elementary', 'Intermediate', 'Proficient', 'Fluent'];
 
@@ -46,16 +51,19 @@ export function Profile() {
   const [age, setAge] = useState(22);
   const [gender, setGender] = useState('Other');
   const [profession, setProfession] = useState('Other');
+  const warnedBioColumnRef = useRef(false);
 
-  const load = useCallback(async () => {
-    if (!userId) return;
+  const load = useCallback(async (): Promise<ProfileRow | null> => {
+    if (!userId) return null;
     setLoading(true);
+    let profile: ProfileRow | null = null;
     try {
-      const [account, profile, options] = await Promise.all([
+      const [account, profileRow, options] = await Promise.all([
         fetchUserAccount(userId),
         fetchUserProfilePayload(userId),
         fetchProfileOptions(),
       ]);
+      profile = profileRow;
       setOpts(options);
       if (account) {
         setFirstName(account.firstName || '');
@@ -64,7 +72,10 @@ export function Profile() {
       }
       if (profile && profile.id != null) {
         setHasProfile(true);
-        setBio(profile.bio ?? '');
+        const raw = profile as Record<string, unknown>;
+        if (profilePayloadHasBioKey(raw)) {
+          setBio(profile.bio == null ? '' : String(profile.bio));
+        }
         setNativeLanguage(profile.native_language || 'English');
         setTargetLanguage(profile.target_language || 'Korean');
         setProficiency(profile.target_language_proficiency || 'Beginner');
@@ -76,6 +87,7 @@ export function Profile() {
         setProfession(profile.profession || 'Other');
       } else {
         setHasProfile(false);
+        setBio('');
         setLearningGoal(options?.learningGoals[0] || '');
         setCommunicationStyle(options?.communicationStyles[0] || '');
         setCommitmentLevel(options?.commitmentLevel.default ?? 3);
@@ -86,6 +98,7 @@ export function Profile() {
     } finally {
       setLoading(false);
     }
+    return profile;
   }, [userId, t]);
 
   useEffect(() => {
@@ -187,7 +200,24 @@ export function Profile() {
         }
         toast.success(t('Profile saved', '프로필이 저장되었습니다'));
       }
-      await load();
+      const bioBeforeReload = bio.trim();
+      const profileAfter = await load();
+      const rawAfter = profileAfter as Record<string, unknown> | null;
+      if (
+        bioBeforeReload &&
+        profileAfter?.id != null &&
+        !profilePayloadHasBioKey(rawAfter) &&
+        !warnedBioColumnRef.current
+      ) {
+        warnedBioColumnRef.current = true;
+        toast.warning(
+          t(
+            'Bio is not stored on the server yet (database may be missing the UserProfile.bio column). Your text stays in this form until you refresh. Run migration 22 or import schema.mysql.sql.',
+            '서버에 bio 컬럼이 없어 소개가 저장되지 않을 수 있습니다. 마이그레이션 22 또는 schema.mysql.sql을 적용하세요.'
+          ),
+          { duration: 8000 }
+        );
+      }
     } catch (e: unknown) {
       console.error(e);
       const ax = e as { response?: { data?: { message?: string } }; message?: string };

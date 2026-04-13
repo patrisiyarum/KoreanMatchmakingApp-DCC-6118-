@@ -158,11 +158,11 @@ export function CreateProfile() {
               className="relative"
               aria-label={t('Upload profile photo', '프로필 사진 업로드')}
             >
-              <span className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-neutral-200 bg-neutral-100 shadow-sm">
+              <span className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-neutral-200 bg-neutral-100 shadow-sm">
                 {photoSrc ? (
                   <img src={photoSrc} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <UserRound className="h-10 w-10 text-neutral-500" />
+                  <UserRound className="h-12 w-12 text-neutral-500" />
                 )}
               </span>
               <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-white shadow-sm">

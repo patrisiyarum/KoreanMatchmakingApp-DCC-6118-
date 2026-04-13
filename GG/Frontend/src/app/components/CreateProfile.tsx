@@ -148,6 +148,50 @@ export function CreateProfile() {
   return (
     <div className="w-full max-w-lg mx-auto px-4 py-4 sm:py-6 pb-10">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full">
+        <div className="flex flex-col items-center text-center mb-5 sm:mb-6">
+          <label className="block text-xs sm:text-sm font-medium text-neutral-700 mb-2">
+            {t('Profile photo', '프로필 사진')}{' '}
+            <span className="text-neutral-500 font-normal">({t('optional', '선택')})</span>
+          </label>
+          <button
+            type="button"
+            onClick={() => photoRef.current?.click()}
+            className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-neutral-100 border-2 border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 hover:border-blue-300 transition-colors overflow-hidden shadow-sm mx-auto"
+            aria-label={t('Upload profile photo', '프로필 사진 업로드')}
+          >
+            {displayedPhotoSrc ? (
+              <img src={displayedPhotoSrc} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <Camera className="w-10 h-10 sm:w-12 sm:h-12" />
+            )}
+            <span className="absolute bottom-1 right-1 w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md border-2 border-white">
+              <Camera className="w-4 h-4" />
+            </span>
+          </button>
+          <input
+            ref={photoRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setPendingPhoto(file);
+              setPhotoPreview(URL.createObjectURL(file));
+              e.target.value = '';
+            }}
+          />
+          <p className="text-[11px] sm:text-xs text-neutral-500 mt-3 max-w-[280px] mx-auto leading-snug">
+            {t(
+              'Shown on Discover and in Profile. Tap to choose — uploads when you continue.',
+              '디스커버와 프로필에 표시됩니다. 탭해서 선택 · 계속할 때 업로드됩니다.'
+            )}
+          </p>
+          {pendingPhoto ? (
+            <p className="text-xs text-blue-600 mt-1">{t('New photo ready — tap Continue to upload.', '새 사진 준됨 — 계속을 누르면 업로드됩니다.')}</p>
+          ) : null}
+        </div>
+
         <div className="text-center mb-5 sm:mb-6">
           <div className="text-4xl sm:text-5xl mb-2">🇰🇷 🇺🇸</div>
           <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-1">
@@ -254,50 +298,6 @@ export function CreateProfile() {
               placeholder="Short intro for Discover • 디스커버용 짧은 소개"
               className="w-full px-3 py-2 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none sm:resize-y min-h-[64px]"
             />
-          </div>
-
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-neutral-700 mb-1.5">
-              {t('Profile photo', '프로필 사진')}{' '}
-              <span className="text-neutral-500 font-normal text-xs">({t('optional', '선택')})</span>
-            </label>
-            <p className="text-[11px] sm:text-xs text-neutral-500 mb-2">
-              {t(
-                'Shown on your Discover card and in the header Profile screen.',
-                '디스커버 카드와 상단 프로필 화면에 표시됩니다.'
-              )}
-            </p>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => photoRef.current?.click()}
-                className="relative w-14 h-14 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 shrink-0 overflow-hidden"
-              >
-                {displayedPhotoSrc ? (
-                  <img src={displayedPhotoSrc} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <Camera className="w-5 h-5" />
-                )}
-              </button>
-              <input
-                ref={photoRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  setPendingPhoto(file);
-                  setPhotoPreview(URL.createObjectURL(file));
-                  e.target.value = '';
-                }}
-              />
-              <p className="text-xs text-neutral-600 leading-snug">
-                {pendingPhoto
-                  ? t('New photo uploads when you tap Continue.', '새 사진은 계속을 누르면 업로드됩니다.')
-                  : t('Tap the circle to choose a file. Change anytime under Profile.', '원을 눌러 파일을 고르세요. 프로필에서 언제든 바꿀 수 있어요.')}
-              </p>
-            </div>
           </div>
 
           <button

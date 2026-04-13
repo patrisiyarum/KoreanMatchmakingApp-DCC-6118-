@@ -35,14 +35,6 @@ function imageUrl(path: string | null | undefined): string | null {
   return `${getApiBase()}${path}`;
 }
 
-function fieldLabel(text: string) {
-  return (
-    <div className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5">
-      {text}
-    </div>
-  );
-}
-
 export function Profile() {
   const { userId } = useAuth();
   const { t } = useLanguage();
@@ -284,7 +276,7 @@ export function Profile() {
   if (!userId) {
     return (
       <div className="p-6 text-center text-neutral-600">
-        <Link to="/login" className="font-medium text-violet-600 hover:text-violet-700">
+        <Link to="/login" className="text-blue-600 font-medium">
           {t('Sign in to edit your profile', '로그인하여 프로필을 편집하세요')}
         </Link>
       </div>
@@ -294,7 +286,7 @@ export function Profile() {
   if (loading) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -303,268 +295,274 @@ export function Profile() {
 
   const saveLabel = hasProfile ? t('Save changes', '변경 저장') : t('Create profile', '프로필 만들기');
   const saveDisabled = saving || interests.filter((n) => n.trim()).length === 0;
-  const displayName =
-    [firstName, lastName].filter(Boolean).join(' ').trim() || t('My profile', '내 프로필');
-
-  const inputClass =
-    'w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500';
-  const selectClass =
-    'w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500';
+  const primarySaveClass =
+    'rounded-xl bg-blue-600 text-white py-2 px-4 text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 shrink-0';
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-2xl max-h-[calc(100dvh-8rem)] flex-col px-4 py-3 sm:max-h-[calc(100dvh-9rem)] sm:px-5 sm:py-4">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-lg">
-        <div className="shrink-0 bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 px-5 pb-5 pt-5 text-center sm:px-6 sm:pb-6 sm:pt-6">
-          <div className="mb-2 flex justify-center">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="relative block"
-                title={t('Change photo', '사진 변경')}
-              >
-                <span className="block h-20 w-20 overflow-hidden rounded-full border-4 border-white/40 shadow-md sm:h-24 sm:w-24">
-                  {photoSrc ? (
-                    <img src={photoSrc} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="flex h-full w-full items-center justify-center bg-white/10 text-2xl font-semibold text-white">
-                      {(firstName[0] || '?').toUpperCase()}
-                    </span>
-                  )}
-                </span>
-                {!photoSrc ? (
-                  <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-white text-violet-700 shadow-md hover:bg-violet-50">
-                    <Camera className="h-3.5 w-3.5" />
-                  </span>
-                ) : null}
-              </button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
-                className="hidden"
-                onChange={handlePhoto}
+    <div className="flex min-h-0 max-h-[calc(100dvh-10rem)] sm:max-h-[calc(100dvh-11rem)] max-w-lg mx-auto w-full flex-col px-3 pt-2 pb-2 gap-2">
+      <div className="shrink-0 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl font-bold text-neutral-900 leading-tight">{t('My profile', '내 프로필')}</h1>
+          <p className="text-[11px] sm:text-xs text-neutral-600 mt-0.5">
+            {t('Photo, bio, interests, and languages', '사진, 소개, 관심사, 언어')}
+          </p>
+        </div>
+        <button type="button" disabled={saveDisabled} onClick={handleSave} className={primarySaveClass}>
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          {saveLabel}
+        </button>
+      </div>
+
+      <div className="flex-1 min-h-0 flex flex-col rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-4">
+        <div className="flex flex-col items-center gap-2">
+          <div className="relative">
+            {photoSrc ? (
+              <img
+                src={photoSrc}
+                alt=""
+                className="w-24 h-24 rounded-full object-cover border-2 border-neutral-100"
               />
-            </div>
-          </div>
-          <h1 className="text-xl font-bold text-white sm:text-2xl">{t('My profile', '내 프로필')}</h1>
-          <p className="mt-0.5 text-base font-semibold text-white/95 sm:text-lg">{displayName}</p>
-          <div className="mt-1.5 flex items-center justify-center gap-2 text-xs text-white/90 sm:text-sm">
-            <span>{nativeLanguage}</span>
-            <span aria-hidden>↔</span>
-            <span>{targetLanguage}</span>
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-neutral-200 flex items-center justify-center text-2xl text-neutral-500">
+                {(firstName[0] || '?').toUpperCase()}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md hover:bg-blue-700"
+              title={t('Change photo', '사진 변경')}
+            >
+              <Camera className="w-4 h-4" />
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              className="hidden"
+              onChange={handlePhoto}
+            />
           </div>
           {photoSrc ? (
             <button
               type="button"
               onClick={handleRemovePhoto}
-              className="mt-3 text-sm font-medium text-white/90 underline-offset-2 hover:text-white hover:underline"
+              className="text-xs text-red-600 hover:underline"
             >
               {t('Remove photo', '사진 제거')}
             </button>
           ) : null}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-hidden p-4 pb-5 space-y-3 sm:p-5 sm:pb-6 sm:space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              {fieldLabel(t('First name', '이름'))}
-              <input
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-            <div>
-              {fieldLabel(t('Last name', '성'))}
-              <input
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-          </div>
-
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            {fieldLabel(t('Bio', '소개'))}
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              rows={2}
-              maxLength={2000}
-              placeholder={t('Tell partners about yourself…', '파트너에게 자신을 소개해 보세요…')}
-              className={`${inputClass} min-h-[56px] resize-none`}
+            <label className="block text-xs font-medium text-neutral-700 mb-1">
+              {t('First name', '이름')}
+            </label>
+            <input
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-sm"
             />
-            <p className="mt-1 text-xs text-neutral-400">{bio.length}/2000</p>
           </div>
-
           <div>
-            {fieldLabel(
-              `${t('Interests', '관심사')} · ${t('at least one', '하나 이상')}`
-            )}
-            <div className="grid grid-cols-4 gap-1.5">
-              {PROFILE_INTEREST_OPTIONS.map((interest) => (
-                <button
-                  key={interest}
-                  type="button"
-                  onClick={() => toggleInterest(interest)}
-                  className={`rounded-full px-2 py-1.5 text-[11px] font-medium transition-colors ${
-                    interests.includes(interest)
-                      ? 'bg-violet-600 text-white shadow-sm'
-                      : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                  }`}
-                >
-                  {interest}
-                </button>
-              ))}
-            </div>
-            {extraInterests.length > 0 ? (
-              <div className="mt-3">
-                <p className="mb-1.5 text-xs font-medium text-neutral-500">{t('Other interests', '기타 관심사')}</p>
-                <div className="flex flex-wrap gap-2">
-                  {extraInterests.map((name) => (
-                    <span
-                      key={name}
-                      className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-800"
+            <label className="block text-xs font-medium text-neutral-700 mb-1">
+              {t('Last name', '성')}
+            </label>
+            <input
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-sm"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-neutral-700 mb-1">
+            {t('Bio', '소개')}
+          </label>
+          <textarea
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            rows={3}
+            maxLength={2000}
+            placeholder={t('Tell partners about yourself…', '파트너에게 자신을 소개해 보세요…')}
+            className="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-sm resize-none min-h-[72px]"
+          />
+          <p className="text-[11px] text-neutral-400 mt-0.5">{bio.length}/2000</p>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-neutral-700 mb-1.5">
+            {t('Interests', '관심사')}{' '}
+            <span className="text-neutral-500 font-normal">({t('at least one', '하나 이상')})</span>
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+            {PROFILE_INTEREST_OPTIONS.map((interest) => (
+              <button
+                key={interest}
+                type="button"
+                onClick={() => toggleInterest(interest)}
+                className={`px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium transition-colors ${
+                  interests.includes(interest)
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                }`}
+              >
+                {interest}
+              </button>
+            ))}
+          </div>
+          {extraInterests.length > 0 ? (
+            <div className="mt-3">
+              <p className="text-xs text-neutral-500 mb-1.5">{t('Other interests', '기타 관심사')}</p>
+              <div className="flex flex-wrap gap-2">
+                {extraInterests.map((name) => (
+                  <span
+                    key={name}
+                    className="inline-flex items-center gap-1 rounded-full bg-neutral-200 px-2.5 py-1 text-xs font-medium text-neutral-800"
+                  >
+                    {name}
+                    <button
+                      type="button"
+                      onClick={() => removeInterest(name)}
+                      className="rounded-full p-0.5 hover:bg-neutral-300 leading-none"
+                      aria-label={t('Remove', '제거')}
                     >
-                      {name}
-                      <button
-                        type="button"
-                        onClick={() => removeInterest(name)}
-                        className="rounded-full p-0.5 leading-none hover:bg-neutral-200"
-                        aria-label={t('Remove', '제거')}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
+                      ×
+                    </button>
+                  </span>
+                ))}
               </div>
-            ) : null}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              {fieldLabel(t('I speak', '모국어'))}
-              <select
-                value={nativeLanguage}
-                onChange={(e) => setNativeLanguage(e.target.value)}
-                className={selectClass}
-              >
-                <option>English</option>
-                <option>Korean</option>
-              </select>
             </div>
-            <div>
-              {fieldLabel(t('Learning', '배우는 언어'))}
-              <select
-                value={targetLanguage}
-                onChange={(e) => setTargetLanguage(e.target.value)}
-                className={selectClass}
-              >
-                <option>Korean</option>
-                <option>English</option>
-              </select>
-            </div>
-          </div>
+          ) : null}
+        </div>
 
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            {fieldLabel(t('Level', '레벨'))}
+            <label className="block text-xs font-medium text-neutral-700 mb-1">
+              {t('I speak', '모국어')}
+            </label>
             <select
-              value={proficiency}
-              onChange={(e) => setProficiency(e.target.value)}
-              className={selectClass}
+              value={nativeLanguage}
+              onChange={(e) => setNativeLanguage(e.target.value)}
+              className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
             >
-              {PROFICIENCIES.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
+              <option>English</option>
+              <option>Korean</option>
             </select>
           </div>
+          <div>
+            <label className="block text-xs font-medium text-neutral-700 mb-1">
+              {t('Learning', '배우는 언어')}
+            </label>
+            <select
+              value={targetLanguage}
+              onChange={(e) => setTargetLanguage(e.target.value)}
+              className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
+            >
+              <option>Korean</option>
+              <option>English</option>
+            </select>
+          </div>
+        </div>
 
-          {!hasProfile ? (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                {fieldLabel('Age')}
-                <input
-                  type="number"
-                  min={13}
-                  max={120}
-                  value={age}
-                  onChange={(e) => setAge(Number(e.target.value))}
-                  className={inputClass}
-                />
-              </div>
-              <div>
-                {fieldLabel('Gender')}
-                <select
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value)}
-                  className={selectClass}
-                >
-                  <option>Male</option>
-                  <option>Female</option>
-                  <option>Other</option>
-                </select>
-              </div>
-            </div>
-          ) : null}
-
-          {opts ? (
-            <>
-              <div>
-                {fieldLabel(t('Learning goal', '학습 목표'))}
-                <select
-                  value={learningGoal}
-                  onChange={(e) => setLearningGoal(e.target.value)}
-                  className={selectClass}
-                >
-                  {opts.learningGoals.map((g) => (
-                    <option key={g} value={g}>
-                      {g}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                {fieldLabel(t('Communication style', '소통 스타일'))}
-                <select
-                  value={communicationStyle}
-                  onChange={(e) => setCommunicationStyle(e.target.value)}
-                  className={selectClass}
-                >
-                  {opts.communicationStyles.map((g) => (
-                    <option key={g} value={g}>
-                      {g}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                {fieldLabel(t('Commitment (1–5)', '참여도 (1–5)'))}
-                <input
-                  type="range"
-                  min={opts.commitmentLevel.min}
-                  max={opts.commitmentLevel.max}
-                  value={commitmentLevel}
-                  onChange={(e) => setCommitmentLevel(Number(e.target.value))}
-                  className="w-full accent-violet-600"
-                />
-                <p className="mt-0.5 text-xs text-neutral-500">{commitmentLevel}</p>
-              </div>
-            </>
-          ) : null}
-
-          <button
-            type="button"
-            disabled={saveDisabled}
-            onClick={handleSave}
-            className="mb-1 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+        <div>
+          <label className="block text-xs font-medium text-neutral-700 mb-1">
+            {t('Level', '레벨')}
+          </label>
+          <select
+            value={proficiency}
+            onChange={(e) => setProficiency(e.target.value)}
+            className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
           >
-            {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-            {saveLabel}
-          </button>
+            {PROFICIENCIES.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {!hasProfile ? (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-neutral-700 mb-1">Age</label>
+              <input
+                type="number"
+                min={13}
+                max={120}
+                value={age}
+                onChange={(e) => setAge(Number(e.target.value))}
+                className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-neutral-700 mb-1">Gender</label>
+              <select
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
+              >
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+        ) : null}
+
+        {opts ? (
+          <>
+            <div>
+              <label className="block text-xs font-medium text-neutral-700 mb-1">
+                {t('Learning goal', '학습 목표')}
+              </label>
+              <select
+                value={learningGoal}
+                onChange={(e) => setLearningGoal(e.target.value)}
+                className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
+              >
+                {opts.learningGoals.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-neutral-700 mb-1">
+                {t('Communication style', '소통 스타일')}
+              </label>
+              <select
+                value={communicationStyle}
+                onChange={(e) => setCommunicationStyle(e.target.value)}
+                className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
+              >
+                {opts.communicationStyles.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-neutral-700 mb-1">
+                {t('Commitment (1–5)', '참여도 (1–5)')}
+              </label>
+              <input
+                type="range"
+                min={opts.commitmentLevel.min}
+                max={opts.commitmentLevel.max}
+                value={commitmentLevel}
+                onChange={(e) => setCommitmentLevel(Number(e.target.value))}
+                className="w-full"
+              />
+              <p className="text-[11px] text-neutral-500">{commitmentLevel}</p>
+            </div>
+          </>
+        ) : null}
         </div>
       </div>
     </div>

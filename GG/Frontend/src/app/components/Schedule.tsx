@@ -250,8 +250,16 @@ export function Schedule() {
       const slots = gridKeysToApiSlots(myKeys);
       await replaceUserAvailability(userId, slots);
       toast.success(t('Availability saved', '가능 시간이 저장되었습니다'));
-    } catch {
-      toast.error(t('Save failed', '저장 실패'));
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string } }; message?: string };
+      const serverMsg = ax.response?.data?.message;
+      toast.error(
+        serverMsg ||
+          t(
+            'Save failed. Is the backend running? Complete your profile if you have not.',
+            '저장 실패. 백엔드가 켜져 있는지 확인하고, 프로필을 먼저 저장하세요.'
+          )
+      );
     } finally {
       setSavingAvail(false);
     }

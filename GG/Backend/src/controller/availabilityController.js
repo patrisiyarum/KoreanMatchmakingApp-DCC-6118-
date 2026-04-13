@@ -3,6 +3,9 @@ import availabilityService from '../Service/availabilityService.js';
 let getAvailability = async (req, res) => {
     try {
         const userId = +req.params.userId;
+        if (!Number.isFinite(userId) || userId <= 0) {
+            return res.status(400).json({ message: 'Invalid user id' });
+        }
         const slots = await availabilityService.getAvailability(userId);
         return res.status(200).json(slots);
     } catch (e) {
@@ -40,12 +43,21 @@ let removeAvailability = async (req, res) => {
 let replaceAvailability = async (req, res) => {
     try {
         const userId = +req.params.userId;
+        if (!Number.isFinite(userId) || userId <= 0) {
+            return res.status(400).json({ message: 'Invalid user id' });
+        }
         const { slots } = req.body;
         if (!Array.isArray(slots)) return res.status(400).json({ message: 'time slots array required' });
         const created = await availabilityService.replaceAvailability(userId, slots);
         return res.status(200).json(created);
     } catch (e) {
-        return res.status(500).json({ message: 'Failed to replace availability' });
+        if (e && e.status === 400 && e.code === 'PROFILE_REQUIRED') {
+            return res.status(400).json({ message: e.message, code: e.code });
+        }
+        console.error('replaceAvailability:', e);
+        return res.status(500).json({
+            message: e?.message || 'Failed to replace availability',
+        });
     }
 }
 

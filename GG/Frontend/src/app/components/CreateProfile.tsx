@@ -159,9 +159,6 @@ export function CreateProfile() {
           <h2 className="text-base sm:text-lg font-bold text-neutral-900 leading-tight">
             {t('Create your profile', '프로필 만들기')}
           </h2>
-          <p className="text-[11px] sm:text-xs text-neutral-500 mt-0.5">
-            {t('Shown on Discover', '디스커버에 표시')}
-          </p>
         </div>
 
         <div className="flex-1 min-h-0 flex flex-col rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
@@ -199,11 +196,8 @@ export function CreateProfile() {
                   e.target.value = '';
                 }}
               />
-              <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-2 max-w-[260px] leading-snug">
-                {t('Tap to choose · uploads when you continue.', '탭해서 선택 · 계속할 때 업로드')}
-              </p>
               {pendingPhoto ? (
-                <p className="text-[10px] text-blue-600 mt-0.5">{t('Ready to upload', '업로드 준비됨')}</p>
+                <p className="text-[10px] text-blue-600 mt-2">{t('Ready to upload', '업로드 준비됨')}</p>
               ) : null}
             </div>
 
@@ -306,9 +300,7 @@ export function CreateProfile() {
                 {t('Skip for now', '나중에 하기')}
               </Link>
             </p>
-          </div>
 
-          <div className="shrink-0 border-t border-neutral-200 bg-neutral-50 px-3 py-2.5">
             <button
               type="button"
               onClick={handleContinue}

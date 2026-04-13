@@ -335,12 +335,6 @@ export function Schedule() {
                 <h3 className="font-semibold text-neutral-900 mb-1">
                   {t('Set Your Available Times', '가능한 시간 설정')}
                 </h3>
-                <p className="text-sm text-neutral-600">
-                  {t(
-                    'Green = you. Amber = partner (read-only overlay). Teal = both free — great meeting times.',
-                    '초록 = 나. 호박색 = 파트너(참고). 청록 = 둘 다 가능 — 미팅 추천 시간.'
-                  )}
-                </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -510,13 +504,7 @@ export function Schedule() {
               <h3 className="text-xl font-bold text-neutral-900 mb-1">
                 {t('Schedule Meeting', '미팅 예약')}
               </h3>
-              <p className="text-sm text-neutral-600 mb-4">
-                {t(
-                  'Green = you, amber = partner, teal = both free. Tap a teal cell, then schedule (1 hour).',
-                  '초록 = 나, 호박색 = 파트너, 청록 = 둘 다 가능. 청록 칸을 누른 뒤 예약하세요(1시간).'
-                )}
-              </p>
-              <div className="space-y-4">
+              <div className="space-y-4 mt-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     {t('Partner', '파트너')}

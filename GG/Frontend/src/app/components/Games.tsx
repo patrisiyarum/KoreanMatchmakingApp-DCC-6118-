@@ -573,9 +573,6 @@ export function Games() {
                               }}
                             />
                           </div>
-                          <p className="text-xs text-neutral-600">
-                            {t('JPG or PNG. Shown on Discover and partner lists.', 'JPG/PNG. 디스커버와 파트너 목록에 표시됩니다.')}
-                          </p>
                         </div>
 
                         <div>

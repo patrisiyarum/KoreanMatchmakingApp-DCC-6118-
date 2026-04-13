@@ -5,9 +5,10 @@ import { Camera, ChevronRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
-import { saveWelcomeProfile } from '@/api/matchmakingProfileApi';
+import { fetchUserInterestNames, saveWelcomeProfile } from '@/api/matchmakingProfileApi';
 import { fetchUserAccount, fetchUserProfilePayload, uploadProfileImage } from '@/api/profileApi';
 import { publicAssetUrl } from '../utils/profileImage';
+import { PROFILE_INTEREST_OPTIONS } from '../constants/profileInterests';
 
 function profileMeetsDiscoverMinimum(p: Awaited<ReturnType<typeof fetchUserProfilePayload>>): boolean {
   if (!p?.id) return false;
@@ -44,27 +45,15 @@ export function CreateProfile() {
     bio: '',
   });
 
-  const interestOptions = [
-    'K-pop',
-    'Gaming',
-    'Cooking',
-    'Movies',
-    'Sports',
-    'Art',
-    'Music',
-    'Technology',
-    'Travel',
-    'Anime',
-  ];
-
   const load = useCallback(async () => {
     if (!userId) return;
     setBootLoading(true);
     let skipSpinnerOff = false;
     try {
-      const [account, payload] = await Promise.all([
+      const [account, payload, interestNames] = await Promise.all([
         fetchUserAccount(userId),
         fetchUserProfilePayload(userId),
+        fetchUserInterestNames(userId).catch(() => [] as string[]),
       ]);
       if (profileMeetsDiscoverMinimum(payload)) {
         skipSpinnerOff = true;
@@ -77,6 +66,12 @@ export function CreateProfile() {
         setServerPhotoPath(account.profileImage && String(account.profileImage).trim() ? account.profileImage : null);
       } else {
         setServerPhotoPath(null);
+      }
+      if (interestNames.length > 0) {
+        setProfile((prev) => ({
+          ...prev,
+          interests: [...new Set([...prev.interests, ...interestNames])],
+        }));
       }
     } catch {
       /* stay on form */
@@ -136,6 +131,9 @@ export function CreateProfile() {
   };
 
   const displayedPhotoSrc = photoPreview || publicAssetUrl(serverPhotoPath);
+  const canContinue = Boolean(profile.name.trim()) && profile.interests.length > 0;
+  const continueClass =
+    'rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base py-2.5 px-5 w-full sm:w-auto shrink-0';
 
   if (bootLoading) {
     return (
@@ -146,7 +144,7 @@ export function CreateProfile() {
   }
 
   return (
-    <div className="w-full max-w-lg mx-auto px-4 py-4 sm:py-6 pb-10">
+    <div className="w-full max-w-lg mx-auto px-4 py-4 sm:py-6 pb-4">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full">
         <div className="flex flex-col items-center text-center mb-5 sm:mb-6">
           <label className="block text-xs sm:text-sm font-medium text-neutral-700 mb-2">
@@ -201,6 +199,22 @@ export function CreateProfile() {
           <p className="text-sm text-neutral-600">
             {t('Shown on Discover and when you match', '디스커버와 매칭에 표시돼요')}
           </p>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
+          <p className="text-xs text-neutral-500">
+            {t('Continue is pinned below while you scroll.', '스크롤해도 아래에 계속 버튼이 보여요')}
+          </p>
+          <button
+            type="button"
+            onClick={handleContinue}
+            disabled={starting || !canContinue}
+            className={continueClass}
+          >
+            {starting ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+            <span>{t('Continue to Discover', '디스커버로 계속')}</span>
+            {!starting ? <ChevronRight className="w-5 h-5" /> : null}
+          </button>
         </div>
 
         <div className="bg-white rounded-2xl border border-neutral-200 p-4 sm:p-5 space-y-4 shadow-sm">
@@ -268,7 +282,7 @@ export function CreateProfile() {
               <span className="text-neutral-500 font-normal text-xs">({t('at least one', '하나 이상')})</span>
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {interestOptions.map((interest) => (
+              {PROFILE_INTEREST_OPTIONS.map((interest) => (
                 <button
                   key={interest}
                   type="button"
@@ -300,22 +314,24 @@ export function CreateProfile() {
             />
           </div>
 
+          <p className="text-center pt-1">
+            <Link to="/home" className="text-sm text-neutral-500 hover:text-neutral-800 hover:underline">
+              {t('Skip for now', '나중에 하기')}
+            </Link>
+          </p>
+        </div>
+
+        <div className="sticky bottom-0 z-10 -mx-4 mt-3 border-t border-neutral-200 bg-neutral-50/95 px-4 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-neutral-50/90 shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
           <button
             type="button"
             onClick={handleContinue}
-            disabled={starting || !profile.name || profile.interests.length === 0}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
+            disabled={starting || !canContinue}
+            className="w-full rounded-xl bg-blue-600 text-white py-3 font-semibold hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {starting ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
             <span>{t('Continue to Discover', '디스커버로 계속')}</span>
             {!starting ? <ChevronRight className="w-5 h-5" /> : null}
           </button>
-
-          <p className="text-center">
-            <Link to="/home" className="text-sm text-neutral-500 hover:text-neutral-800 hover:underline">
-              {t('Skip for now', '나중에 하기')}
-            </Link>
-          </p>
         </div>
       </motion.div>
     </div>

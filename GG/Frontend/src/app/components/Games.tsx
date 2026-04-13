@@ -24,19 +24,7 @@ import {
 } from '@/api/matchmakingProfileApi';
 import { fetchUserAccount, fetchUserProfilePayload, uploadProfileImage } from '@/api/profileApi';
 import { publicAssetUrl } from '../utils/profileImage';
-
-const TEAM_INTEREST_OPTIONS = [
-  'K-pop',
-  'Gaming',
-  'Cooking',
-  'Movies',
-  'Sports',
-  'Art',
-  'Music',
-  'Technology',
-  'Travel',
-  'Anime',
-];
+import { PROFILE_INTEREST_OPTIONS } from '../constants/profileInterests';
 
 interface VocabQuestion {
   korean: string;
@@ -616,7 +604,7 @@ export function Games() {
                             <span className="text-neutral-500 font-normal">({t('choose at least one', '하나 이상')})</span>
                           </label>
                           <div className="flex flex-wrap gap-2">
-                            {TEAM_INTEREST_OPTIONS.map((label) => (
+                            {PROFILE_INTEREST_OPTIONS.map((label) => (
                               <button
                                 key={label}
                                 type="button"

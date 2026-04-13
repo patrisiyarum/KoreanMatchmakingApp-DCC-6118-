@@ -16,6 +16,12 @@ import {
   type ProfileOptions,
   type ProfileRow,
 } from '@/api/profileApi';
+import {
+  fetchUserInterestNames,
+  replaceUserInterestsApi,
+  resolveInterestIds,
+} from '@/api/matchmakingProfileApi';
+import { PROFILE_INTEREST_OPTIONS } from '../constants/profileInterests';
 
 function profilePayloadHasBioKey(profile: Record<string, unknown> | null | undefined): boolean {
   return profile != null && Object.prototype.hasOwnProperty.call(profile, 'bio');
@@ -51,17 +57,32 @@ export function Profile() {
   const [age, setAge] = useState(22);
   const [gender, setGender] = useState('Other');
   const [profession, setProfession] = useState('Other');
+  const [interests, setInterests] = useState<string[]>([]);
   const warnedBioColumnRef = useRef(false);
+
+  const optionSet = new Set<string>([...PROFILE_INTEREST_OPTIONS]);
+  const extraInterests = interests.filter((n) => !optionSet.has(n));
+
+  const toggleInterest = (label: string) => {
+    setInterests((prev) =>
+      prev.includes(label) ? prev.filter((x) => x !== label) : [...prev, label]
+    );
+  };
+
+  const removeInterest = (label: string) => {
+    setInterests((prev) => prev.filter((x) => x !== label));
+  };
 
   const load = useCallback(async (): Promise<ProfileRow | null> => {
     if (!userId) return null;
     setLoading(true);
     let profile: ProfileRow | null = null;
     try {
-      const [account, profileRow, options] = await Promise.all([
+      const [account, profileRow, options, interestNames] = await Promise.all([
         fetchUserAccount(userId),
         fetchUserProfilePayload(userId),
         fetchProfileOptions(),
+        fetchUserInterestNames(userId).catch(() => [] as string[]),
       ]);
       profile = profileRow;
       setOpts(options);
@@ -72,6 +93,7 @@ export function Profile() {
       }
       if (profile && profile.id != null) {
         setHasProfile(true);
+        setInterests(interestNames.length ? [...interestNames] : []);
         const raw = profile as Record<string, unknown>;
         if (profilePayloadHasBioKey(raw)) {
           setBio(profile.bio == null ? '' : String(profile.bio));
@@ -88,6 +110,7 @@ export function Profile() {
       } else {
         setHasProfile(false);
         setBio('');
+        setInterests([]);
         setLearningGoal(options?.learningGoals[0] || '');
         setCommunicationStyle(options?.communicationStyles[0] || '');
         setCommitmentLevel(options?.commitmentLevel.default ?? 3);
@@ -135,6 +158,11 @@ export function Profile() {
       toast.error(t('Loading options… try again.', '옵션 로딩 중… 다시 시도하세요.'));
       return;
     }
+    const trimmedInterests = [...new Set(interests.map((n) => n.trim()).filter(Boolean))];
+    if (trimmedInterests.length === 0) {
+      toast.error(t('Select at least one interest.', '관심사를 하나 이상 선택하세요.'));
+      return;
+    }
     setSaving(true);
     try {
       if (!hasProfile) {
@@ -168,6 +196,13 @@ export function Profile() {
         }
         setHasProfile(true);
         toast.success(t('Profile created', '프로필이 생성되었습니다'));
+        try {
+          const ids = await resolveInterestIds(trimmedInterests);
+          await replaceUserInterestsApi(userId, ids);
+        } catch (ie: unknown) {
+          console.error(ie);
+          toast.error(t('Could not save interests', '관심사를 저장하지 못했습니다'));
+        }
       } else {
         const res = await updateProfile({
           id: Number(userId),
@@ -199,6 +234,13 @@ export function Profile() {
           return;
         }
         toast.success(t('Profile saved', '프로필이 저장되었습니다'));
+        try {
+          const ids = await resolveInterestIds(trimmedInterests);
+          await replaceUserInterestsApi(userId, ids);
+        } catch (ie: unknown) {
+          console.error(ie);
+          toast.error(t('Could not save interests', '관심사를 저장하지 못했습니다'));
+        }
       }
       const bioBeforeReload = bio.trim();
       const profileAfter = await load();
@@ -251,14 +293,25 @@ export function Profile() {
 
   const photoSrc = imageUrl(profileImage);
 
+  const saveLabel = hasProfile ? t('Save changes', '변경 저장') : t('Create profile', '프로필 만들기');
+  const saveDisabled = saving || interests.filter((n) => n.trim()).length === 0;
+  const primarySaveClass =
+    'w-full sm:w-auto min-w-[10rem] rounded-xl bg-blue-600 text-white py-2.5 px-5 font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 shrink-0';
+
   return (
-    <div className="max-w-lg mx-auto p-6 pb-24">
-      <h1 className="text-2xl font-bold text-neutral-900 mb-1">
-        {t('My profile', '내 프로필')}
-      </h1>
-      <p className="text-sm text-neutral-600 mb-6">
-        {t('Photo, bio, and languages', '사진, 소개, 언어 설정')}
-      </p>
+    <div className="max-w-lg mx-auto px-6 pt-6 pb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-neutral-900 mb-1">{t('My profile', '내 프로필')}</h1>
+          <p className="text-sm text-neutral-600">
+            {t('Photo, bio, interests, and languages', '사진, 소개, 관심사, 언어')}
+          </p>
+        </div>
+        <button type="button" disabled={saveDisabled} onClick={handleSave} className={primarySaveClass}>
+          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+          {saveLabel}
+        </button>
+      </div>
 
       <div className="bg-white rounded-2xl border border-neutral-200 p-6 space-y-6 shadow-sm">
         <div className="flex flex-col items-center gap-3">
@@ -337,6 +390,52 @@ export function Profile() {
             className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm resize-y min-h-[100px]"
           />
           <p className="text-xs text-neutral-400 mt-1">{bio.length}/2000</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
+            {t('Interests', '관심사')}{' '}
+            <span className="text-neutral-500 font-normal text-xs">({t('at least one', '하나 이상')})</span>
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {PROFILE_INTEREST_OPTIONS.map((interest) => (
+              <button
+                key={interest}
+                type="button"
+                onClick={() => toggleInterest(interest)}
+                className={`px-2 py-2 rounded-lg text-xs font-medium transition-colors ${
+                  interests.includes(interest)
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                }`}
+              >
+                {interest}
+              </button>
+            ))}
+          </div>
+          {extraInterests.length > 0 ? (
+            <div className="mt-3">
+              <p className="text-xs text-neutral-500 mb-1.5">{t('Other interests', '기타 관심사')}</p>
+              <div className="flex flex-wrap gap-2">
+                {extraInterests.map((name) => (
+                  <span
+                    key={name}
+                    className="inline-flex items-center gap-1 rounded-full bg-neutral-200 px-2.5 py-1 text-xs font-medium text-neutral-800"
+                  >
+                    {name}
+                    <button
+                      type="button"
+                      onClick={() => removeInterest(name)}
+                      className="rounded-full p-0.5 hover:bg-neutral-300 leading-none"
+                      aria-label={t('Remove', '제거')}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -463,15 +562,12 @@ export function Profile() {
             </div>
           </>
         ) : null}
+      </div>
 
-        <button
-          type="button"
-          disabled={saving}
-          onClick={handleSave}
-          className="w-full rounded-xl bg-blue-600 text-white py-3 font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
-        >
+      <div className="sticky bottom-0 z-10 -mx-6 mt-4 border-t border-neutral-200 bg-neutral-50/95 px-6 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-neutral-50/90 shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
+        <button type="button" disabled={saveDisabled} onClick={handleSave} className="w-full rounded-xl bg-blue-600 text-white py-3 font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2">
           {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-          {hasProfile ? t('Save changes', '변경 저장') : t('Create profile', '프로필 만들기')}
+          {saveLabel}
         </button>
       </div>
     </div>

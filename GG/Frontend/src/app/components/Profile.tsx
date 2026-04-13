@@ -297,6 +297,11 @@ export function Profile() {
   const saveDisabled = saving || interests.filter((n) => n.trim()).length === 0;
   const primarySaveClass =
     'rounded-xl bg-blue-600 text-white py-2 px-4 text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 shrink-0';
+  const statsItems = [
+    { label: t('Partners', '파트너'), value: 1 },
+    { label: t('Games Played', '플레이한 게임'), value: 5 },
+    { label: t('Days Active', '활동 일수'), value: 12 },
+  ];
 
   return (
     <div className="flex min-h-0 max-h-[calc(100dvh-10rem)] sm:max-h-[calc(100dvh-11rem)] max-w-lg mx-auto w-full flex-col px-3 pt-2 pb-2 gap-2">
@@ -315,6 +320,18 @@ export function Profile() {
 
       <div className="flex-1 min-h-0 flex flex-col rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-4">
+        <div className="rounded-2xl bg-gradient-to-r from-blue-500 to-violet-500 px-4 py-4 sm:px-5 sm:py-5 text-white">
+          <p className="text-sm sm:text-base font-semibold mb-3">{t('Your Stats', '내 통계')}</p>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {statsItems.map((item) => (
+              <div key={item.label}>
+                <div className="text-3xl sm:text-4xl font-bold leading-none">{item.value}</div>
+                <div className="mt-1 text-xs sm:text-sm text-white/95">{item.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="flex flex-col items-center gap-2">
           <div className="relative">
             {photoSrc ? (

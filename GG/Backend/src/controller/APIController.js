@@ -303,7 +303,13 @@ const getDiscoverUsers = async (req, res) => {
         up.default_time_zone, up.rating, up.learning_goal, up.communication_style, up.commitment_level, up.bio,
         COALESCE(badge_counts.cnt, 0) AS badgeCount,
         badge_strip.icons AS badgeIcons,
-        LEAST(100, GREATEST(0, ROUND(100 * (${matchExpr}) / ${PROFILE_MATCH_MAX_RAW}))) AS matchScore
+        LEAST(100, GREATEST(0, ROUND(100 * (${matchExpr}) / ${PROFILE_MATCH_MAX_RAW}))) AS matchScore,
+        (
+          SELECT GROUP_CONCAT(DISTINCT i.interest_name ORDER BY i.interest_name SEPARATOR '||')
+          FROM UserInterest ui
+          INNER JOIN Interest i ON i.id = ui.interest_id
+          WHERE ui.user_id = ua.id
+        ) AS interestNames
       FROM useraccount ua
       INNER JOIN UserProfile up ON up.id = ua.id
       INNER JOIN UserProfile rp ON rp.id = ?
@@ -352,7 +358,13 @@ const getDiscoverUsers = async (req, res) => {
           up.default_time_zone, up.rating,
           NULL AS learning_goal, NULL AS communication_style, NULL AS commitment_level, NULL AS bio,
           0 AS badgeCount, NULL AS badgeIcons,
-          0 AS matchScore
+          0 AS matchScore,
+          (
+            SELECT GROUP_CONCAT(DISTINCT i.interest_name ORDER BY i.interest_name SEPARATOR '||')
+            FROM UserInterest ui
+            INNER JOIN Interest i ON i.id = ui.interest_id
+            WHERE ui.user_id = ua.id
+          ) AS interestNames
         FROM useraccount ua
         INNER JOIN UserProfile up ON up.id = ua.id
         INNER JOIN UserProfile rp ON rp.id = ?

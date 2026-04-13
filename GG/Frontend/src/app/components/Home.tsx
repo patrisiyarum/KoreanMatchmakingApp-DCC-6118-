@@ -1,20 +1,28 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { ChevronRight } from 'lucide-react';
+import { Camera, ChevronRight, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { saveWelcomeProfile } from '@/api/matchmakingProfileApi';
+import { uploadProfileImage } from '@/api/profileApi';
 
 export function Home() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { userId } = useAuth();
+  const photoRef = useRef<HTMLInputElement>(null);
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
   const [profile, setProfile] = useState({
     name: '',
     nativeLanguage: 'English',
     learningLanguage: 'Korean',
     interests: [] as string[],
     level: 'Beginner',
+    bio: '',
   });
 
   const interestOptions = [
@@ -31,13 +39,45 @@ export function Home() {
     }));
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (!(profile.name && profile.interests.length > 0)) return;
     if (!userId) {
       navigate('/login');
       return;
     }
-    navigate('/discover');
+    const trimmed = profile.name.trim();
+    const parts = trimmed.split(/\s+/);
+    const firstName = parts[0] || 'User';
+    const lastName = parts.slice(1).join(' ') || '';
+    setStarting(true);
+    try {
+      const res = await saveWelcomeProfile({
+        userId,
+        firstName,
+        lastName,
+        nativeLanguage: profile.nativeLanguage,
+        learningLanguage: profile.learningLanguage,
+        proficiency: profile.level,
+        interestNames: profile.interests,
+        bio: profile.bio,
+      });
+      if (!res.ok) {
+        toast.error(res.message || 'Could not save your profile');
+        return;
+      }
+      if (pendingPhoto) {
+        try {
+          await uploadProfileImage(userId, pendingPhoto);
+        } catch {
+          toast.error('Photo upload failed — you can add one later in Profile.');
+        }
+      }
+      navigate('/discover');
+    } catch {
+      toast.error('Could not save your profile');
+    } finally {
+      setStarting(false);
+    }
   };
 
   return (
@@ -127,6 +167,7 @@ export function Home() {
               {interestOptions.map(interest => (
                 <button
                   key={interest}
+                  type="button"
                   onClick={() => toggleInterest(interest)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                     profile.interests.includes(interest)
@@ -140,15 +181,70 @@ export function Home() {
             </div>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-2">
+              Bio <span className="text-neutral-500">소개</span>{' '}
+              <span className="text-xs text-neutral-500 font-normal">(optional)</span>
+            </label>
+            <textarea
+              value={profile.bio}
+              onChange={(e) => setProfile((prev) => ({ ...prev, bio: e.target.value }))}
+              rows={3}
+              maxLength={2000}
+              placeholder="A short intro for your Discover card • 디스커버 카드에 보일 짧은 소개"
+              className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-y min-h-[80px]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-2">
+              Profile photo <span className="text-neutral-500">프로필 사진</span>{' '}
+              <span className="text-xs text-neutral-500 font-normal">(optional)</span>
+            </label>
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => photoRef.current?.click()}
+                className="relative w-16 h-16 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 shrink-0"
+              >
+                {photoPreview ? (
+                  <img src={photoPreview} alt="" className="w-full h-full rounded-full object-cover" />
+                ) : (
+                  <Camera className="w-6 h-6" />
+                )}
+              </button>
+              <input
+                ref={photoRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setPendingPhoto(file);
+                  setPhotoPreview(URL.createObjectURL(file));
+                  e.target.value = '';
+                }}
+              />
+              <p className="text-xs text-neutral-600">
+                {userId
+                  ? 'Saved when you start — or add later in Profile.'
+                  : 'After login, your photo uploads when you start matching.'}
+              </p>
+            </div>
+          </div>
+
           <button
+            type="button"
             onClick={handleStart}
-            disabled={!profile.name || profile.interests.length === 0}
+            disabled={starting || !profile.name || profile.interests.length === 0}
             className="w-full bg-blue-600 text-white py-4 rounded-lg font-medium hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
           >
+            {starting ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
             <span>Start Matching</span>
             <span className="text-blue-100">•</span>
             <span>시작하기</span>
-            <ChevronRight className="w-5 h-5" />
+            {!starting ? <ChevronRight className="w-5 h-5" /> : null}
           </button>
           <p className="text-center text-sm text-neutral-600">
             <Link to="/login" className="text-blue-600 font-medium hover:underline">

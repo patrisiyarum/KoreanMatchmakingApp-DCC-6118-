@@ -8,7 +8,10 @@ export interface User {
   interests: string[];
   bio: string;
   level: 'Beginner' | 'Intermediate' | 'Advanced';
+  /** Emoji or short fallback when no photo */
   avatar: string;
+  /** Server path or URL for profile photo (Discover uses this first). */
+  profileImage?: string | null;
 }
 
 export interface Match {

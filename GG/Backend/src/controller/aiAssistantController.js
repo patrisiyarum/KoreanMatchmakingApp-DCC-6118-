@@ -7,9 +7,7 @@ import fs from "fs";
 dotenv.config();
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
-if (!GEMINI_KEY || GEMINI_KEY === "your_gemini_api_key_here") {
-  console.warn("[AI Assistant] GEMINI_API_KEY is missing or placeholder. Chat Assistant will not work. Add your key to GG/Backend/.env (see .env.example)");
-}
+let warnedMissingGeminiKey = false;
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 const genAI = new GoogleGenerativeAI(GEMINI_KEY || "placeholder");
@@ -330,6 +328,12 @@ async function extractChatId(userMessage) {
 export async function chatWithAssistant(req, res) {
   try {
     if (!GEMINI_KEY || GEMINI_KEY === "your_gemini_api_key_here") {
+      if (!warnedMissingGeminiKey) {
+        console.warn(
+          "[AI Assistant] GEMINI_API_KEY is missing or placeholder. Chat Assistant endpoints will return 503 until configured."
+        );
+        warnedMissingGeminiKey = true;
+      }
       return res.status(503).json({
         error: "Chat Assistant is not configured. Add GEMINI_API_KEY to GG/Backend/.env (see .env.example). Get a key at https://aistudio.google.com/apikey",
       });

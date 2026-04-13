@@ -139,8 +139,21 @@ if (process.env.NODE_ENV !== "production" || process.env.ENABLE_MCP === "1") {
 
 const runAfterListen = async () => {
     try {
-        await sequelize.sync({ alter: true });
-        console.log("Database tables synced.");
+        // Production-safe default: do not run alter unless explicitly enabled.
+        // Use DB_SYNC_MODE=alter only in controlled environments.
+        const syncMode = (process.env.DB_SYNC_MODE || "").trim().toLowerCase();
+        if (syncMode === "off" || syncMode === "none") {
+            console.log("Database sync skipped (DB_SYNC_MODE=off).");
+        } else if (syncMode === "alter") {
+            await sequelize.sync({ alter: true });
+            console.log("Database tables synced with alter mode.");
+        } else if (syncMode === "force") {
+            await sequelize.sync({ force: true });
+            console.log("Database tables synced with force mode.");
+        } else {
+            await sequelize.sync();
+            console.log("Database tables synced.");
+        }
     } catch (err) {
         console.error("Database sync error:", err.message);
     }

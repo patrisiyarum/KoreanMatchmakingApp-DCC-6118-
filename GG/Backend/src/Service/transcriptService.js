@@ -13,17 +13,22 @@ const __dirname = path.dirname(__filename);
 
 // Use createRequire to load the native addon (it doesn't support ES modules)
 const require = createRequire(import.meta.url);
+const whisperBaseLocation = path.resolve("whisper.cpp");
+const whisperModuleLocation = "build/bin/Release/addon.node.node";
 
 let whisperAsync = null;
-try {
-  const whisperBaseLocation = path.resolve("whisper.cpp");
-  const moduleLocation = "build/bin/Release/addon.node.node";
-  const { whisper } = require(
-    path.join(whisperBaseLocation, moduleLocation)
-  );
-  whisperAsync = promisify(whisper);
-} catch (err) {
-  console.warn("Whisper native module not found — transcript generation will be unavailable.", err.message);
+let whisperUnavailableReason = null;
+
+function getWhisperAsync() {
+  if (whisperAsync) return whisperAsync;
+  try {
+    const { whisper } = require(path.join(whisperBaseLocation, whisperModuleLocation));
+    whisperAsync = promisify(whisper);
+    return whisperAsync;
+  } catch (err) {
+    whisperUnavailableReason = err?.message || "Whisper native module not found";
+    return null;
+  }
 }
 
 function convertToWav(inputPath, outputPath) {
@@ -44,6 +49,12 @@ function convertToWav(inputPath, outputPath) {
 const modelName = "ggml-medium.bin";
 
 async function transcribeAudio(filename) {
+    const whisper = getWhisperAsync();
+    if (!whisper) {
+        throw new Error(
+            `Transcript generation is unavailable on this server (${whisperUnavailableReason || "missing whisper module"})`
+        );
+    }
     const modelPath = path.join(whisperBaseLocation, "models", modelName);
     
     // Convert to WAV format that whisper expects
@@ -67,7 +78,7 @@ async function transcribeAudio(filename) {
             }
         };
         
-        const result = await whisperAsync(params);
+        const result = await whisper(params);
         
         // Clean up temp file
         if (fs.existsSync(tempWavPath)) {

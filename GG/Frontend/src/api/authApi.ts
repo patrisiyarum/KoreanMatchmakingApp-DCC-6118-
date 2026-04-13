@@ -17,10 +17,13 @@ export function registerApi(
   email: string,
   password: string
 ) {
-  return http.post<LoginResponse>('/Register', {
-    firstName,
-    lastName,
-    email,
-    password,
-  }) as unknown as Promise<LoginResponse>;
+  return http.post<LoginResponse>(
+    '/api/v1/register',
+    {
+      firstName,
+      lastName,
+      email,
+      password,
+    }
+  ) as unknown as Promise<LoginResponse>;
 }

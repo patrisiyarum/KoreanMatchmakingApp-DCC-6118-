@@ -11,6 +11,15 @@ export default defineConfig({
     outDir: 'build',
     emptyOutDir: true,
   },
+  server: {
+    proxy: {
+      // Dev: browser calls same-origin /api/* → forwarded to Express (avoids CORS).
+      '/api': {
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+      },
+    },
+  },
   plugins: [
     // The React and Tailwind plugins are both required for Make, even if
     // Tailwind is not being actively used – do not remove them

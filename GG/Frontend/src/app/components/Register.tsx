@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import axios from 'axios';
 import { registerApi } from '@/api/authApi';
+import { getApiBase } from '@/api/apiBase';
 import { useAuth } from '../context/AuthContext';
 
 export function Register() {
@@ -29,7 +31,19 @@ export function Register() {
       setUserId(String(data.id));
       navigate('/welcome', { replace: true });
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } }; message?: string };
+      if (axios.isAxiosError(err) && !err.response) {
+        const base = getApiBase();
+        setErrMsg(
+          base
+            ? `Cannot reach API at ${base}. Start the backend or fix API_BASE_URL.`
+            : 'Cannot reach API (same origin / Vite proxy). Start the backend on port 8080.'
+        );
+        return;
+      }
+      const ax = err as {
+        response?: { data?: { message?: string; errorCode?: number } };
+        message?: string;
+      };
       setErrMsg(
         ax.response?.data?.message ||
           ax.message ||

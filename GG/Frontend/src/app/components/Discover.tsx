@@ -97,15 +97,30 @@ export function Discover() {
   }
 
   if (profileGate) {
+    const gateTitle =
+      loadError ||
+      t('Complete your profile to discover partners.', '파트너를 찾으려면 프로필을 완성하세요.');
     return (
       <div className="size-full flex items-center justify-center p-6">
-        <div className="max-w-md flex justify-center">
-          <Link
-            to="/create-profile"
-            className="inline-flex items-center justify-center rounded-lg bg-violet-600 text-white px-5 py-2.5 text-sm font-medium hover:bg-violet-700 shadow-sm"
-          >
-            {t('Create profile', '프로필 만들기')}
-          </Link>
+        <div className="max-w-md w-full text-center space-y-4">
+          <div className="inline-flex rounded-full bg-violet-100 p-3 mx-auto">
+            <Sparkles className="w-8 h-8 text-violet-600" aria-hidden />
+          </div>
+          <p className="text-neutral-900 font-semibold text-lg leading-snug">{gateTitle}</p>
+          <p className="text-sm text-neutral-600 leading-relaxed">
+            {t(
+              'Finish creating your profile with languages, level, and interests so we can show you good matches.',
+              '언어, 레벨, 관심사를 입력해 프로필을 완성하면 맞는 파트너를 보여 드려요.'
+            )}
+          </p>
+          <div className="pt-1">
+            <Link
+              to="/create-profile"
+              className="inline-flex items-center justify-center rounded-xl bg-violet-600 text-white px-6 py-3 text-sm font-semibold hover:bg-violet-700 shadow-md"
+            >
+              {t('Create profile', '프로필 만들기')}
+            </Link>
+          </div>
         </div>
       </div>
     );

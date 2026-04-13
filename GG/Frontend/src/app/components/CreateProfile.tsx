@@ -32,7 +32,6 @@ export function CreateProfile() {
   const photoRef = useRef<HTMLInputElement>(null);
   const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  /** Saved on server already (from Profile or a previous upload). */
   const [serverPhotoPath, setServerPhotoPath] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [bootLoading, setBootLoading] = useState(true);
@@ -132,8 +131,6 @@ export function CreateProfile() {
 
   const displayedPhotoSrc = photoPreview || publicAssetUrl(serverPhotoPath);
   const canContinue = Boolean(profile.name.trim()) && profile.interests.length > 0;
-  const continueClass =
-    'rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base py-2.5 px-5 w-full sm:w-auto shrink-0';
 
   if (bootLoading) {
     return (
@@ -144,195 +141,185 @@ export function CreateProfile() {
   }
 
   return (
-    <div className="w-full max-w-lg mx-auto px-4 py-4 sm:py-6 pb-4">
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full">
-        <div className="text-center mb-5 sm:mb-6">
-          <div className="text-4xl sm:text-5xl mb-2">🇰🇷 🇺🇸</div>
-          <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-1">
+    <div className="flex flex-col min-h-0 max-h-[calc(100dvh-10rem)] sm:max-h-[calc(100dvh-11rem)] max-w-lg mx-auto w-full px-3 pt-2 pb-2 gap-2">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex min-h-0 flex-1 flex-col gap-2"
+      >
+        <div className="shrink-0 text-center px-1">
+          <div className="flex items-center justify-center gap-2 mb-0.5">
+            <span className="text-2xl leading-none" aria-hidden>
+              🇰🇷
+            </span>
+            <span className="text-2xl leading-none" aria-hidden>
+              🇺🇸
+            </span>
+          </div>
+          <h2 className="text-base sm:text-lg font-bold text-neutral-900 leading-tight">
             {t('Create your profile', '프로필 만들기')}
           </h2>
-          <p className="text-sm text-blue-600 mb-0.5">환영합니다</p>
-          <p className="text-sm text-neutral-600">
-            {t('Shown on Discover and when you match', '디스커버와 매칭에 표시돼요')}
+          <p className="text-[11px] sm:text-xs text-neutral-500 mt-0.5">
+            {t('Shown on Discover', '디스커버에 표시')}
           </p>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
-          <p className="text-xs text-neutral-500">
-            {t('Continue is pinned below while you scroll.', '스크롤해도 아래에 계속 버튼이 보여요')}
-          </p>
-          <button
-            type="button"
-            onClick={handleContinue}
-            disabled={starting || !canContinue}
-            className={continueClass}
-          >
-            {starting ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-            <span>{t('Continue to Discover', '디스커버로 계속')}</span>
-            {!starting ? <ChevronRight className="w-5 h-5" /> : null}
-          </button>
-        </div>
+        <div className="flex-1 min-h-0 flex flex-col rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 space-y-3">
+            <div className="flex flex-col items-center text-center pb-2 border-b border-neutral-100">
+              <label className="block text-[11px] sm:text-xs font-medium text-neutral-700 mb-1.5">
+                {t('Profile photo', '프로필 사진')}{' '}
+                <span className="text-neutral-500 font-normal">({t('optional', '선택')})</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => photoRef.current?.click()}
+                className="relative w-20 h-20 rounded-full bg-neutral-100 border-2 border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 hover:border-blue-300 transition-colors overflow-hidden shadow-sm"
+                aria-label={t('Upload profile photo', '프로필 사진 업로드')}
+              >
+                {displayedPhotoSrc ? (
+                  <img src={displayedPhotoSrc} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <Camera className="w-8 h-8" />
+                )}
+                <span className="absolute bottom-0.5 right-0.5 w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md border-2 border-white">
+                  <Camera className="w-3.5 h-3.5" />
+                </span>
+              </button>
+              <input
+                ref={photoRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setPendingPhoto(file);
+                  setPhotoPreview(URL.createObjectURL(file));
+                  e.target.value = '';
+                }}
+              />
+              <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-2 max-w-[260px] leading-snug">
+                {t('Tap to choose · uploads when you continue.', '탭해서 선택 · 계속할 때 업로드')}
+              </p>
+              {pendingPhoto ? (
+                <p className="text-[10px] text-blue-600 mt-0.5">{t('Ready to upload', '업로드 준비됨')}</p>
+              ) : null}
+            </div>
 
-        <div className="bg-white rounded-2xl border border-neutral-200 p-4 sm:p-5 space-y-4 shadow-sm">
-          <div className="flex flex-col items-center text-center pb-2 border-b border-neutral-100">
-            <label className="block text-xs sm:text-sm font-medium text-neutral-700 mb-2">
-              {t('Profile photo', '프로필 사진')}{' '}
-              <span className="text-neutral-500 font-normal">({t('optional', '선택')})</span>
-            </label>
+            <div>
+              <label className="block text-[11px] sm:text-xs font-medium text-neutral-700 mb-1">
+                {t('Name', '이름')}
+              </label>
+              <input
+                type="text"
+                value={profile.name}
+                onChange={(e) => setProfile((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder={t('Enter your name', '이름을 입력하세요')}
+                className="w-full px-2.5 py-2 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] sm:text-xs font-medium text-neutral-700 mb-1">
+                  {t('I speak', '모국어')}
+                </label>
+                <select
+                  value={profile.nativeLanguage}
+                  onChange={(e) => setProfile((prev) => ({ ...prev, nativeLanguage: e.target.value }))}
+                  className="w-full px-2 py-1.5 rounded-lg border border-neutral-300 text-xs sm:text-sm"
+                >
+                  <option>English</option>
+                  <option>Korean 한국어</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] sm:text-xs font-medium text-neutral-700 mb-1">
+                  {t('Learning', '배우는 언어')}
+                </label>
+                <select
+                  value={profile.learningLanguage}
+                  onChange={(e) => setProfile((prev) => ({ ...prev, learningLanguage: e.target.value }))}
+                  className="w-full px-2 py-1.5 rounded-lg border border-neutral-300 text-xs sm:text-sm"
+                >
+                  <option>Korean 한국어</option>
+                  <option>English</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] sm:text-xs font-medium text-neutral-700 mb-1">
+                {t('Level', '레벨')}
+              </label>
+              <select
+                value={profile.level}
+                onChange={(e) => setProfile((prev) => ({ ...prev, level: e.target.value }))}
+                className="w-full px-2 py-1.5 rounded-lg border border-neutral-300 text-xs sm:text-sm"
+              >
+                <option>Beginner 초급</option>
+                <option>Intermediate 중급</option>
+                <option>Advanced 고급</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] sm:text-xs font-medium text-neutral-700 mb-1.5">
+                {t('Interests', '관심사')}{' '}
+                <span className="text-neutral-500 font-normal">({t('one+', '1+')})</span>
+              </label>
+              <div className="grid grid-cols-3 gap-1.5">
+                {PROFILE_INTEREST_OPTIONS.map((interest) => (
+                  <button
+                    key={interest}
+                    type="button"
+                    onClick={() => toggleInterest(interest)}
+                    className={`px-1.5 py-1.5 rounded-md text-[10px] sm:text-xs font-medium transition-colors leading-tight ${
+                      profile.interests.includes(interest)
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                    }`}
+                  >
+                    {interest}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] sm:text-xs font-medium text-neutral-700 mb-1">
+                Bio <span className="text-neutral-500">({t('optional', '선택')})</span>
+              </label>
+              <textarea
+                value={profile.bio}
+                onChange={(e) => setProfile((prev) => ({ ...prev, bio: e.target.value }))}
+                rows={2}
+                maxLength={2000}
+                placeholder={t('Short intro…', '짧은 소개…')}
+                className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm resize-none min-h-[52px]"
+              />
+            </div>
+
+            <p className="text-center pb-1">
+              <Link to="/home" className="text-xs text-neutral-500 hover:text-neutral-800 hover:underline">
+                {t('Skip for now', '나중에 하기')}
+              </Link>
+            </p>
+          </div>
+
+          <div className="shrink-0 border-t border-neutral-200 bg-neutral-50 px-3 py-2.5">
             <button
               type="button"
-              onClick={() => photoRef.current?.click()}
-              className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-neutral-100 border-2 border-neutral-200 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 hover:border-blue-300 transition-colors overflow-hidden shadow-sm mx-auto"
-              aria-label={t('Upload profile photo', '프로필 사진 업로드')}
+              onClick={handleContinue}
+              disabled={starting || !canContinue}
+              className="w-full rounded-xl bg-blue-600 text-white py-2.5 text-sm font-semibold hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {displayedPhotoSrc ? (
-                <img src={displayedPhotoSrc} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <Camera className="w-10 h-10 sm:w-12 sm:h-12" />
-              )}
-              <span className="absolute bottom-1 right-1 w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md border-2 border-white">
-                <Camera className="w-4 h-4" />
-              </span>
+              {starting ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+              <span>{t('Continue to Discover', '디스커버로 계속')}</span>
+              {!starting ? <ChevronRight className="w-5 h-5" /> : null}
             </button>
-            <input
-              ref={photoRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setPendingPhoto(file);
-                setPhotoPreview(URL.createObjectURL(file));
-                e.target.value = '';
-              }}
-            />
-            <p className="text-[11px] sm:text-xs text-neutral-500 mt-3 max-w-[280px] mx-auto leading-snug">
-              {t(
-                'Shown on Discover and in Profile. Tap to choose — uploads when you continue.',
-                '디스커버와 프로필에 표시됩니다. 탭해서 선택 · 계속할 때 업로드됩니다.'
-              )}
-            </p>
-            {pendingPhoto ? (
-              <p className="text-xs text-blue-600 mt-1">
-                {t('New photo ready — tap Continue to upload.', '새 사진 준됨 — 계속을 누르면 업로드됩니다.')}
-              </p>
-            ) : null}
           </div>
-
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-neutral-700 mb-1.5">
-              {t('Name', '이름')}
-            </label>
-            <input
-              type="text"
-              value={profile.name}
-              onChange={(e) => setProfile((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder={t('Enter your name', '이름을 입력하세요')}
-              className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-neutral-700 mb-1.5">
-                {t('I speak', '모국어')}
-              </label>
-              <select
-                value={profile.nativeLanguage}
-                onChange={(e) => setProfile((prev) => ({ ...prev, nativeLanguage: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              >
-                <option>English</option>
-                <option>Korean 한국어</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-neutral-700 mb-1.5">
-                {t("I'm learning", '배우는 언어')}
-              </label>
-              <select
-                value={profile.learningLanguage}
-                onChange={(e) => setProfile((prev) => ({ ...prev, learningLanguage: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              >
-                <option>Korean 한국어</option>
-                <option>English</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-neutral-700 mb-1.5">
-              {t('My level', '레벨')}
-            </label>
-            <select
-              value={profile.level}
-              onChange={(e) => setProfile((prev) => ({ ...prev, level: e.target.value }))}
-              className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              <option>Beginner 초급</option>
-              <option>Intermediate 중급</option>
-              <option>Advanced 고급</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-neutral-700 mb-2">
-              {t('Interests', '관심사')}{' '}
-              <span className="text-neutral-500 font-normal text-xs">({t('at least one', '하나 이상')})</span>
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {PROFILE_INTEREST_OPTIONS.map((interest) => (
-                <button
-                  key={interest}
-                  type="button"
-                  onClick={() => toggleInterest(interest)}
-                  className={`px-2 py-2 rounded-lg text-xs font-medium transition-colors ${
-                    profile.interests.includes(interest)
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                  }`}
-                >
-                  {interest}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-neutral-700 mb-1.5">
-              Bio <span className="text-neutral-500">소개</span>{' '}
-              <span className="text-neutral-500 font-normal text-xs">({t('optional', '선택')})</span>
-            </label>
-            <textarea
-              value={profile.bio}
-              onChange={(e) => setProfile((prev) => ({ ...prev, bio: e.target.value }))}
-              rows={2}
-              maxLength={2000}
-              placeholder="Short intro for Discover • 디스커버용 짧은 소개"
-              className="w-full px-3 py-2 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none sm:resize-y min-h-[64px]"
-            />
-          </div>
-
-          <p className="text-center pt-1">
-            <Link to="/home" className="text-sm text-neutral-500 hover:text-neutral-800 hover:underline">
-              {t('Skip for now', '나중에 하기')}
-            </Link>
-          </p>
-        </div>
-
-        <div className="sticky bottom-0 z-10 -mx-4 mt-3 border-t border-neutral-200 bg-neutral-50/95 px-4 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-neutral-50/90 shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
-          <button
-            type="button"
-            onClick={handleContinue}
-            disabled={starting || !canContinue}
-            className="w-full rounded-xl bg-blue-600 text-white py-3 font-semibold hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {starting ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-            <span>{t('Continue to Discover', '디스커버로 계속')}</span>
-            {!starting ? <ChevronRight className="w-5 h-5" /> : null}
-          </button>
         </div>
       </motion.div>
     </div>

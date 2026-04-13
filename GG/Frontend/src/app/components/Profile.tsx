@@ -296,44 +296,45 @@ export function Profile() {
   const saveLabel = hasProfile ? t('Save changes', '변경 저장') : t('Create profile', '프로필 만들기');
   const saveDisabled = saving || interests.filter((n) => n.trim()).length === 0;
   const primarySaveClass =
-    'w-full sm:w-auto min-w-[10rem] rounded-xl bg-blue-600 text-white py-2.5 px-5 font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 shrink-0';
+    'rounded-xl bg-blue-600 text-white py-2 px-4 text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 shrink-0';
 
   return (
-    <div className="max-w-lg mx-auto px-6 pt-6 pb-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900 mb-1">{t('My profile', '내 프로필')}</h1>
-          <p className="text-sm text-neutral-600">
+    <div className="flex min-h-0 max-h-[calc(100dvh-10rem)] sm:max-h-[calc(100dvh-11rem)] max-w-lg mx-auto w-full flex-col px-3 pt-2 pb-2 gap-2">
+      <div className="shrink-0 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl font-bold text-neutral-900 leading-tight">{t('My profile', '내 프로필')}</h1>
+          <p className="text-[11px] sm:text-xs text-neutral-600 mt-0.5">
             {t('Photo, bio, interests, and languages', '사진, 소개, 관심사, 언어')}
           </p>
         </div>
         <button type="button" disabled={saveDisabled} onClick={handleSave} className={primarySaveClass}>
-          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           {saveLabel}
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-neutral-200 p-6 space-y-6 shadow-sm">
-        <div className="flex flex-col items-center gap-3">
+      <div className="flex-1 min-h-0 flex flex-col rounded-2xl border border-neutral-200 bg-white shadow-sm overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-4">
+        <div className="flex flex-col items-center gap-2">
           <div className="relative">
             {photoSrc ? (
               <img
                 src={photoSrc}
                 alt=""
-                className="w-28 h-28 rounded-full object-cover border-4 border-neutral-100"
+                className="w-24 h-24 rounded-full object-cover border-2 border-neutral-100"
               />
             ) : (
-              <div className="w-28 h-28 rounded-full bg-neutral-200 flex items-center justify-center text-3xl text-neutral-500">
+              <div className="w-24 h-24 rounded-full bg-neutral-200 flex items-center justify-center text-2xl text-neutral-500">
                 {(firstName[0] || '?').toUpperCase()}
               </div>
             )}
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md hover:bg-blue-700"
+              className="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md hover:bg-blue-700"
               title={t('Change photo', '사진 변경')}
             >
-              <Camera className="w-5 h-5" />
+              <Camera className="w-4 h-4" />
             </button>
             <input
               ref={fileRef}
@@ -347,63 +348,63 @@ export function Profile() {
             <button
               type="button"
               onClick={handleRemovePhoto}
-              className="text-sm text-red-600 hover:underline"
+              className="text-xs text-red-600 hover:underline"
             >
               {t('Remove photo', '사진 제거')}
             </button>
           ) : null}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-xs font-medium text-neutral-700 mb-1">
               {t('First name', '이름')}
             </label>
             <input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-xs font-medium text-neutral-700 mb-1">
               {t('Last name', '성')}
             </label>
             <input
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-sm"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">
+          <label className="block text-xs font-medium text-neutral-700 mb-1">
             {t('Bio', '소개')}
           </label>
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            rows={4}
+            rows={3}
             maxLength={2000}
             placeholder={t('Tell partners about yourself…', '파트너에게 자신을 소개해 보세요…')}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm resize-y min-h-[100px]"
+            className="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-sm resize-none min-h-[72px]"
           />
-          <p className="text-xs text-neutral-400 mt-1">{bio.length}/2000</p>
+          <p className="text-[11px] text-neutral-400 mt-0.5">{bio.length}/2000</p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-2">
+          <label className="block text-xs font-medium text-neutral-700 mb-1.5">
             {t('Interests', '관심사')}{' '}
-            <span className="text-neutral-500 font-normal text-xs">({t('at least one', '하나 이상')})</span>
+            <span className="text-neutral-500 font-normal">({t('at least one', '하나 이상')})</span>
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
             {PROFILE_INTEREST_OPTIONS.map((interest) => (
               <button
                 key={interest}
                 type="button"
                 onClick={() => toggleInterest(interest)}
-                className={`px-2 py-2 rounded-lg text-xs font-medium transition-colors ${
+                className={`px-2 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium transition-colors ${
                   interests.includes(interest)
                     ? 'bg-blue-600 text-white'
                     : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
@@ -438,28 +439,28 @@ export function Profile() {
           ) : null}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-xs font-medium text-neutral-700 mb-1">
               {t('I speak', '모국어')}
             </label>
             <select
               value={nativeLanguage}
               onChange={(e) => setNativeLanguage(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
             >
               <option>English</option>
               <option>Korean</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-xs font-medium text-neutral-700 mb-1">
               {t('Learning', '배우는 언어')}
             </label>
             <select
               value={targetLanguage}
               onChange={(e) => setTargetLanguage(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
             >
               <option>Korean</option>
               <option>English</option>
@@ -468,13 +469,13 @@ export function Profile() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">
+          <label className="block text-xs font-medium text-neutral-700 mb-1">
             {t('Level', '레벨')}
           </label>
           <select
             value={proficiency}
             onChange={(e) => setProficiency(e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
           >
             {PROFICIENCIES.map((p) => (
               <option key={p} value={p}>
@@ -485,24 +486,24 @@ export function Profile() {
         </div>
 
         {!hasProfile ? (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Age</label>
+              <label className="block text-xs font-medium text-neutral-700 mb-1">Age</label>
               <input
                 type="number"
                 min={13}
                 max={120}
                 value={age}
                 onChange={(e) => setAge(Number(e.target.value))}
-                className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Gender</label>
+              <label className="block text-xs font-medium text-neutral-700 mb-1">Gender</label>
               <select
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
-                className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
               >
                 <option>Male</option>
                 <option>Female</option>
@@ -515,13 +516,13 @@ export function Profile() {
         {opts ? (
           <>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-xs font-medium text-neutral-700 mb-1">
                 {t('Learning goal', '학습 목표')}
               </label>
               <select
                 value={learningGoal}
                 onChange={(e) => setLearningGoal(e.target.value)}
-                className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
               >
                 {opts.learningGoals.map((g) => (
                   <option key={g} value={g}>
@@ -531,13 +532,13 @@ export function Profile() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-xs font-medium text-neutral-700 mb-1">
                 {t('Communication style', '소통 스타일')}
               </label>
               <select
                 value={communicationStyle}
                 onChange={(e) => setCommunicationStyle(e.target.value)}
-                className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-xs sm:text-sm"
               >
                 {opts.communicationStyles.map((g) => (
                   <option key={g} value={g}>
@@ -547,7 +548,7 @@ export function Profile() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-xs font-medium text-neutral-700 mb-1">
                 {t('Commitment (1–5)', '참여도 (1–5)')}
               </label>
               <input
@@ -558,17 +559,11 @@ export function Profile() {
                 onChange={(e) => setCommitmentLevel(Number(e.target.value))}
                 className="w-full"
               />
-              <p className="text-xs text-neutral-500">{commitmentLevel}</p>
+              <p className="text-[11px] text-neutral-500">{commitmentLevel}</p>
             </div>
           </>
         ) : null}
-      </div>
-
-      <div className="sticky bottom-0 z-10 -mx-6 mt-4 border-t border-neutral-200 bg-neutral-50/95 px-6 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-neutral-50/90 shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
-        <button type="button" disabled={saveDisabled} onClick={handleSave} className="w-full rounded-xl bg-blue-600 text-white py-3 font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2">
-          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-          {saveLabel}
-        </button>
+        </div>
       </div>
     </div>
   );

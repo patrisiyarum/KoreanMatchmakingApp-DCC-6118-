@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { Camera, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronRight, Loader2, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -166,20 +166,17 @@ export function CreateProfile() {
             <button
               type="button"
               onClick={() => photoRef.current?.click()}
-              className="relative"
+              className="block"
               aria-label={t('Upload profile photo', '프로필 사진 업로드')}
             >
-              <span className="block h-24 w-24 overflow-hidden rounded-full border-4 border-white/40 shadow-md sm:h-28 sm:w-28">
+              <span className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-4 border-white/40 shadow-md sm:h-32 sm:w-32">
                 {displayedPhotoSrc ? (
                   <img src={displayedPhotoSrc} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <span className="flex h-full w-full items-center justify-center bg-white/10 text-white">
-                    <Camera className="h-10 w-10 opacity-90 sm:h-12 sm:w-12" />
+                  <span className="flex h-full w-full items-center justify-center bg-white/15 text-white">
+                    <UserRound className="h-14 w-14 opacity-95 sm:h-16 sm:w-16" strokeWidth={1.25} />
                   </span>
                 )}
-              </span>
-              <span className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-white text-violet-700 shadow-md hover:bg-violet-50">
-                <Camera className="h-4 w-4" />
               </span>
             </button>
             <input
@@ -203,9 +200,6 @@ export function CreateProfile() {
             <span aria-hidden>↔</span>
             <span>{profile.learningLanguage}</span>
           </div>
-          {pendingPhoto ? (
-            <p className="mt-2 text-xs text-white/90">{t('Ready to upload', '업로드 준비됨')}</p>
-          ) : null}
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 space-y-5">
@@ -222,7 +216,7 @@ export function CreateProfile() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              {fieldLabel(t('I speak', '모국어'))}
+              {fieldLabel(t('Native', '모국어'))}
               <select
                 value={profile.nativeLanguage}
                 onChange={(e) => setProfile((prev) => ({ ...prev, nativeLanguage: e.target.value }))}

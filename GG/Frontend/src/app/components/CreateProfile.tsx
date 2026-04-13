@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { ChevronRight, Loader2, UserRound } from 'lucide-react';
+import { Camera, ChevronRight, Loader2, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -166,7 +166,7 @@ export function CreateProfile() {
             <button
               type="button"
               onClick={() => photoRef.current?.click()}
-              className="block"
+              className="relative"
               aria-label={t('Upload profile photo', '프로필 사진 업로드')}
             >
               <span className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-4 border-white/40 shadow-md sm:h-32 sm:w-32">
@@ -178,6 +178,11 @@ export function CreateProfile() {
                   </span>
                 )}
               </span>
+              {!displayedPhotoSrc ? (
+                <span className="absolute bottom-0.5 right-0.5 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-white text-violet-700 shadow-md hover:bg-violet-50">
+                  <Camera className="h-4 w-4" />
+                </span>
+              ) : null}
             </button>
             <input
               ref={photoRef}

@@ -332,9 +332,11 @@ export function Profile() {
                     </span>
                   )}
                 </span>
-                <span className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-white text-violet-700 shadow-md hover:bg-violet-50">
-                  <Camera className="h-4 w-4" />
-                </span>
+                {!photoSrc ? (
+                  <span className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-white text-violet-700 shadow-md hover:bg-violet-50">
+                    <Camera className="h-4 w-4" />
+                  </span>
+                ) : null}
               </button>
               <input
                 ref={fileRef}

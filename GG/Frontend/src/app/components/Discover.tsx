@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Heart, X, Sparkles, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { User } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { fetchDiscoverUsers } from '@/api/discoverApi';
 import { fetchUserInterestNames } from '@/api/matchmakingProfileApi';
+import { sendFriendRequest } from '@/api/friendsApi';
 import { publicAssetUrl } from '../utils/profileImage';
 
 export function Discover() {
@@ -19,6 +21,7 @@ export function Discover() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [profileGate, setProfileGate] = useState(false);
   const [myInterests, setMyInterests] = useState<Set<string>>(() => new Set());
+  const [sendingRequest, setSendingRequest] = useState(false);
 
   const load = useCallback(async () => {
     if (!userId) {
@@ -59,17 +62,34 @@ export function Discover() {
 
   const currentPartner = partners[currentIndex];
 
-  const handleSwipe = (liked: boolean) => {
+  const handleSwipe = async (liked: boolean) => {
     if (!currentPartner) return;
     if (liked) {
       setMatches((prev) => [...prev, currentPartner]);
+      if (userId) {
+        setSendingRequest(true);
+        try {
+          await sendFriendRequest(userId, currentPartner.id);
+          toast.success(t('Friend request sent', '친구 요청을 보냈습니다'));
+        } catch (e: unknown) {
+          const err = e as { response?: { data?: { error?: string; message?: string } }; message?: string };
+          toast.error(
+            err.response?.data?.error ||
+              err.response?.data?.message ||
+              err.message ||
+              t('Could not send request', '요청을 보내지 못했습니다')
+          );
+        } finally {
+          setSendingRequest(false);
+        }
+      }
     }
 
     setTimeout(() => {
       if (currentIndex < partners.length - 1) {
         setCurrentIndex((prev) => prev + 1);
       } else {
-        setCurrentIndex(0);
+        setCurrentIndex(partners.length);
       }
     }, 300);
   };
@@ -115,7 +135,7 @@ export function Discover() {
           </p>
           <div className="pt-1">
             <Link
-              to="/create-profile"
+              to="/profile"
               className="inline-flex items-center justify-center rounded-xl bg-violet-600 text-white px-6 py-3 text-sm font-semibold hover:bg-violet-700 shadow-md"
             >
               {t('Create profile', '프로필 만들기')}
@@ -263,7 +283,8 @@ export function Discover() {
           type="button"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          onClick={() => handleSwipe(false)}
+          onClick={() => void handleSwipe(false)}
+          disabled={sendingRequest}
           className="w-16 h-16 rounded-full bg-white border-2 border-neutral-300 flex items-center justify-center shadow-lg hover:border-red-400 transition-colors"
         >
           <X className="w-8 h-8 text-neutral-600" />
@@ -273,8 +294,9 @@ export function Discover() {
           type="button"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          onClick={() => handleSwipe(true)}
-          className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-red-500 flex items-center justify-center shadow-lg"
+          onClick={() => void handleSwipe(true)}
+          disabled={sendingRequest}
+          className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-red-500 flex items-center justify-center shadow-lg disabled:opacity-60"
         >
           <Heart className="w-8 h-8 text-white fill-white" />
         </motion.button>

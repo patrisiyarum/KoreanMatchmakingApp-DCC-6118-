@@ -8,6 +8,12 @@ import {
 
 export type InterestDto = { id: number; interest_name: string };
 
+function isMissingBioColumnError(err: unknown): boolean {
+  const e = err as { response?: { data?: { message?: string; error?: string } }; message?: string };
+  const msg = `${e?.response?.data?.message || ''} ${e?.response?.data?.error || ''} ${e?.message || ''}`.toLowerCase();
+  return msg.includes('bio') && (msg.includes('unknown column') || msg.includes('does not exist'));
+}
+
 export async function fetchInterestCatalog(): Promise<InterestDto[]> {
   const data = await http.get<InterestDto[]>('/api/v1/interests');
   return Array.isArray(data) ? data : [];
@@ -60,29 +66,58 @@ export async function saveMatchmakingBioAndInterests(
   if (!hasProfile) {
     const opts = await fetchProfileOptions();
     if (!opts) return { ok: false, message: 'Could not load profile options.' };
-    const res = await createProfile({
-      id: Number(userId),
-      native_language: 'English',
-      target_language: 'Korean',
-      target_language_proficiency: 'Beginner',
-      age: 22,
-      gender: 'Other',
-      profession: 'Other',
-      mbti: 'INTJ',
-      zodiac: 'Aries',
-      default_time_zone: 'UTC',
-      visibility: 'Show',
-      learning_goal: opts.learningGoals[0],
-      communication_style: opts.communicationStyles[0],
-      commitment_level: opts.commitmentLevel.default,
-      bio: bio.trim() || undefined,
-    });
+    let res;
+    try {
+      res = await createProfile({
+        id: Number(userId),
+        native_language: 'English',
+        target_language: 'Korean',
+        target_language_proficiency: 'Beginner',
+        age: 22,
+        gender: 'Other',
+        profession: 'Other',
+        mbti: 'INTJ',
+        zodiac: 'Aries',
+        default_time_zone: 'UTC',
+        visibility: 'Show',
+        learning_goal: opts.learningGoals[0],
+        communication_style: opts.communicationStyles[0],
+        commitment_level: opts.commitmentLevel.default,
+        bio: bio.trim() || undefined,
+      });
+    } catch (err) {
+      if (!isMissingBioColumnError(err)) throw err;
+      res = await createProfile({
+        id: Number(userId),
+        native_language: 'English',
+        target_language: 'Korean',
+        target_language_proficiency: 'Beginner',
+        age: 22,
+        gender: 'Other',
+        profession: 'Other',
+        mbti: 'INTJ',
+        zodiac: 'Aries',
+        default_time_zone: 'UTC',
+        visibility: 'Show',
+        learning_goal: opts.learningGoals[0],
+        communication_style: opts.communicationStyles[0],
+        commitment_level: opts.commitmentLevel.default,
+      });
+    }
     if (res.errorCode !== 0) return { ok: false, message: res.message };
   } else {
-    const res = await updateProfile({
-      id: Number(userId),
-      bio: bio.trim(),
-    });
+    let res;
+    try {
+      res = await updateProfile({
+        id: Number(userId),
+        bio: bio.trim(),
+      });
+    } catch (err) {
+      if (!isMissingBioColumnError(err)) throw err;
+      res = await updateProfile({
+        id: Number(userId),
+      });
+    }
     if (res.errorCode !== 0) return { ok: false, message: res.message };
   }
 
@@ -120,23 +155,44 @@ export async function saveWelcomeProfile(input: WelcomeProfileInput): Promise<{ 
   const proficiency = mapWelcomeProficiency(input.proficiency);
 
   if (!hasProfile) {
-    const res = await createProfile({
-      id: Number(input.userId),
-      native_language: native,
-      target_language: target,
-      target_language_proficiency: proficiency,
-      age: 22,
-      gender: 'Other',
-      profession: 'Other',
-      mbti: 'INTJ',
-      zodiac: 'Aries',
-      default_time_zone: 'UTC',
-      visibility: 'Show',
-      learning_goal: opts.learningGoals[0],
-      communication_style: opts.communicationStyles[0],
-      commitment_level: opts.commitmentLevel.default,
-      bio: input.bio.trim() || undefined,
-    });
+    let res;
+    try {
+      res = await createProfile({
+        id: Number(input.userId),
+        native_language: native,
+        target_language: target,
+        target_language_proficiency: proficiency,
+        age: 22,
+        gender: 'Other',
+        profession: 'Other',
+        mbti: 'INTJ',
+        zodiac: 'Aries',
+        default_time_zone: 'UTC',
+        visibility: 'Show',
+        learning_goal: opts.learningGoals[0],
+        communication_style: opts.communicationStyles[0],
+        commitment_level: opts.commitmentLevel.default,
+        bio: input.bio.trim() || undefined,
+      });
+    } catch (err) {
+      if (!isMissingBioColumnError(err)) throw err;
+      res = await createProfile({
+        id: Number(input.userId),
+        native_language: native,
+        target_language: target,
+        target_language_proficiency: proficiency,
+        age: 22,
+        gender: 'Other',
+        profession: 'Other',
+        mbti: 'INTJ',
+        zodiac: 'Aries',
+        default_time_zone: 'UTC',
+        visibility: 'Show',
+        learning_goal: opts.learningGoals[0],
+        communication_style: opts.communicationStyles[0],
+        commitment_level: opts.commitmentLevel.default,
+      });
+    }
     if (res.errorCode !== 0) return { ok: false, message: res.message };
     const nameRes = await updateProfile({
       id: Number(input.userId),
@@ -145,25 +201,48 @@ export async function saveWelcomeProfile(input: WelcomeProfileInput): Promise<{ 
     });
     if (nameRes.errorCode !== 0) return { ok: false, message: nameRes.message };
   } else {
-    const res = await updateProfile({
-      id: Number(input.userId),
-      native_language: native,
-      target_language: target,
-      target_language_proficiency: proficiency,
-      bio: input.bio.trim(),
-      first_name: input.firstName.trim(),
-      last_name: input.lastName.trim(),
-      learning_goal: profile!.learning_goal ?? opts.learningGoals[0],
-      communication_style: profile!.communication_style ?? opts.communicationStyles[0],
-      commitment_level: profile!.commitment_level ?? opts.commitmentLevel.default,
-      age: profile!.age ?? 22,
-      gender: profile!.gender ?? 'Other',
-      profession: profile!.profession ?? 'Other',
-      mbti: profile!.mbti ?? 'INTJ',
-      zodiac: profile!.zodiac ?? 'Aries',
-      default_time_zone: profile!.default_time_zone ?? 'UTC',
-      visibility: profile!.visibility ?? 'Show',
-    });
+    let res;
+    try {
+      res = await updateProfile({
+        id: Number(input.userId),
+        native_language: native,
+        target_language: target,
+        target_language_proficiency: proficiency,
+        bio: input.bio.trim(),
+        first_name: input.firstName.trim(),
+        last_name: input.lastName.trim(),
+        learning_goal: profile!.learning_goal ?? opts.learningGoals[0],
+        communication_style: profile!.communication_style ?? opts.communicationStyles[0],
+        commitment_level: profile!.commitment_level ?? opts.commitmentLevel.default,
+        age: profile!.age ?? 22,
+        gender: profile!.gender ?? 'Other',
+        profession: profile!.profession ?? 'Other',
+        mbti: profile!.mbti ?? 'INTJ',
+        zodiac: profile!.zodiac ?? 'Aries',
+        default_time_zone: profile!.default_time_zone ?? 'UTC',
+        visibility: profile!.visibility ?? 'Show',
+      });
+    } catch (err) {
+      if (!isMissingBioColumnError(err)) throw err;
+      res = await updateProfile({
+        id: Number(input.userId),
+        native_language: native,
+        target_language: target,
+        target_language_proficiency: proficiency,
+        first_name: input.firstName.trim(),
+        last_name: input.lastName.trim(),
+        learning_goal: profile!.learning_goal ?? opts.learningGoals[0],
+        communication_style: profile!.communication_style ?? opts.communicationStyles[0],
+        commitment_level: profile!.commitment_level ?? opts.commitmentLevel.default,
+        age: profile!.age ?? 22,
+        gender: profile!.gender ?? 'Other',
+        profession: profile!.profession ?? 'Other',
+        mbti: profile!.mbti ?? 'INTJ',
+        zodiac: profile!.zodiac ?? 'Aries',
+        default_time_zone: profile!.default_time_zone ?? 'UTC',
+        visibility: profile!.visibility ?? 'Show',
+      });
+    }
     if (res.errorCode !== 0) return { ok: false, message: res.message };
   }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Trophy,
@@ -11,21 +11,13 @@ import {
   Gamepad2,
   BookOpen,
   Loader2,
-  Camera,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { initialMatches } from '../data/mockData';
-import { createTeam, fetchMyTeam, type TeamRow } from '@/api/teamsApi';
+import { createTeam, fetchMyTeam, sendTeamInvite, type TeamRow } from '@/api/teamsApi';
 import { getFriendsList, type FriendRow } from '@/api/friendsApi';
-import {
-  fetchUserInterestNames,
-  saveMatchmakingBioAndInterests,
-} from '@/api/matchmakingProfileApi';
-import { fetchUserAccount, fetchUserProfilePayload, uploadProfileImage } from '@/api/profileApi';
-import { publicAssetUrl } from '../utils/profileImage';
-import { PROFILE_INTEREST_OPTIONS } from '../constants/profileInterests';
 
 interface VocabQuestion {
   korean: string;
@@ -105,27 +97,27 @@ export function Games() {
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [apiTeam, setApiTeam] = useState<TeamRow | null>(null);
+  const [myTeamRole, setMyTeamRole] = useState<string | null>(null);
   const [teamLoading, setTeamLoading] = useState(false);
   const [creatingTeam, setCreatingTeam] = useState(false);
-
-  const teamPhotoInputRef = useRef<HTMLInputElement>(null);
-  const [teamBio, setTeamBio] = useState('');
-  const [teamInterests, setTeamInterests] = useState<string[]>([]);
-  const [teamProfileImage, setTeamProfileImage] = useState<string | null>(null);
-  const [teamProfileLoading, setTeamProfileLoading] = useState(false);
-  const [teamProfileSaving, setTeamProfileSaving] = useState(false);
+  const [teamFriendPool, setTeamFriendPool] = useState<FriendRow[]>([]);
+  const [teamFriendPoolLoading, setTeamFriendPoolLoading] = useState(false);
+  const [invitingFriendId, setInvitingFriendId] = useState<number | null>(null);
 
   const refreshTeam = useCallback(async () => {
     if (!userId) {
       setApiTeam(null);
+      setMyTeamRole(null);
       return;
     }
     setTeamLoading(true);
     try {
       const res = await fetchMyTeam(userId);
       setApiTeam(res?.team ?? null);
+      setMyTeamRole(res?.myRole ?? null);
     } catch {
       setApiTeam(null);
+      setMyTeamRole(null);
     } finally {
       setTeamLoading(false);
     }
@@ -135,33 +127,28 @@ export function Games() {
     if (view === 'teams') refreshTeam();
   }, [view, refreshTeam]);
 
-  const loadTeamMatchmakingProfile = useCallback(async () => {
-    if (!userId) {
-      setTeamBio('');
-      setTeamInterests([]);
-      setTeamProfileImage(null);
+  const loadTeamFriendPool = useCallback(async () => {
+    if (!userId || !apiTeam) {
+      setTeamFriendPool([]);
       return;
     }
-    setTeamProfileLoading(true);
+    setTeamFriendPoolLoading(true);
     try {
-      const [account, interests, profile] = await Promise.all([
-        fetchUserAccount(userId),
-        fetchUserInterestNames(userId).catch(() => [] as string[]),
-        fetchUserProfilePayload(userId),
-      ]);
-      setTeamProfileImage(account?.profileImage ?? null);
-      setTeamBio(profile?.bio ?? '');
-      setTeamInterests(interests.filter(Boolean));
+      const friends = await getFriendsList(userId);
+      const memberIds = new Set((apiTeam.members ?? []).map((m) => Number(m.userId)));
+      setTeamFriendPool(friends.filter((f) => !memberIds.has(Number(f.id))));
     } catch {
-      toast.error(t('Could not load your profile for discover', '디스커버용 프로필을 불러오지 못했습니다'));
+      setTeamFriendPool([]);
     } finally {
-      setTeamProfileLoading(false);
+      setTeamFriendPoolLoading(false);
     }
-  }, [userId, t]);
+  }, [userId, apiTeam]);
 
   useEffect(() => {
-    if (view === 'teams' && userId) loadTeamMatchmakingProfile();
-  }, [view, userId, loadTeamMatchmakingProfile]);
+    if (view === 'teams') {
+      void loadTeamFriendPool();
+    }
+  }, [view, loadTeamFriendPool]);
 
   const loadChallengePartners = useCallback(async () => {
     if (!userId) {
@@ -189,14 +176,6 @@ export function Games() {
       void loadChallengePartners();
     }
   }, [view, showChallengeModal, loadChallengePartners]);
-
-  const toggleTeamInterest = (label: string) => {
-    setTeamInterests((prev) =>
-      prev.includes(label) ? prev.filter((x) => x !== label) : [...prev, label]
-    );
-  };
-
-  const teamPhotoSrc = publicAssetUrl(teamProfileImage);
 
   const question = vocabQuestions[currentQuestion];
 
@@ -591,136 +570,76 @@ export function Games() {
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-4 mb-4 space-y-4">
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 mb-4 space-y-3">
                     <div>
-                      <h4 className="text-sm font-semibold text-violet-950 mb-0.5">
-                        {t('Your discover profile', '디스커버에 보일 프로필')}
+                      <h4 className="text-sm font-semibold text-neutral-900 mb-0.5">
+                        {t('Invite friends to this team', '친구를 이 팀에 초대하기')}
                       </h4>
-                      <p className="text-xs text-violet-800/90">
-                        {t(
-                          'Add a photo, short bio, and interests before finding a match so partners see the real you.',
-                          '매치 찾기 전에 사진·소개·관심사를 저장하면 파트너에게 그대로 보여요.'
-                        )}
+                      <p className="text-xs text-neutral-600">
+                        {myTeamRole === 'owner'
+                          ? t(
+                              'Only accepted friends who are not already in this team appear here.',
+                              '이 팀에 없는 수락된 친구만 여기에 표시됩니다.'
+                            )
+                          : t(
+                              'Only the team owner can send team invites.',
+                              '팀 초대는 팀장만 보낼 수 있습니다.'
+                            )}
                       </p>
                     </div>
 
-                    {teamProfileLoading ? (
-                      <div className="flex justify-center py-4">
-                        <Loader2 className="w-6 h-6 animate-spin text-violet-600" />
+                    {teamFriendPoolLoading ? (
+                      <div className="flex justify-center py-3">
+                        <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                      </div>
+                    ) : teamFriendPool.length === 0 ? (
+                      <div className="text-xs text-neutral-600 rounded-lg border border-dashed border-neutral-300 bg-white p-3">
+                        {t(
+                          'No invite-ready friends found. Accept friends first or ask them to leave their current team.',
+                          '초대 가능한 친구가 없습니다. 먼저 친구를 수락하거나, 친구가 기존 팀에서 나오도록 해주세요.'
+                        )}
                       </div>
                     ) : (
-                      <>
-                        <div className="flex items-center gap-4">
-                          <div className="relative shrink-0">
-                            {teamPhotoSrc ? (
-                              <img
-                                src={teamPhotoSrc}
-                                alt=""
-                                className="w-16 h-16 rounded-full object-cover border-2 border-white shadow"
-                              />
-                            ) : (
-                              <div className="w-16 h-16 rounded-full bg-violet-200 flex items-center justify-center text-violet-700 text-xl font-medium border-2 border-white shadow">
-                                ?
-                              </div>
-                            )}
+                      <div className="space-y-2">
+                        {teamFriendPool.map((friend) => (
+                          <div
+                            key={friend.id}
+                            className="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white px-3 py-2"
+                          >
+                            <span className="text-sm text-neutral-900">
+                              {[friend.firstName, friend.lastName].filter(Boolean).join(' ').trim() || 'Partner'}
+                            </span>
                             <button
                               type="button"
-                              onClick={() => teamPhotoInputRef.current?.click()}
-                              disabled={!userId}
-                              className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white border border-violet-200 shadow flex items-center justify-center text-violet-700 hover:bg-violet-50 disabled:opacity-50"
-                              aria-label={t('Upload photo', '사진 업로드')}
-                            >
-                              <Camera className="w-4 h-4" />
-                            </button>
-                            <input
-                              ref={teamPhotoInputRef}
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file || !userId) return;
+                              disabled={myTeamRole !== 'owner' || invitingFriendId === Number(friend.id)}
+                              onClick={async () => {
+                                if (!userId) return;
+                                setInvitingFriendId(Number(friend.id));
                                 try {
-                                  const { profileImage } = await uploadProfileImage(userId, file);
-                                  setTeamProfileImage(profileImage);
-                                  toast.success(t('Photo updated', '사진이 업데이트되었습니다'));
-                                } catch {
-                                  toast.error(t('Upload failed', '업로드 실패'));
+                                  await sendTeamInvite(userId, String(friend.id));
+                                  toast.success(t('Invite sent', '초대를 보냈습니다'));
+                                } catch (err: unknown) {
+                                  const ax = err as { response?: { data?: { error?: string } }; message?: string };
+                                  toast.error(
+                                    ax.response?.data?.error ||
+                                      ax.message ||
+                                      t('Could not send invite', '초대를 보내지 못했습니다')
+                                  );
+                                } finally {
+                                  setInvitingFriendId(null);
+                                  void loadTeamFriendPool();
                                 }
-                                e.target.value = '';
                               }}
-                            />
+                              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                            >
+                              {invitingFriendId === Number(friend.id) ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : null}
+                              {t('Invite', '초대')}
+                            </button>
                           </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-medium text-neutral-700 mb-1">
-                            {t('Bio', '소개')}{' '}
-                            <span className="text-neutral-500 font-normal">
-                              {t('(optional)', '(선택)')}
-                            </span>
-                          </label>
-                          <textarea
-                            value={teamBio}
-                            onChange={(e) => setTeamBio(e.target.value)}
-                            rows={3}
-                            maxLength={2000}
-                            placeholder={t(
-                              'Say hello! What do you want to practice? Favorite topics?',
-                              '인사와 연습 목표, 좋아하는 주제를 적어 보세요.'
-                            )}
-                            className="w-full px-3 py-2 rounded-lg border border-violet-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-y min-h-[72px]"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-medium text-neutral-700 mb-2">
-                            {t('Interests', '관심사')}{' '}
-                            <span className="text-neutral-500 font-normal">({t('choose at least one', '하나 이상')})</span>
-                          </label>
-                          <div className="flex flex-wrap gap-2">
-                            {PROFILE_INTEREST_OPTIONS.map((label) => (
-                              <button
-                                key={label}
-                                type="button"
-                                onClick={() => toggleTeamInterest(label)}
-                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                                  teamInterests.includes(label)
-                                    ? 'bg-violet-600 text-white'
-                                    : 'bg-white text-neutral-700 border border-violet-200 hover:bg-violet-100/80'
-                                }`}
-                              >
-                                {label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          disabled={!userId || teamProfileSaving || teamInterests.length === 0}
-                          onClick={async () => {
-                            if (!userId) return;
-                            setTeamProfileSaving(true);
-                            try {
-                              const res = await saveMatchmakingBioAndInterests(userId, teamBio, teamInterests);
-                              if (!res.ok) {
-                                toast.error(res.message || t('Save failed', '저장 실패'));
-                                return;
-                              }
-                              toast.success(
-                                t('Profile saved for Discover', '디스커버용 프로필이 저장되었습니다')
-                              );
-                            } finally {
-                              setTeamProfileSaving(false);
-                            }
-                          }}
-                          className="w-full py-2.5 rounded-lg font-medium text-sm bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
-                        >
-                          {teamProfileSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                          {t('Save bio & interests', '소개·관심사 저장')}
-                        </button>
-                      </>
+                        ))}
+                      </div>
                     )}
                   </div>
 

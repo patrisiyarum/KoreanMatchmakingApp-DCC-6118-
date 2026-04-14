@@ -46,3 +46,10 @@ export async function createTeam(userId: string, teamName: string, logo?: string
     logo: logo || '🏆',
   }) as Promise<{ team: TeamRow; inviteCode: string }>;
 }
+
+export async function sendTeamInvite(ownerId: string, inviteeId: string) {
+  return http.post<{ invite?: { id: number }; team?: TeamRow; error?: string }>('/api/teams/send-invite', {
+    inviterId: Number(ownerId),
+    inviteeId: Number(inviteeId),
+  });
+}

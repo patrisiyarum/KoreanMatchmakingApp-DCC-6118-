@@ -15,6 +15,7 @@ import {
   type FriendRow,
 } from '@/api/friendsApi';
 import { publicAssetUrl } from '../utils/profileImage';
+import { getChatsForUser, getMessages } from '@/api/chatApi';
 
 export function MyPartners() {
   const { t } = useLanguage();
@@ -24,6 +25,8 @@ export function MyPartners() {
   const [incoming, setIncoming] = useState<FriendRequestIncomingRow[]>([]);
   const [outgoing, setOutgoing] = useState<FriendRequestOutgoingRow[]>([]);
   const [actingRequestId, setActingRequestId] = useState<number | null>(null);
+  const [unreadPartnerIds, setUnreadPartnerIds] = useState<Set<string>>(new Set());
+  const [chatIdByPartner, setChatIdByPartner] = useState<Record<string, number>>({});
 
   const load = useCallback(async () => {
     if (!userId) {
@@ -49,6 +52,73 @@ export function MyPartners() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!userId) {
+        setUnreadPartnerIds(new Set());
+        setChatIdByPartner({});
+        return;
+      }
+      try {
+        const chats = await getChatsForUser(userId);
+        const raw = window.localStorage.getItem(`chatSeenAt:${userId}`);
+        const seenMap = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+        const nextUnread = new Set<string>();
+        const nextByPartner: Record<string, number> = {};
+        await Promise.all(
+          chats.map(async (chat) => {
+            const partnerId =
+              Number(chat.senderId) === Number(userId) ? String(chat.receiverId) : String(chat.senderId);
+            nextByPartner[partnerId] = Number(chat.id);
+            const rows = await getMessages(Number(chat.id));
+            const latest = rows
+              .slice()
+              .sort(
+                (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+              )[0];
+            if (!latest) return;
+            if (Number(latest.senderId) === Number(userId)) return;
+            const seenAt = seenMap[String(chat.id)];
+            const isUnread = !seenAt || new Date(latest.createdAt || 0).getTime() > new Date(seenAt).getTime();
+            if (isUnread) nextUnread.add(partnerId);
+          })
+        );
+        if (!cancelled) {
+          setUnreadPartnerIds(nextUnread);
+          setChatIdByPartner(nextByPartner);
+        }
+      } catch {
+        if (!cancelled) {
+          setUnreadPartnerIds(new Set());
+          setChatIdByPartner({});
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [friends, userId]);
+
+  const markPartnerChatSeen = (partnerId: string) => {
+    if (!userId) return;
+    const chatId = chatIdByPartner[String(partnerId)];
+    if (!chatId) return;
+    try {
+      const raw = window.localStorage.getItem(`chatSeenAt:${userId}`);
+      const seenMap = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+      seenMap[String(chatId)] = new Date().toISOString();
+      window.localStorage.setItem(`chatSeenAt:${userId}`, JSON.stringify(seenMap));
+    } catch {
+      // Ignore localStorage failures.
+    }
+    setUnreadPartnerIds((prev) => {
+      const next = new Set(prev);
+      next.delete(String(partnerId));
+      return next;
+    });
+  };
 
   const displayName = (first?: string, last?: string, fallback = 'Partner') =>
     `${first || ''} ${last || ''}`.trim() || fallback;
@@ -211,10 +281,16 @@ export function MyPartners() {
             <div className="flex gap-3">
               <Link
                 to={`/chat/${friend.id}`}
-                className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 flex items-center justify-center gap-2 transition-colors"
+                onClick={() => markPartnerChatSeen(String(friend.id))}
+                className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 flex items-center justify-center gap-2 transition-colors relative"
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>{t('Chat', '채팅')}</span>
+                {unreadPartnerIds.has(String(friend.id)) ? (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                    {t('New', '새로')}
+                  </span>
+                ) : null}
               </Link>
               <Link
                 to="/games"

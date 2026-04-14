@@ -18,7 +18,6 @@ import { useAIAssistant } from '../context/AIAssistantContext';
 import { useAuth } from '../context/AuthContext';
 import { AIAssistant } from './AIAssistant';
 import { Translator } from './Translator';
-import { getFriendRequests } from '@/api/friendsApi';
 import { getChatsForUser, getMessages } from '@/api/chatApi';
 import { getMeetingsForUserApi } from '@/api/meetingsApi';
 import { getPendingTeamInvites } from '@/api/teamsApi';
@@ -45,6 +44,15 @@ export function AppShell() {
     }
   }, [userId]);
 
+  const getScheduleSeenAt = useCallback((): string | null => {
+    if (!userId) return null;
+    try {
+      return window.localStorage.getItem(`scheduleSeenAt:${userId}`);
+    } catch {
+      return null;
+    }
+  }, [userId]);
+
   const loadNotifications = useCallback(async () => {
     if (!userId) {
       setPartnersNotifCount(0);
@@ -53,8 +61,7 @@ export function AppShell() {
       return;
     }
     try {
-      const [reqs, chats, meetings, teamInvites, challengeInvites] = await Promise.all([
-        getFriendRequests(userId),
+      const [chats, meetings, teamInvites, challengeInvites] = await Promise.all([
         getChatsForUser(userId),
         getMeetingsForUserApi(userId),
         getPendingTeamInvites(userId),
@@ -79,18 +86,22 @@ export function AppShell() {
         })
       );
 
-      const pendingIncomingRequests = reqs.incoming.filter((r) => r.status === 'pending').length;
       const unreadChats = unreadByChat.reduce((sum, value) => sum + value, 0);
-      const meetingsCount = meetings.length;
+      const scheduleSeenAt = getScheduleSeenAt();
+      const unseenMeetings = meetings.filter((meeting) => {
+        if (!scheduleSeenAt) return true;
+        const createdAt = meeting.createdAt ? new Date(meeting.createdAt).getTime() : 0;
+        return createdAt > new Date(scheduleSeenAt).getTime();
+      }).length;
       const gameInvitesCount = teamInvites.length + challengeInvites.length;
 
-      setPartnersNotifCount(pendingIncomingRequests + unreadChats);
-      setScheduleNotifCount(meetingsCount);
+      setPartnersNotifCount(unreadChats);
+      setScheduleNotifCount(unseenMeetings);
       setGamesNotifCount(gameInvitesCount);
     } catch {
       // Keep nav usable even when notification fetch fails.
     }
-  }, [getSeenMap, userId]);
+  }, [getScheduleSeenAt, getSeenMap, userId]);
 
   useEffect(() => {
     void loadNotifications();
@@ -99,6 +110,52 @@ export function AppShell() {
     }, 15000);
     return () => window.clearInterval(intervalId);
   }, [loadNotifications]);
+
+  useEffect(() => {
+    if (!userId) return;
+    if (location.pathname !== '/schedule') return;
+    try {
+      window.localStorage.setItem(`scheduleSeenAt:${userId}`, new Date().toISOString());
+    } catch {
+      // Ignore localStorage failures.
+    }
+    setScheduleNotifCount(0);
+  }, [location.pathname, userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    if (!(location.pathname === '/partners' || location.pathname.startsWith('/chat'))) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const chats = await getChatsForUser(userId);
+        const raw = window.localStorage.getItem(`chatSeenAt:${userId}`);
+        const seenMap = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+        await Promise.all(
+          chats.map(async (chat) => {
+            const rows = await getMessages(Number(chat.id));
+            const latest = rows
+              .slice()
+              .sort(
+                (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+              )[0];
+            if (latest) {
+              seenMap[String(chat.id)] = latest.createdAt || new Date().toISOString();
+            }
+          })
+        );
+        if (!cancelled) {
+          window.localStorage.setItem(`chatSeenAt:${userId}`, JSON.stringify(seenMap));
+          setPartnersNotifCount(0);
+        }
+      } catch {
+        // Silent fallback.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, userId]);
 
   const navItems = [
     { path: '/home', icon: Home, label: t('Home', '홈'), notifCount: 0 },

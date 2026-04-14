@@ -3,8 +3,13 @@ import { Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 import { loginApi } from '@/api/authApi';
+import { fetchUserProfilePayload } from '@/api/profileApi';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+
+function hasExistingProfile(profile: Awaited<ReturnType<typeof fetchUserProfilePayload>>) {
+  return Boolean(profile?.id);
+}
 
 export function Login() {
   const { t } = useLanguage();
@@ -26,8 +31,14 @@ export function Login() {
         setErrMsg(data.message || 'Login failed.');
         return;
       }
-      setUserId(String(data.id));
-      navigate('/create-profile', { replace: true });
+      const nextUserId = String(data.id);
+      setUserId(nextUserId);
+      const profile = await fetchUserProfilePayload(nextUserId);
+      if (hasExistingProfile(profile)) {
+        navigate('/home', { replace: true });
+      } else {
+        navigate('/create-profile', { replace: true });
+      }
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } }; message?: string };
       setErrMsg(

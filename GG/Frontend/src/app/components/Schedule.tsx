@@ -21,6 +21,7 @@ interface Meeting {
   id: string;
   partnerId: string;
   partnerName: string;
+  dayOfWeek: string;
   date: string;
   time: string;
   duration: string;
@@ -46,7 +47,6 @@ export function Schedule() {
   const [friends, setFriends] = useState<FriendRow[]>([]);
   const [overlayPartnerId, setOverlayPartnerId] = useState<string>('');
   const [loadAvail, setLoadAvail] = useState(false);
-  const [savingAvail, setSavingAvail] = useState(false);
   const [isPaintingAvailability, setIsPaintingAvailability] = useState(false);
   const [paintAvailabilityTo, setPaintAvailabilityTo] = useState<boolean>(false);
 
@@ -104,6 +104,7 @@ export function Schedule() {
           id: String(row.id),
           partnerId,
           partnerName,
+          dayOfWeek: row.day_of_week,
           date: nextDateIsoForWeekday(row.day_of_week),
           time: String(row.start_time || '').slice(0, 5),
           duration: '60 min',
@@ -268,6 +269,7 @@ export function Schedule() {
             id: String(data.id),
             partnerId: modalPartnerId,
             partnerName: modalPartnerLabel || `User ${modalPartnerId}`,
+            dayOfWeek: modalSelectedDay,
             date: dateIso,
             time: modalSelectedTime,
             duration: '60 min',
@@ -327,36 +329,41 @@ export function Schedule() {
     return () => window.removeEventListener('mouseup', endDrag);
   }, [isDraggingModalSlot]);
 
-  const saveAvailability = async () => {
-    if (!userId) return;
-    setSavingAvail(true);
-    try {
-      const slots = gridKeysToApiSlots(myKeys);
-      await replaceUserAvailability(userId, slots);
-      toast.success(t('Availability saved', '가능 시간이 저장되었습니다'));
-    } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } }; message?: string };
-      const serverMsg = ax.response?.data?.message;
-      toast.error(
-        serverMsg ||
-          t(
-            'Save failed. Is the backend running? Complete your profile if you have not.',
-            '저장 실패. 백엔드가 켜져 있는지 확인하고, 프로필을 먼저 저장하세요.'
-          )
-      );
-    } finally {
-      setSavingAvail(false);
-    }
-  };
+  useEffect(() => {
+    if (!userId || loadAvail) return;
+    const timer = window.setTimeout(async () => {
+      try {
+        const slots = gridKeysToApiSlots(myKeys);
+        await replaceUserAvailability(userId, slots);
+      } catch {
+        // Background autosave keeps the grid snappy; errors can be retried on next change.
+      }
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [loadAvail, myKeys, userId]);
+
+  const meetingKeys = useMemo(() => {
+    const set = new Set<string>();
+    meetings.forEach((meeting) => {
+      if (meeting.dayOfWeek && meeting.time) {
+        set.add(`${meeting.dayOfWeek}-${meeting.time}`);
+      }
+    });
+    return set;
+  }, [meetings]);
 
   const cellClass = (day: string, time: string) => {
     const key = `${day}-${time}`;
     const mine = myKeys.has(key);
     const theirs = partnerKeys.has(key);
-    if (mine && theirs) return 'bg-fuchsia-600 hover:bg-fuchsia-700 ring-2 ring-fuchsia-800 ring-inset';
-    if (mine) return 'bg-blue-600 hover:bg-blue-700';
-    if (theirs) return 'bg-amber-400 hover:bg-amber-500';
-    return 'bg-neutral-100 hover:bg-neutral-200';
+    const hasMeeting = meetingKeys.has(key);
+    let base = '';
+    if (mine && theirs) base = 'bg-fuchsia-600 hover:bg-fuchsia-700';
+    else if (mine) base = 'bg-blue-600 hover:bg-blue-700';
+    else if (theirs) base = 'bg-amber-400 hover:bg-amber-500';
+    else base = 'bg-neutral-100 hover:bg-neutral-200';
+    if (hasMeeting) base += ' ring-2 ring-rose-500 ring-inset';
+    return base;
   };
 
   const partnerLabel = useMemo(() => {
@@ -423,12 +430,12 @@ export function Schedule() {
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  disabled={savingAvail || loadAvail || !userId}
-                  onClick={saveAvailability}
+                  disabled={loadAvail || !userId}
+                  onClick={openScheduleModal}
                   className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 inline-flex items-center gap-2"
                 >
-                  {savingAvail ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                  {t('Save my availability', '내 시간 저장')}
+                  <Plus className="w-4 h-4" />
+                  {t('Schedule a meeting', '미팅 예약하기')}
                 </button>
               </div>
             </div>
@@ -519,6 +526,10 @@ export function Schedule() {
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-neutral-100 rounded border border-neutral-200" />
                 <span className="text-neutral-600">{t('Not available', '불가')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-neutral-100 rounded border-2 border-rose-500" />
+                <span className="text-neutral-600">{t('Scheduled meeting', '예약된 미팅')}</span>
               </div>
             </div>
           </motion.div>

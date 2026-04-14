@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { Camera, ChevronRight, Loader2, UserRound } from 'lucide-react';
-import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { fetchUserInterestNames, saveWelcomeProfile } from '@/api/matchmakingProfileApi';
@@ -56,13 +55,7 @@ export function CreateProfile() {
       ]);
       if (profileMeetsDiscoverMinimum(payload)) {
         skipSpinnerOff = true;
-        toast.info(
-          t(
-            'You already have a profile — opening the profile editor.',
-            '프로필이 이미 있습니다. 프로필 편집 화면으로 이동합니다.',
-          )
-        );
-        navigate('/profile', { replace: true });
+        navigate('/home', { replace: true });
         return;
       }
       if (account) {

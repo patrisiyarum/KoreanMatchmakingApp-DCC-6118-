@@ -64,13 +64,20 @@ export function AppShell() {
             >
               <Languages className="w-5 h-5 text-neutral-700" />
             </button>
-            <Link
-              to="/profile"
+            <button
+              type="button"
+              onClick={() => {
+                if (location.pathname === '/profile') {
+                  navigate('/home');
+                } else {
+                  navigate('/profile');
+                }
+              }}
               className="p-2 rounded-lg hover:bg-neutral-100 transition-colors"
               title={t('My profile', '내 프로필')}
             >
               <UserCircle className="w-5 h-5 text-neutral-700" />
-            </Link>
+            </button>
             <button
               type="button"
               onClick={() => setIsAssistantOpen(true)}

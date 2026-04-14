@@ -38,21 +38,12 @@ function formatMeetingDate(isoDate: string, lang: 'en' | 'ko') {
   return d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
 }
 
-function shortPartnerName(name: string) {
-  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return 'Meeting';
-  if (parts.length === 1) return parts[0];
-  return `${parts[0]} ${parts[1].charAt(0)}.`;
-}
-
 export function Schedule() {
   const { userId } = useAuth();
   const { t, language } = useLanguage();
   const [view, setView] = useState<'availability' | 'meetings'>('availability');
   const [myKeys, setMyKeys] = useState<Set<string>>(new Set());
-  const [partnerKeys, setPartnerKeys] = useState<Set<string>>(new Set());
   const [friends, setFriends] = useState<FriendRow[]>([]);
-  const [overlayPartnerId, setOverlayPartnerId] = useState<string>('');
   const [loadAvail, setLoadAvail] = useState(false);
   const [isPaintingAvailability, setIsPaintingAvailability] = useState(false);
   const [paintAvailabilityTo, setPaintAvailabilityTo] = useState<boolean>(false);
@@ -158,21 +149,6 @@ export function Schedule() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      if (!overlayPartnerId) {
-        setPartnerKeys(new Set());
-        return;
-      }
-      const slots = await getUserAvailability(overlayPartnerId);
-      if (!cancelled) setPartnerKeys(apiSlotsToGridKeys(slots));
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [overlayPartnerId]);
-
-  useEffect(() => {
-    let cancelled = false;
     if (!showScheduleModal || !modalPartnerId) {
       if (!showScheduleModal) setModalPartnerKeys(new Set());
       return () => {
@@ -196,8 +172,7 @@ export function Schedule() {
   }, [showScheduleModal, modalPartnerId]);
 
   const openScheduleModal = () => {
-    const defaultPartner =
-      overlayPartnerId || (friends.length ? String(friends[0].id) : '');
+    const defaultPartner = friends.length ? String(friends[0].id) : '';
     setModalPartnerId(defaultPartner);
     setModalSelectedDay(null);
     setModalSelectedTime(null);
@@ -373,22 +348,11 @@ export function Schedule() {
   const cellClass = (day: string, time: string) => {
     const key = `${day}-${time}`;
     const mine = myKeys.has(key);
-    const theirs = partnerKeys.has(key);
     const hasMeeting = meetingKeys.has(key);
-    let base = '';
-    if (mine && theirs) base = 'bg-fuchsia-600 hover:bg-fuchsia-700';
-    else if (mine) base = 'bg-blue-600 hover:bg-blue-700';
-    else if (theirs) base = 'bg-amber-400 hover:bg-amber-500';
-    else base = 'bg-neutral-100 hover:bg-neutral-200';
-    if (hasMeeting) base += ' ring-2 ring-red-600 ring-inset';
-    return base;
+    if (hasMeeting) return 'bg-red-600 hover:bg-red-700';
+    if (mine) return 'bg-blue-600 hover:bg-blue-700';
+    return 'bg-neutral-100 hover:bg-neutral-200';
   };
-
-  const partnerLabel = useMemo(() => {
-    const f = friends.find((x) => String(x.id) === overlayPartnerId);
-    if (!f) return '';
-    return [f.firstName, f.lastName].filter(Boolean).join(' ') || f.email || '';
-  }, [friends, overlayPartnerId]);
 
   return (
     <div className="size-full overflow-y-auto bg-neutral-50">
@@ -458,31 +422,6 @@ export function Schedule() {
               </div>
             </div>
 
-            <div className="mb-3">
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
-                {t('Show partner availability', '파트너 일정 겹쳐 보기')}
-              </label>
-              <select
-                value={overlayPartnerId}
-                onChange={(e) => setOverlayPartnerId(e.target.value)}
-                className="w-full max-w-md px-3 py-2 rounded-lg border border-neutral-300 text-sm"
-              >
-                <option value="">
-                  {t('— None —', '— 없음 —')}
-                </option>
-                {friends.map((f) => (
-                  <option key={f.id} value={String(f.id)}>
-                    {[f.firstName, f.lastName].filter(Boolean).join(' ') || f.email || `User ${f.id}`}
-                  </option>
-                ))}
-              </select>
-              {overlayPartnerId && !partnerLabel ? (
-                <p className="text-xs text-amber-700 mt-1">
-                  {t('No slots returned — they may not have saved availability yet.', '일정이 없습니다. 상대가 저장했는지 확인하세요.')}
-                </p>
-              ) : null}
-            </div>
-
             <div className="overflow-x-auto">
               {loadAvail ? (
                 <div className="flex justify-center py-12">
@@ -526,14 +465,8 @@ export function Schedule() {
                               onMouseDown={() => beginAvailabilityPaint(day, time)}
                               onMouseEnter={() => paintAvailabilityCell(day, time)}
                               onMouseUp={() => setIsPaintingAvailability(false)}
-                              className={`w-full h-6 sm:h-7 rounded transition-colors cursor-pointer relative overflow-hidden ${cellClass(day, time)}`}
-                            >
-                              {(meetingBySlot.get(`${day}-${time}`) || []).length ? (
-                                <span className="absolute inset-x-0.5 top-0.5 px-1 rounded bg-red-600 text-white text-[9px] leading-3 truncate">
-                                  {shortPartnerName(meetingBySlot.get(`${day}-${time}`)![0].partnerName)}
-                                </span>
-                              ) : null}
-                            </button>
+                              className={`w-full h-6 sm:h-7 rounded transition-colors cursor-pointer ${cellClass(day, time)}`}
+                            />
                           </td>
                         ))}
                       </tr>
@@ -546,15 +479,7 @@ export function Schedule() {
             <div className="mt-3 flex flex-wrap items-center gap-3 text-xs sm:text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-blue-600 rounded" />
-                <span className="text-neutral-600">{t('You', '나')}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-amber-400 rounded" />
-                <span className="text-neutral-600">{t('Partner', '파트너')}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-fuchsia-600 rounded" />
-                <span className="text-neutral-600">{t('Both free', '둘 다 가능')}</span>
+                <span className="text-neutral-600">{t('Available', '가능')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-red-600 rounded" />
@@ -566,25 +491,6 @@ export function Schedule() {
               </div>
             </div>
 
-            <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/60 p-3">
-              <p className="text-xs font-semibold text-blue-800 mb-2">
-                {t('Scheduled this week', '이번 주 예약')}
-              </p>
-              {meetings.length > 0 ? (
-                <div className="space-y-1.5">
-                  {meetings.slice(0, 4).map((meeting) => (
-                    <div key={`availability-list-${meeting.id}`} className="text-xs text-blue-900">
-                      <span className="font-medium">{meeting.partnerName}</span>
-                      <span className="text-blue-700"> · {meeting.dayOfWeek} {meeting.time}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-blue-700">
-                  {t('No meetings yet this week.', '이번 주 예약된 미팅이 없습니다.')}
-                </p>
-              )}
-            </div>
           </motion.div>
         )}
 

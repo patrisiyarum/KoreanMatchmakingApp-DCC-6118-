@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { motion } from 'motion/react';
 import { MessageSquare, Gamepad2, Calendar, Loader2 } from 'lucide-react';
@@ -27,6 +27,7 @@ export function MyPartners() {
   const [actingRequestId, setActingRequestId] = useState<number | null>(null);
   const [unreadPartnerIds, setUnreadPartnerIds] = useState<Set<string>>(new Set());
   const [chatIdByPartner, setChatIdByPartner] = useState<Record<string, number>>({});
+  const [latestMessageAtByPartner, setLatestMessageAtByPartner] = useState<Record<string, number>>({});
 
   const load = useCallback(async () => {
     if (!userId) {
@@ -59,6 +60,7 @@ export function MyPartners() {
       if (!userId) {
         setUnreadPartnerIds(new Set());
         setChatIdByPartner({});
+        setLatestMessageAtByPartner({});
         return;
       }
       try {
@@ -67,6 +69,7 @@ export function MyPartners() {
         const seenMap = raw ? (JSON.parse(raw) as Record<string, string>) : {};
         const nextUnread = new Set<string>();
         const nextByPartner: Record<string, number> = {};
+        const nextLatestByPartner: Record<string, number> = {};
         await Promise.all(
           chats.map(async (chat) => {
             const partnerId =
@@ -79,20 +82,24 @@ export function MyPartners() {
                 (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
               )[0];
             if (!latest) return;
+            const latestTs = new Date(latest.createdAt || 0).getTime();
+            nextLatestByPartner[partnerId] = Math.max(nextLatestByPartner[partnerId] || 0, latestTs);
             if (Number(latest.senderId) === Number(userId)) return;
             const seenAt = seenMap[String(chat.id)];
-            const isUnread = !seenAt || new Date(latest.createdAt || 0).getTime() > new Date(seenAt).getTime();
+            const isUnread = !seenAt || latestTs > new Date(seenAt).getTime();
             if (isUnread) nextUnread.add(partnerId);
           })
         );
         if (!cancelled) {
           setUnreadPartnerIds(nextUnread);
           setChatIdByPartner(nextByPartner);
+          setLatestMessageAtByPartner(nextLatestByPartner);
         }
       } catch {
         if (!cancelled) {
           setUnreadPartnerIds(new Set());
           setChatIdByPartner({});
+          setLatestMessageAtByPartner({});
         }
       }
     })();
@@ -119,6 +126,15 @@ export function MyPartners() {
       return next;
     });
   };
+
+  const orderedFriends = useMemo(() => {
+    return [...friends].sort((a, b) => {
+      const aTs = latestMessageAtByPartner[String(a.id)] || 0;
+      const bTs = latestMessageAtByPartner[String(b.id)] || 0;
+      if (aTs !== bTs) return bTs - aTs;
+      return String(a.firstName || '').localeCompare(String(b.firstName || ''));
+    });
+  }, [friends, latestMessageAtByPartner]);
 
   const displayName = (first?: string, last?: string, fallback = 'Partner') =>
     `${first || ''} ${last || ''}`.trim() || fallback;
@@ -247,7 +263,7 @@ export function MyPartners() {
           </div>
         )}
 
-        {friends.map((friend, index) => (
+        {orderedFriends.map((friend, index) => (
           <motion.div
             key={friend.id}
             initial={{ opacity: 0, y: 20 }}

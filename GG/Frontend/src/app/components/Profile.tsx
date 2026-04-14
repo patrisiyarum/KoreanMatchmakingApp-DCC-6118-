@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { Camera, ChevronRight, Loader2, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +29,7 @@ function profilePayloadHasBioKey(profile: Record<string, unknown> | null | undef
 const PROFICIENCIES = ['Beginner', 'Elementary', 'Intermediate', 'Proficient', 'Fluent'];
 
 export function Profile() {
+  const navigate = useNavigate();
   const { userId } = useAuth();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
@@ -228,6 +229,7 @@ export function Profile() {
           { duration: 8000 }
         );
       }
+      navigate('/discover');
     } catch (e: unknown) {
       console.error(e);
       const ax = e as { response?: { data?: { message?: string } }; message?: string };

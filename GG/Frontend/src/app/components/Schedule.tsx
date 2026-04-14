@@ -167,14 +167,14 @@ export function Schedule() {
 
   const pickModalSlot = (day: string, time: string) => {
     const key = `${day}-${time}`;
-    if (!myKeys.has(key) || !modalPartnerKeys.has(key)) {
-      toast.error(
+    const bothFree = myKeys.has(key) && modalPartnerKeys.has(key);
+    if (!bothFree) {
+      toast.message(
         t(
-          'Choose a teal slot where you are both available.',
-          '둘 다 가능한 청록 칸만 선택할 수 있습니다.'
+          'Scheduled anyway — teal slots are recommended for both-free times.',
+          '선택한 시간으로 예약합니다. 청록색은 둘 다 가능한 추천 시간입니다.'
         )
       );
-      return;
     }
     setModalSelectedDay(day);
     setModalSelectedTime(time);
@@ -283,8 +283,8 @@ export function Schedule() {
 
   return (
     <div className="size-full overflow-y-auto bg-neutral-50">
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="mb-6">
+      <div className="max-w-5xl mx-auto p-3 sm:p-4">
+        <div className="mb-3">
           <h2 className="text-2xl font-bold text-neutral-900 mb-1">
             {t('Schedule', '일정')}
           </h2>
@@ -293,7 +293,7 @@ export function Schedule() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-3 mb-6">
+        <div className="flex flex-wrap gap-2 mb-3">
           <button
             type="button"
             onClick={() => setView('availability')}
@@ -328,9 +328,9 @@ export function Schedule() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl border border-neutral-200 p-6"
+            className="bg-white rounded-2xl border border-neutral-200 p-4"
           >
-            <div className="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div className="mb-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
               <div>
                 <h3 className="font-semibold text-neutral-900 mb-1">
                   {t('Set Your Available Times', '가능한 시간 설정')}
@@ -349,7 +349,7 @@ export function Schedule() {
               </div>
             </div>
 
-            <div className="mb-4">
+            <div className="mb-3">
               <label className="block text-sm font-medium text-neutral-700 mb-1">
                 {t('Show partner availability', '파트너 일정 겹쳐 보기')}
               </label>
@@ -383,13 +383,13 @@ export function Schedule() {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr>
-                      <th className="p-2 text-left text-sm font-medium text-neutral-700 border-b">
+                      <th className="px-2 py-1 text-left text-xs font-medium text-neutral-700 border-b">
                         {t('Time', '시간')}
                       </th>
                       {GRID_DAYS.map((day, index) => (
                         <th
                           key={day}
-                          className="p-2 text-center text-sm font-medium text-neutral-700 border-b"
+                          className="px-1 py-1 text-center text-xs font-medium text-neutral-700 border-b"
                         >
                           {language === 'ko' ? daysOfWeekKo[index] : day.slice(0, 3)}
                         </th>
@@ -399,14 +399,14 @@ export function Schedule() {
                   <tbody>
                     {GRID_HOURS.map((time) => (
                       <tr key={time}>
-                        <td className="p-2 text-sm text-neutral-600 border-b">{time}</td>
+                        <td className="px-2 py-1 text-xs text-neutral-600 border-b whitespace-nowrap">{time}</td>
                         {GRID_DAYS.map((day) => (
-                          <td key={`${day}-${time}`} className="p-1 border-b">
+                          <td key={`${day}-${time}`} className="p-0.5 border-b">
                             <button
                               type="button"
                               title={`${day} ${time}`}
                               onClick={() => toggleMySlot(day, time)}
-                              className={`w-full h-10 rounded-md transition-colors ${cellClass(day, time)}`}
+                              className={`w-full h-7 sm:h-8 rounded transition-colors ${cellClass(day, time)}`}
                             />
                           </td>
                         ))}
@@ -417,7 +417,7 @@ export function Schedule() {
               )}
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs sm:text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-emerald-500 rounded" />
                 <span className="text-neutral-600">{t('You', '나')}</span>
@@ -442,7 +442,7 @@ export function Schedule() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-4"
+              className="space-y-3"
           >
             <button
               type="button"
@@ -495,11 +495,11 @@ export function Schedule() {
         )}
 
         {showScheduleModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 sm:p-6 z-50 overflow-y-auto">
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-white rounded-2xl p-5 sm:p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto my-auto shadow-xl"
+              className="bg-white rounded-2xl p-4 sm:p-5 max-w-5xl w-full max-h-[92vh] overflow-y-auto my-auto shadow-xl"
             >
               <h3 className="text-xl font-bold text-neutral-900 mb-1">
                 {t('Schedule Meeting', '미팅 예약')}
@@ -546,16 +546,16 @@ export function Schedule() {
                       <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                     </div>
                   ) : (
-                    <table className="w-full border-collapse min-w-[640px]">
+                    <table className="w-full border-collapse min-w-[600px]">
                       <thead>
                         <tr>
-                          <th className="p-2 text-left text-sm font-medium text-neutral-700 border-b bg-neutral-50">
+                          <th className="px-2 py-1 text-left text-xs font-medium text-neutral-700 border-b bg-neutral-50">
                             {t('Time', '시간')}
                           </th>
                           {GRID_DAYS.map((day, index) => (
                             <th
                               key={day}
-                              className="p-2 text-center text-sm font-medium text-neutral-700 border-b bg-neutral-50"
+                              className="px-1 py-1 text-center text-xs font-medium text-neutral-700 border-b bg-neutral-50"
                             >
                               {language === 'ko' ? daysOfWeekKo[index] : day.slice(0, 3)}
                             </th>
@@ -565,16 +565,16 @@ export function Schedule() {
                       <tbody>
                         {GRID_HOURS.map((time) => (
                           <tr key={time}>
-                            <td className="p-2 text-sm text-neutral-600 border-b whitespace-nowrap">
+                            <td className="px-2 py-1 text-xs text-neutral-600 border-b whitespace-nowrap">
                               {time}
                             </td>
                             {GRID_DAYS.map((day) => (
-                              <td key={`m-${day}-${time}`} className="p-1 border-b">
+                              <td key={`m-${day}-${time}`} className="p-0.5 border-b">
                                 <button
                                   type="button"
                                   title={`${day} ${time}`}
                                   onClick={() => pickModalSlot(day, time)}
-                                  className={`w-full h-9 sm:h-10 rounded-md transition-colors ${modalCellClass(day, time)}`}
+                                  className={`w-full h-7 sm:h-8 rounded transition-colors ${modalCellClass(day, time)}`}
                                 />
                               </td>
                             ))}
@@ -596,7 +596,9 @@ export function Schedule() {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3.5 h-3.5 bg-teal-600 rounded shrink-0" />
-                    <span className="text-neutral-600">{t('Both free — tap to pick', '둘 다 가능 — 탭하여 선택')}</span>
+                    <span className="text-neutral-600">
+                      {t('Both free (teal) is recommended, but any slot can be selected', '청록색(둘 다 가능) 추천, 다른 시간도 선택 가능')}
+                    </span>
                   </div>
                 </div>
 

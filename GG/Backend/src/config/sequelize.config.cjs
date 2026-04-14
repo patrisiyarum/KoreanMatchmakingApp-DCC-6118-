@@ -13,15 +13,34 @@ const path = require('path');
 const backendRoot = path.join(__dirname, '../..');
 const dotenv = require('dotenv');
 
-for (const envPath of [
-  path.join(backendRoot, '.env'),
-  path.join(process.cwd(), '.env'),
-]) {
-  if (fs.existsSync(envPath)) {
-    dotenv.config({ path: envPath, override: false });
+// Prefer GG/Backend/.env (authoritative). Cwd may be a parent folder on Plesk.
+if (fs.existsSync(path.join(backendRoot, '.env'))) {
+  dotenv.config({ path: path.join(backendRoot, '.env'), override: true });
+}
+if (fs.existsSync(path.join(process.cwd(), '.env'))) {
+  dotenv.config({ path: path.join(process.cwd(), '.env'), override: false });
+}
+
+/** mysql://user:pass@host:3306/dbname */
+function fromDatabaseUrl() {
+  const raw = process.env.DATABASE_URL;
+  if (!raw || typeof raw !== 'string' || !/^mysql/i.test(raw)) return null;
+  try {
+    const u = new URL(raw);
+    const database = u.pathname.replace(/^\//, '').split('?')[0];
+    return {
+      username: decodeURIComponent(u.username || ''),
+      password: u.password ? decodeURIComponent(u.password) : '',
+      host: u.hostname || '127.0.0.1',
+      database,
+      port: u.port || undefined,
+    };
+  } catch {
+    return null;
   }
 }
-dotenv.config();
+
+const fromUrl = fromDatabaseUrl();
 
 const configPath = path.join(__dirname, 'config.json');
 const configFile = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -29,27 +48,40 @@ const env = process.env.NODE_ENV || 'development';
 const base = configFile[env] || configFile.development;
 
 const database =
-  process.env.DB_NAME || process.env.MYSQL_DATABASE || base.database;
+  (fromUrl && fromUrl.database) ||
+  process.env.DB_NAME ||
+  process.env.MYSQL_DATABASE ||
+  base.database;
 const username =
-  process.env.DB_USER || process.env.MYSQL_USER || base.username;
+  (fromUrl && fromUrl.username) ||
+  process.env.DB_USER ||
+  process.env.MYSQL_USER ||
+  base.username;
 const password =
-  process.env.DB_PASSWORD !== undefined
-    ? process.env.DB_PASSWORD
-    : process.env.MYSQL_PASSWORD !== undefined
-      ? process.env.MYSQL_PASSWORD
-      : base.password;
-const host = process.env.DB_HOST || base.host || '127.0.0.1';
+  fromUrl && fromUrl.password !== undefined
+    ? fromUrl.password
+    : process.env.DB_PASSWORD !== undefined
+      ? process.env.DB_PASSWORD
+      : process.env.MYSQL_PASSWORD !== undefined
+        ? process.env.MYSQL_PASSWORD
+        : base.password;
+const host =
+  (fromUrl && fromUrl.host) || process.env.DB_HOST || base.host || '127.0.0.1';
 const dialect = process.env.DB_DIALECT || base.dialect || 'mysql';
 
 const hasExplicitDbUser =
   Boolean(
-    (process.env.DB_USER && String(process.env.DB_USER).trim()) ||
+    (fromUrl && fromUrl.username) ||
+      (process.env.DB_USER && String(process.env.DB_USER).trim()) ||
       (process.env.MYSQL_USER && String(process.env.MYSQL_USER).trim())
   );
 const hasExplicitPassword =
-  process.env.DB_PASSWORD !== undefined || process.env.MYSQL_PASSWORD !== undefined;
+  (fromUrl && fromUrl.password !== undefined) ||
+  process.env.DB_PASSWORD !== undefined ||
+  process.env.MYSQL_PASSWORD !== undefined;
 
 if (
+  !fromUrl &&
   !hasExplicitDbUser &&
   username === 'root' &&
   (password === null || password === '') &&
@@ -78,6 +110,10 @@ const merged = {
   logging: base.logging ?? false,
   define: { ...(base.define || {}), freezeTableName: true },
 };
+
+if (fromUrl && fromUrl.port) {
+  merged.port = fromUrl.port;
+}
 
 if (process.env.DB_SOCKET) {
   merged.dialectOptions = { socketPath: process.env.DB_SOCKET };

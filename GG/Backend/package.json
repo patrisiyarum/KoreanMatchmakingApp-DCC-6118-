@@ -11,7 +11,8 @@
     "diagnose": "node -e \"console.log('Node OK:', process.version); import('./src/models/index.js').then(db => db.default.sequelize.authenticate().then(() => { console.log('DB OK'); process.exit(0); })).catch(e => { console.error('ERROR:', e.message); process.exit(1); })\"",
     "check": "node --input-type=module -e \"try { await import('./src/server.js'); } catch(e) { console.error(e); process.exit(1); }\"",
     "migrate": "sequelize-cli db:migrate --config src/config/sequelize.config.cjs",
-    "migrate:status": "sequelize-cli db:migrate:status --config src/config/sequelize.config.cjs"
+    "migrate:status": "sequelize-cli db:migrate:status --config src/config/sequelize.config.cjs",
+    "migrate:check": "node scripts/check-migrate-env.cjs"
   },
   "author": "",
   "license": "ISC",

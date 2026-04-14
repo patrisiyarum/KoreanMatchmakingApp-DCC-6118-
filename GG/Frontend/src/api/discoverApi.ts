@@ -29,7 +29,7 @@ export function discoverRowToUser(row: Record<string, unknown>): User {
   const pic = row.profileImage != null && String(row.profileImage) !== '' ? String(row.profileImage) : null;
   const n = Number(id) || 0;
   const emoji = AVATAR_FALLBACK[n % AVATAR_FALLBACK.length];
-  const bioRaw = String(row.bio ?? '').trim();
+  const bioRaw = String(row.bio ?? row.Bio ?? '').trim();
   return {
     id,
     name,

@@ -47,6 +47,12 @@ const isMissingColumnDbError = (error) => {
   return false;
 };
 
+const isMissingBioColumnDbError = (error) => {
+  if (!isMissingColumnDbError(error)) return false;
+  const msg = String(error.message || error.sqlMessage || '');
+  return /\bbio\b/i.test(msg);
+};
+
 const getProfileCustomizationOptions = (req, res) => {
   try {
     return res.status(200).json({ message: 'ok', data: loadProfileCustomizationConfig() });
@@ -351,12 +357,13 @@ const getDiscoverUsers = async (req, res) => {
           ? 'ORDER BY ua.firstName ASC, ua.lastName ASC'
           : 'ORDER BY ua.firstName ASC, ua.lastName ASC';
 
-      const legacySql = `
+      const legacySqlBase = (bioSelect) => `
         SELECT
           ua.id, ua.email, ua.firstName, ua.lastName, ua.createdAt, ua.updatedAt, ua.loggedIn, ua.gameStats, ua.xp, ua.level, ua.profileImage,
           up.native_language, up.target_language, up.target_language_proficiency, up.age, up.gender, up.profession, up.mbti, up.zodiac, up.visibility,
           up.default_time_zone, up.rating,
-          NULL AS learning_goal, NULL AS communication_style, NULL AS commitment_level, NULL AS bio,
+          NULL AS learning_goal, NULL AS communication_style, NULL AS commitment_level,
+          ${bioSelect},
           0 AS badgeCount, NULL AS badgeIcons,
           0 AS matchScore,
           (
@@ -374,7 +381,19 @@ const getDiscoverUsers = async (req, res) => {
         ${legacyOrder}
       `;
       const legacyParams = [requesterId, requesterId, ...searchParams];
-      const [legacyRows] = await pool.execute(legacySql, legacyParams);
+      let legacyRows;
+      try {
+        const [rows] = await pool.execute(legacySqlBase('up.bio'), legacyParams);
+        legacyRows = rows;
+      } catch (legacyErr) {
+        if (isMissingBioColumnDbError(legacyErr)) {
+          console.warn('getDiscoverUsers: legacy query without UserProfile.bio (migration 22 not applied).');
+          const [rows] = await pool.execute(legacySqlBase('NULL AS bio'), legacyParams);
+          legacyRows = rows;
+        } else {
+          throw legacyErr;
+        }
+      }
       return res.status(200).json({
         message: 'ok',
         data: legacyRows,

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { Camera, ChevronRight, Loader2, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
@@ -42,7 +42,10 @@ export function CreateProfile() {
   });
 
   const load = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      setBootLoading(false);
+      return;
+    }
     setBootLoading(true);
     let skipSpinnerOff = false;
     try {
@@ -53,6 +56,12 @@ export function CreateProfile() {
       ]);
       if (profileMeetsDiscoverMinimum(payload)) {
         skipSpinnerOff = true;
+        toast.info(
+          t(
+            'You already have a profile — opening the profile editor.',
+            '프로필이 이미 있습니다. 프로필 편집 화면으로 이동합니다.',
+          )
+        );
         navigate('/profile', { replace: true });
         return;
       }
@@ -72,7 +81,7 @@ export function CreateProfile() {
     } finally {
       if (!skipSpinnerOff) setBootLoading(false);
     }
-  }, [userId, navigate]);
+  }, [userId, navigate, t]);
 
   useEffect(() => {
     load();
@@ -123,6 +132,17 @@ export function CreateProfile() {
     return (
       <div className="flex justify-center py-16 text-neutral-500">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (!userId) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-3 text-neutral-600">
+        <p>{t('Sign in to set up your profile.', '로그인 후 프로필을 설정하세요.')}</p>
+        <Link to="/login" className="text-blue-600 font-medium hover:underline">
+          {t('Sign in', '로그인')}
+        </Link>
       </div>
     );
   }

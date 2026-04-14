@@ -157,9 +157,9 @@ export function Schedule() {
     const theirs = modalPartnerKeys.has(key);
     const selected = modalSelectedDay === day && modalSelectedTime === time;
     let cls = '';
-    if (mine && theirs) cls = 'bg-teal-600 hover:bg-teal-700';
-    else if (mine) cls = 'bg-emerald-500';
-    else if (theirs) cls = 'bg-amber-400';
+    if (mine && theirs) cls = 'bg-fuchsia-600 hover:bg-fuchsia-700';
+    else if (mine) cls = 'bg-blue-600 hover:bg-blue-700';
+    else if (theirs) cls = 'bg-amber-400 hover:bg-amber-500';
     else cls = 'bg-neutral-100 hover:bg-neutral-200';
     if (selected) cls += ' ring-2 ring-blue-600 ring-offset-2 ring-inset';
     return cls;
@@ -171,8 +171,8 @@ export function Schedule() {
     if (!bothFree) {
       toast.message(
         t(
-          'Scheduled anyway — teal slots are recommended for both-free times.',
-          '선택한 시간으로 예약합니다. 청록색은 둘 다 가능한 추천 시간입니다.'
+          'Scheduled anyway — highlighted both-free slots are recommended.',
+          '선택한 시간으로 예약합니다. 강조된 색상은 둘 다 가능한 추천 시간입니다.'
         )
       );
     }
@@ -269,8 +269,8 @@ export function Schedule() {
     const key = `${day}-${time}`;
     const mine = myKeys.has(key);
     const theirs = partnerKeys.has(key);
-    if (mine && theirs) return 'bg-teal-600 hover:bg-teal-700 ring-2 ring-teal-800 ring-inset';
-    if (mine) return 'bg-emerald-500 hover:bg-emerald-600';
+    if (mine && theirs) return 'bg-fuchsia-600 hover:bg-fuchsia-700 ring-2 ring-fuchsia-800 ring-inset';
+    if (mine) return 'bg-blue-600 hover:bg-blue-700';
     if (theirs) return 'bg-amber-400 hover:bg-amber-500';
     return 'bg-neutral-100 hover:bg-neutral-200';
   };
@@ -419,7 +419,7 @@ export function Schedule() {
 
             <div className="mt-3 flex flex-wrap items-center gap-3 text-xs sm:text-sm">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-emerald-500 rounded" />
+                <div className="w-4 h-4 bg-blue-600 rounded" />
                 <span className="text-neutral-600">{t('You', '나')}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -427,7 +427,7 @@ export function Schedule() {
                 <span className="text-neutral-600">{t('Partner', '파트너')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-teal-600 rounded" />
+                <div className="w-4 h-4 bg-fuchsia-600 rounded" />
                 <span className="text-neutral-600">{t('Both free', '둘 다 가능')}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -587,7 +587,7 @@ export function Schedule() {
 
                 <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
                   <div className="flex items-center gap-2">
-                    <div className="w-3.5 h-3.5 bg-emerald-500 rounded shrink-0" />
+                    <div className="w-3.5 h-3.5 bg-blue-600 rounded shrink-0" />
                     <span className="text-neutral-600">{t('You', '나')}</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -595,9 +595,9 @@ export function Schedule() {
                     <span className="text-neutral-600">{t('Partner', '파트너')}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3.5 h-3.5 bg-teal-600 rounded shrink-0" />
+                    <div className="w-3.5 h-3.5 bg-fuchsia-600 rounded shrink-0" />
                     <span className="text-neutral-600">
-                      {t('Both free (teal) is recommended, but any slot can be selected', '청록색(둘 다 가능) 추천, 다른 시간도 선택 가능')}
+                      {t('Both free is recommended, but any slot can be selected', '둘 다 가능 시간 추천, 다른 시간도 선택 가능')}
                     </span>
                   </div>
                 </div>

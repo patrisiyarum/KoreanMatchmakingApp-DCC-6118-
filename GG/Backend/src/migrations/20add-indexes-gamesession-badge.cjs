@@ -1,39 +1,59 @@
 'use strict';
 
+/** Migration 10 may already have created some of these indexes (partial overlap). */
+async function indexExists(queryInterface, tableName, indexName) {
+  const indexes = await queryInterface.showIndex(tableName);
+  const want = String(indexName).toLowerCase();
+  return indexes.some((ix) => String(ix.name).toLowerCase() === want);
+}
+
+async function addIndexIfMissing(queryInterface, table, fields, options) {
+  const name = options.name;
+  if (!(await indexExists(queryInterface, table, name))) {
+    await queryInterface.addIndex(table, fields, options);
+  }
+}
+
+async function removeIndexIfExists(queryInterface, table, indexName) {
+  if (await indexExists(queryInterface, table, indexName)) {
+    await queryInterface.removeIndex(table, indexName);
+  }
+}
+
 module.exports = {
   async up(queryInterface) {
     // userId is already covered by FK index; composite helps history + status filters
-    await queryInterface.addIndex('GameSession', ['status'], {
+    await addIndexIfMissing(queryInterface, 'GameSession', ['status'], {
       name: 'idx_gamesession_status',
     });
-    await queryInterface.addIndex('GameSession', ['userId', 'status'], {
+    await addIndexIfMissing(queryInterface, 'GameSession', ['userId', 'status'], {
       name: 'idx_gamesession_user_status',
     });
-    await queryInterface.addIndex('GameSession', ['challengeId'], {
+    await addIndexIfMissing(queryInterface, 'GameSession', ['challengeId'], {
       name: 'idx_gamesession_challengeId',
     });
 
-    await queryInterface.addIndex('Badge', ['category'], {
+    await addIndexIfMissing(queryInterface, 'Badge', ['category'], {
       name: 'idx_badge_category',
     });
-    await queryInterface.addIndex('Badge', ['isActive'], {
+    await addIndexIfMissing(queryInterface, 'Badge', ['isActive'], {
       name: 'idx_badge_isActive',
     });
-    await queryInterface.addIndex('Badge', ['category', 'isActive'], {
+    await addIndexIfMissing(queryInterface, 'Badge', ['category', 'isActive'], {
       name: 'idx_badge_category_active',
     });
-    await queryInterface.addIndex('UserBadge', ['badgeId'], {
+    await addIndexIfMissing(queryInterface, 'UserBadge', ['badgeId'], {
       name: 'idx_userbadge_badgeId',
     });
   },
 
   async down(queryInterface) {
-    await queryInterface.removeIndex('UserBadge', 'idx_userbadge_badgeId');
-    await queryInterface.removeIndex('Badge', 'idx_badge_category_active');
-    await queryInterface.removeIndex('Badge', 'idx_badge_isActive');
-    await queryInterface.removeIndex('Badge', 'idx_badge_category');
-    await queryInterface.removeIndex('GameSession', 'idx_gamesession_challengeId');
-    await queryInterface.removeIndex('GameSession', 'idx_gamesession_user_status');
-    await queryInterface.removeIndex('GameSession', 'idx_gamesession_status');
+    await removeIndexIfExists(queryInterface, 'UserBadge', 'idx_userbadge_badgeId');
+    await removeIndexIfExists(queryInterface, 'Badge', 'idx_badge_category_active');
+    await removeIndexIfExists(queryInterface, 'Badge', 'idx_badge_isActive');
+    await removeIndexIfExists(queryInterface, 'Badge', 'idx_badge_category');
+    await removeIndexIfExists(queryInterface, 'GameSession', 'idx_gamesession_challengeId');
+    await removeIndexIfExists(queryInterface, 'GameSession', 'idx_gamesession_user_status');
+    await removeIndexIfExists(queryInterface, 'GameSession', 'idx_gamesession_status');
   },
 };

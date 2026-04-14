@@ -214,7 +214,25 @@ const getDiscoverUsers = async (req, res) => {
     }
 
     let whereExtra = '';
-    const execParams = [requesterId, requesterId];
+    const execParams = [requesterId, requesterId, requesterId, requesterId, requesterId, requesterId];
+    const relationshipExclusionClause = `
+      AND NOT EXISTS (
+        SELECT 1
+        FROM FriendRequest fr
+        WHERE fr.pairUser1Id = LEAST(ua.id, ?)
+          AND fr.pairUser2Id = GREATEST(ua.id, ?)
+          AND fr.status IN ('pending', 'accepted')
+      )
+      AND NOT EXISTS (
+        SELECT 1
+        FROM FriendsModel f
+        WHERE (
+          (f.user1_ID = ua.id AND f.user2_ID = ?)
+          OR (f.user2_ID = ua.id AND f.user1_ID = ?)
+        )
+          AND (f.status IS NULL OR f.status = 'accepted')
+      )
+    `;
 
     if (flg) {
       whereExtra += ' AND up.learning_goal = ? ';
@@ -333,6 +351,7 @@ const getDiscoverUsers = async (req, res) => {
       ) badge_strip ON badge_strip.userId = ua.id
       WHERE ua.id <> ?
       AND (up.visibility IS NULL OR up.visibility = '' OR up.visibility = 'Show')
+      ${relationshipExclusionClause}
       ${whereExtra}
       ${searchClause}
       ${orderClause}
@@ -377,10 +396,19 @@ const getDiscoverUsers = async (req, res) => {
         INNER JOIN UserProfile rp ON rp.id = ?
         WHERE ua.id <> ?
         AND (up.visibility IS NULL OR up.visibility = '' OR up.visibility = 'Show')
+        ${relationshipExclusionClause}
         ${searchClause}
         ${legacyOrder}
       `;
-      const legacyParams = [requesterId, requesterId, ...searchParams];
+      const legacyParams = [
+        requesterId,
+        requesterId,
+        requesterId,
+        requesterId,
+        requesterId,
+        requesterId,
+        ...searchParams,
+      ];
       let legacyRows;
       try {
         const [rows] = await pool.execute(legacySqlBase('up.bio'), legacyParams);

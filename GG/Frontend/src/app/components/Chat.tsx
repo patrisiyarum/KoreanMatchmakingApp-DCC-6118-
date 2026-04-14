@@ -1,21 +1,92 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, Link } from 'react-router';
 import { motion } from 'motion/react';
-import { ArrowLeft, Send } from 'lucide-react';
+import { ArrowLeft, Send, Loader2 } from 'lucide-react';
 import { mockMessages, potentialPartners, initialMatches } from '../data/mockData';
 import { Message } from '../types';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { getFriendsList, type FriendRow } from '@/api/friendsApi';
+import { publicAssetUrl } from '../utils/profileImage';
+
+type ChatPartner = {
+  id: string;
+  name: string;
+  avatar: string;
+  profileImage?: string | null;
+};
 
 export function Chat() {
   const { partnerId } = useParams();
   const { t } = useLanguage();
-  const [messages, setMessages] = useState<Message[]>(mockMessages[partnerId || ''] || []);
+  const { userId } = useAuth();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [partner, setPartner] = useState<ChatPartner | null>(null);
+  const [loadingPartner, setLoadingPartner] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const partner = [...potentialPartners, ...initialMatches.map(m => m.user)].find(
-    u => u.id === partnerId
-  );
+  useEffect(() => {
+    setMessages(mockMessages[partnerId || ''] || []);
+  }, [partnerId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPartner() {
+      if (!partnerId) {
+        setPartner(null);
+        setLoadingPartner(false);
+        return;
+      }
+      setLoadingPartner(true);
+
+      const fromMock = [...potentialPartners, ...initialMatches.map((m) => m.user)].find(
+        (u) => String(u.id) === String(partnerId)
+      );
+      if (fromMock) {
+        if (!cancelled) {
+          setPartner({
+            id: String(fromMock.id),
+            name: fromMock.name,
+            avatar: fromMock.avatar,
+            profileImage: fromMock.profileImage ?? null,
+          });
+          setLoadingPartner(false);
+        }
+        return;
+      }
+
+      if (!userId) {
+        if (!cancelled) {
+          setPartner(null);
+          setLoadingPartner(false);
+        }
+        return;
+      }
+
+      try {
+        const friends = await getFriendsList(userId);
+        if (cancelled) return;
+        const row = friends.find((f) => String(f.id) === String(partnerId));
+        if (!row) {
+          setPartner(null);
+          setLoadingPartner(false);
+          return;
+        }
+        setPartner(friendRowToPartner(row));
+      } catch {
+        if (!cancelled) setPartner(null);
+      } finally {
+        if (!cancelled) setLoadingPartner(false);
+      }
+    }
+
+    void loadPartner();
+    return () => {
+      cancelled = true;
+    };
+  }, [partnerId, userId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -26,7 +97,7 @@ export function Chat() {
 
     const message: Message = {
       id: `msg-${Date.now()}`,
-      senderId: 'user-1',
+      senderId: userId || 'user-1',
       text: newMessage,
       timestamp: new Date(),
     };
@@ -44,6 +115,14 @@ export function Chat() {
       setMessages(prev => [...prev, autoReply]);
     }, 1500);
   };
+
+  if (loadingPartner) {
+    return (
+      <div className="size-full flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
+      </div>
+    );
+  }
 
   if (!partner) {
     return (
@@ -64,7 +143,15 @@ export function Chat() {
         <Link to="/partners" className="text-neutral-600 hover:text-neutral-900">
           <ArrowLeft className="w-6 h-6" />
         </Link>
-        <div className="text-3xl">{partner.avatar}</div>
+        {publicAssetUrl(partner.profileImage) ? (
+          <img
+            src={publicAssetUrl(partner.profileImage)}
+            alt=""
+            className="w-10 h-10 rounded-full object-cover border border-neutral-200"
+          />
+        ) : (
+          <div className="text-3xl">{partner.avatar}</div>
+        )}
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-neutral-900 truncate">{partner.name}</h3>
           <p className="text-xs text-emerald-600 font-medium">{t('Online', '온라인')}</p>
@@ -73,7 +160,7 @@ export function Chat() {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message, index) => {
-          const isOwn = message.senderId === 'user-1';
+          const isOwn = message.senderId === (userId || 'user-1');
 
           return (
             <motion.div
@@ -127,4 +214,14 @@ export function Chat() {
       </div>
     </div>
   );
+}
+
+function friendRowToPartner(row: FriendRow): ChatPartner {
+  const fullName = `${row.firstName || ''} ${row.lastName || ''}`.trim() || 'Partner';
+  return {
+    id: String(row.id),
+    name: fullName,
+    avatar: '👤',
+    profileImage: row.profileImage ?? null,
+  };
 }

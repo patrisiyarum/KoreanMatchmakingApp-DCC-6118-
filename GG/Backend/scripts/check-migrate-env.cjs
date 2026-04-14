@@ -9,19 +9,20 @@ const path = require('path');
 const dotenv = require('dotenv');
 
 const backendRoot = path.join(__dirname, '..');
+const envParent = path.join(backendRoot, '..', '.env');
 const envBackend = path.join(backendRoot, '.env');
 const envCwd = path.join(process.cwd(), '.env');
 
 console.log('--- migrate env check ---');
 console.log('process.cwd():', process.cwd());
 console.log('Expected app root:', backendRoot);
+console.log('parent .env (e.g. httpdocs/.env):', fs.existsSync(envParent), envParent);
 console.log('GG/Backend/.env exists:', fs.existsSync(envBackend), envBackend);
 console.log('cwd .env exists:', fs.existsSync(envCwd), envCwd);
 
-dotenv.config({ path: envBackend, override: true });
-if (path.resolve(process.cwd()) !== path.resolve(backendRoot)) {
-  dotenv.config({ path: envCwd, override: false });
-}
+if (fs.existsSync(envParent)) dotenv.config({ path: envParent, override: false });
+if (fs.existsSync(envBackend)) dotenv.config({ path: envBackend, override: true });
+if (fs.existsSync(envCwd)) dotenv.config({ path: envCwd, override: false });
 
 function mask(v) {
   if (v == null || v === '') return '(empty)';

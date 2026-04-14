@@ -12,10 +12,14 @@ const path = require('path');
 
 const backendRoot = path.join(__dirname, '../..');
 const dotenv = require('dotenv');
+const envInParent = path.join(backendRoot, '..', '.env');
+const envInBackend = path.join(backendRoot, '.env');
 
-// Prefer GG/Backend/.env (authoritative). Cwd may be a parent folder on Plesk.
-if (fs.existsSync(path.join(backendRoot, '.env'))) {
-  dotenv.config({ path: path.join(backendRoot, '.env'), override: true });
+if (fs.existsSync(envInParent)) {
+  dotenv.config({ path: envInParent, override: false });
+}
+if (fs.existsSync(envInBackend)) {
+  dotenv.config({ path: envInBackend, override: true });
 }
 if (fs.existsSync(path.join(process.cwd(), '.env'))) {
   dotenv.config({ path: path.join(process.cwd(), '.env'), override: false });

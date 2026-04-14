@@ -6,7 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { getFriendsList, type FriendRow } from '@/api/friendsApi';
 import { getUserAvailability, replaceUserAvailability } from '@/api/availabilityApi';
-import { createMeetingApi } from '@/api/meetingsApi';
+import { createMeetingApi, getMeetingsForUserApi, type MeetingRow } from '@/api/meetingsApi';
 import {
   GRID_DAYS,
   GRID_HOURS,
@@ -50,17 +50,7 @@ export function Schedule() {
   const [isPaintingAvailability, setIsPaintingAvailability] = useState(false);
   const [paintAvailabilityTo, setPaintAvailabilityTo] = useState<boolean>(false);
 
-  const [meetings, setMeetings] = useState<Meeting[]>([
-    {
-      id: '1',
-      partnerId: 'user-2',
-      partnerName: '지우 (Jiwoo)',
-      date: '2026-04-10',
-      time: '14:00',
-      duration: '60 min',
-      topic: 'Conversation practice',
-    },
-  ]);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [modalPartnerId, setModalPartnerId] = useState('');
   const [modalPartnerKeys, setModalPartnerKeys] = useState<Set<string>>(new Set());
@@ -98,6 +88,65 @@ export function Schedule() {
     loadMine();
     loadFriends();
   }, [loadMine, loadFriends]);
+
+  const mapMeetingRowsToCards = useCallback(
+    (rows: MeetingRow[]) => {
+      if (!userId) return [] as Meeting[];
+      return rows.map((row) => {
+        const partnerId =
+          Number(row.user1_id) === Number(userId) ? String(row.user2_id) : String(row.user1_id);
+        const friend = friends.find((f) => String(f.id) === partnerId);
+        const partnerName =
+          [friend?.firstName, friend?.lastName].filter(Boolean).join(' ') ||
+          friend?.email ||
+          `User ${partnerId}`;
+        return {
+          id: String(row.id),
+          partnerId,
+          partnerName,
+          date: nextDateIsoForWeekday(row.day_of_week),
+          time: String(row.start_time || '').slice(0, 5),
+          duration: '60 min',
+          topic: t('Language exchange', '언어 교환'),
+        };
+      });
+    },
+    [friends, t, userId]
+  );
+
+  const loadMeetings = useCallback(async () => {
+    if (!userId) {
+      setMeetings([]);
+      return;
+    }
+    try {
+      const rows = await getMeetingsForUserApi(userId);
+      setMeetings(mapMeetingRowsToCards(rows));
+    } catch {
+      setMeetings([]);
+    }
+  }, [mapMeetingRowsToCards, userId]);
+
+  useEffect(() => {
+    void loadMeetings();
+  }, [loadMeetings]);
+
+  useEffect(() => {
+    if (!userId) return;
+    const intervalId = window.setInterval(() => {
+      void loadMeetings();
+    }, 10000);
+    const onFocus = () => {
+      void loadMeetings();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, [loadMeetings, userId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -211,19 +260,23 @@ export function Schedule() {
       const topic =
         modalTopic.trim() ||
         t('Language exchange', '언어 교환');
-      setMeetings((prev) => [
-        ...prev,
-        {
-          id: data?.id != null ? String(data.id) : `m-${Date.now()}`,
-          partnerId: modalPartnerId,
-          partnerName: modalPartnerLabel || `User ${modalPartnerId}`,
-          date: dateIso,
-          time: modalSelectedTime,
-          duration: '60 min',
-          topic,
-        },
-      ]);
+      setMeetings((prev) => {
+        if (data?.id == null) return prev;
+        return [
+          ...prev,
+          {
+            id: String(data.id),
+            partnerId: modalPartnerId,
+            partnerName: modalPartnerLabel || `User ${modalPartnerId}`,
+            date: dateIso,
+            time: modalSelectedTime,
+            duration: '60 min',
+            topic,
+          },
+        ];
+      });
       toast.success(t('Meeting scheduled', '미팅이 예약되었습니다'));
+      void loadMeetings();
       setShowScheduleModal(false);
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
@@ -328,28 +381,28 @@ export function Schedule() {
           <button
             type="button"
             onClick={() => setView('availability')}
-            className={`px-5 py-2.5 rounded-full text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${
               view === 'availability'
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'bg-white text-neutral-800 border border-neutral-200 hover:bg-neutral-50'
             }`}
           >
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
+              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               {t('My Availability', '내 가능 시간')}
             </div>
           </button>
           <button
             type="button"
             onClick={() => setView('meetings')}
-            className={`px-5 py-2.5 rounded-full text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors ${
               view === 'meetings'
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'bg-white text-neutral-800 border border-neutral-200 hover:bg-neutral-50'
             }`}
           >
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               {t('Scheduled Meetings', '예정된 미팅')} ({meetings.length})
             </div>
           </button>

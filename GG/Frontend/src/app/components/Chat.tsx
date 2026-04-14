@@ -29,6 +29,19 @@ export function Chat() {
   const [chatId, setChatId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const markChatSeen = (targetChatId: number, seenAt: Date) => {
+    if (!userId) return;
+    try {
+      const key = `chatSeenAt:${userId}`;
+      const raw = window.localStorage.getItem(key);
+      const parsed = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+      parsed[String(targetChatId)] = seenAt.toISOString();
+      window.localStorage.setItem(key, JSON.stringify(parsed));
+    } catch {
+      // Ignore localStorage failures.
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
 
@@ -119,16 +132,16 @@ export function Chat() {
         if (cancelled) return;
 
         setChatId(activeChatId);
-        setMessages(
-          rows
-            .map((row) => ({
-              id: String(row.id),
-              senderId: String(row.senderId),
-              text: String(row.text ?? ''),
-              timestamp: row.createdAt ? new Date(row.createdAt) : new Date(),
-            }))
-            .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
-        );
+        const mappedRows = rows
+          .map((row) => ({
+            id: String(row.id),
+            senderId: String(row.senderId),
+            text: String(row.text ?? ''),
+            timestamp: row.createdAt ? new Date(row.createdAt) : new Date(),
+          }))
+          .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        setMessages(mappedRows);
+        markChatSeen(activeChatId, mappedRows[mappedRows.length - 1]?.timestamp ?? new Date());
       } catch {
         if (!cancelled) {
           setChatId(null);
@@ -167,6 +180,7 @@ export function Chat() {
           const tempMessages = prev.filter((msg) => msg.id.startsWith('temp-'));
           return [...mapped, ...tempMessages];
         });
+        markChatSeen(chatId, mapped[mapped.length - 1]?.timestamp ?? new Date());
       } catch {
         // Silent retry on next polling tick.
       }
@@ -209,6 +223,7 @@ export function Chat() {
             : msg
         )
       );
+      markChatSeen(chatId, saved.createdAt ? new Date(saved.createdAt) : new Date());
     } catch {
       setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessage.id));
       setNewMessage(text);

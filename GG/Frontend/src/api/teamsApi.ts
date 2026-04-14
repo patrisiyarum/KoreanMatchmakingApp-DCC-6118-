@@ -26,6 +26,15 @@ export type TeamRow = {
   members?: TeamMemberRow[];
 };
 
+export type TeamInviteRow = {
+  id: number;
+  teamId: number;
+  inviterId: number;
+  inviteeId: number;
+  status: 'pending' | 'accepted' | 'declined';
+  team?: TeamRow;
+};
+
 export async function fetchMyTeam(userId: string): Promise<{
   team: TeamRow | null;
   myRole?: string;
@@ -52,4 +61,13 @@ export async function sendTeamInvite(ownerId: string, inviteeId: string) {
     inviterId: Number(ownerId),
     inviteeId: Number(inviteeId),
   });
+}
+
+export async function getPendingTeamInvites(userId: string): Promise<TeamInviteRow[]> {
+  try {
+    const res = await http.get<{ invites?: TeamInviteRow[] }>(`/api/teams/invites/${userId}`);
+    return Array.isArray(res?.invites) ? res.invites : [];
+  } catch {
+    return [];
+  }
 }

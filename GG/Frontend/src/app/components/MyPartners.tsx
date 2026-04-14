@@ -177,26 +177,6 @@ export function MyPartners() {
           </div>
         )}
 
-        {outgoing.length > 0 && (
-          <div className="bg-white rounded-2xl border border-neutral-200 p-5">
-            <h3 className="font-semibold text-neutral-900 mb-3">
-              {t('Sent Requests', '보낸 요청')}
-            </h3>
-            <div className="space-y-2">
-              {outgoing.map((req) => (
-                <div key={req.id} className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2">
-                  <span className="text-sm text-neutral-800">
-                    {displayName(req.recipientFirstName, req.recipientLastName)}
-                  </span>
-                  <span className="text-xs rounded-full bg-amber-100 text-amber-700 px-2 py-0.5">
-                    {t('Pending', '대기 중')}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {friends.map((friend, index) => (
           <motion.div
             key={friend.id}

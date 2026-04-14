@@ -1,4 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Home,
   Search,
@@ -17,6 +18,11 @@ import { useAIAssistant } from '../context/AIAssistantContext';
 import { useAuth } from '../context/AuthContext';
 import { AIAssistant } from './AIAssistant';
 import { Translator } from './Translator';
+import { getFriendRequests } from '@/api/friendsApi';
+import { getChatsForUser, getMessages } from '@/api/chatApi';
+import { getMeetingsForUserApi } from '@/api/meetingsApi';
+import { getPendingTeamInvites } from '@/api/teamsApi';
+import { getIncomingPendingChallenges } from '@/api/challengesApi';
 
 export function AppShell() {
   const location = useLocation();
@@ -24,14 +30,82 @@ export function AppShell() {
   const { language, setLanguage, t } = useLanguage();
   const { setIsTranslatorOpen } = useTranslator();
   const { setIsAssistantOpen } = useAIAssistant();
-  const { logout } = useAuth();
+  const { logout, userId } = useAuth();
+  const [partnersNotifCount, setPartnersNotifCount] = useState(0);
+  const [scheduleNotifCount, setScheduleNotifCount] = useState(0);
+  const [gamesNotifCount, setGamesNotifCount] = useState(0);
+
+  const getSeenMap = useCallback((): Record<string, string> => {
+    if (!userId) return {};
+    try {
+      const raw = window.localStorage.getItem(`chatSeenAt:${userId}`);
+      return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+    } catch {
+      return {};
+    }
+  }, [userId]);
+
+  const loadNotifications = useCallback(async () => {
+    if (!userId) {
+      setPartnersNotifCount(0);
+      setScheduleNotifCount(0);
+      setGamesNotifCount(0);
+      return;
+    }
+    try {
+      const [reqs, chats, meetings, teamInvites, challengeInvites] = await Promise.all([
+        getFriendRequests(userId),
+        getChatsForUser(userId),
+        getMeetingsForUserApi(userId),
+        getPendingTeamInvites(userId),
+        getIncomingPendingChallenges(userId),
+      ]);
+
+      const seenMap = getSeenMap();
+      const unreadByChat = await Promise.all(
+        chats.map(async (chat) => {
+          const rows = await getMessages(Number(chat.id));
+          const latest = rows
+            .slice()
+            .sort(
+              (a, b) =>
+                new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+            )[0];
+          if (!latest) return 0;
+          if (Number(latest.senderId) === Number(userId)) return 0;
+          const seenAt = seenMap[String(chat.id)];
+          if (!seenAt) return 1;
+          return new Date(latest.createdAt || 0).getTime() > new Date(seenAt).getTime() ? 1 : 0;
+        })
+      );
+
+      const pendingIncomingRequests = reqs.incoming.filter((r) => r.status === 'pending').length;
+      const unreadChats = unreadByChat.reduce((sum, value) => sum + value, 0);
+      const meetingsCount = meetings.length;
+      const gameInvitesCount = teamInvites.length + challengeInvites.length;
+
+      setPartnersNotifCount(pendingIncomingRequests + unreadChats);
+      setScheduleNotifCount(meetingsCount);
+      setGamesNotifCount(gameInvitesCount);
+    } catch {
+      // Keep nav usable even when notification fetch fails.
+    }
+  }, [getSeenMap, userId]);
+
+  useEffect(() => {
+    void loadNotifications();
+    const intervalId = window.setInterval(() => {
+      void loadNotifications();
+    }, 15000);
+    return () => window.clearInterval(intervalId);
+  }, [loadNotifications]);
 
   const navItems = [
-    { path: '/home', icon: Home, label: t('Home', '홈') },
-    { path: '/discover', icon: Search, label: t('Discover', '발견') },
-    { path: '/partners', icon: MessageSquare, label: t('Partners', '파트너') },
-    { path: '/schedule', icon: Calendar, label: t('Schedule', '일정') },
-    { path: '/games', icon: Gamepad2, label: t('Games', '게임') },
+    { path: '/home', icon: Home, label: t('Home', '홈'), notifCount: 0 },
+    { path: '/discover', icon: Search, label: t('Discover', '발견'), notifCount: 0 },
+    { path: '/partners', icon: MessageSquare, label: t('Partners', '파트너'), notifCount: partnersNotifCount },
+    { path: '/schedule', icon: Calendar, label: t('Schedule', '일정'), notifCount: scheduleNotifCount },
+    { path: '/games', icon: Gamepad2, label: t('Games', '게임'), notifCount: gamesNotifCount },
   ];
 
   return (
@@ -39,15 +113,6 @@ export function AppShell() {
       <header className="shrink-0 border-b border-neutral-200 bg-white">
         <div className="px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
           <div className="min-w-0">
-            {location.pathname !== '/home' ? (
-              <Link
-                to="/home"
-                className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium mb-1"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>{t('Back to Home', '홈으로 돌아가기')}</span>
-              </Link>
-            ) : null}
             <h1 className="text-lg sm:text-xl font-semibold text-neutral-900 truncate">
               LangMatch <span className="text-blue-600">언어교환</span>
             </h1>
@@ -140,7 +205,14 @@ export function AppShell() {
                   isActive ? 'text-blue-600' : 'text-neutral-600 hover:text-neutral-900'
                 }`}
               >
-                <Icon className="w-5 h-5 shrink-0" />
+                <div className="relative">
+                  <Icon className="w-5 h-5 shrink-0" />
+                  {item.notifCount > 0 ? (
+                    <span className="absolute -top-1.5 -right-2 min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[1.1rem] text-center font-semibold">
+                      {item.notifCount > 9 ? '9+' : item.notifCount}
+                    </span>
+                  ) : null}
+                </div>
                 <span className="text-[10px] sm:text-xs truncate max-w-[4.5rem] sm:max-w-none text-center">
                   {item.label}
                 </span>

@@ -184,12 +184,36 @@ router.delete('/leave', async (req, res) => {
     if (!membership) {
       return res.status(404).json({ error: 'You are not in a team.' });
     }
-    if (membership.role === 'owner') {
-      return res.status(400).json({ error: 'Owners cannot leave. Use disband to delete the team.' });
+    if (membership.role !== 'owner') {
+      await membership.destroy();
+      return res.status(200).json({ message: 'You have left the team.' });
     }
- 
+
+    const teammates = await db.TeamMember.findAll({
+      where: {
+        teamId: membership.teamId,
+        userId: { [Op.ne]: userId },
+      },
+      order: [['createdAt', 'ASC']],
+    });
+
+    // If owner is last member, remove the whole team.
+    if (teammates.length === 0) {
+      await db.TeamMember.destroy({ where: { teamId: membership.teamId } });
+      await db.Team.destroy({ where: { id: membership.teamId } });
+      return res.status(200).json({ message: 'You left and the team was disbanded.' });
+    }
+
+    // Promote earliest teammate to owner, then remove current owner membership.
+    const nextOwner = teammates[0];
+    await nextOwner.update({ role: 'owner' });
+    await db.Team.update(
+      { ownerID: nextOwner.userId },
+      { where: { id: membership.teamId } }
+    );
     await membership.destroy();
-    return res.status(200).json({ message: 'You have left the team.' });
+
+    return res.status(200).json({ message: 'You have left the team. Ownership was transferred.' });
   } catch (err) {
     console.error('Error leaving team:', err);
     return res.status(500).json({ error: 'Internal server error' });
@@ -237,6 +261,49 @@ router.get('/search', async (req, res) => {
   }
 });
  
+// ── GET /api/teams/matchmake/:userId
+// Find a currently available opponent team for the caller's team.
+router.get('/matchmake/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const membership = await db.TeamMember.findOne({ where: { userId } });
+    if (!membership) {
+      return res.status(404).json({ error: 'You are not in a team.' });
+    }
+
+    const myTeam = await db.Team.findByPk(membership.teamId, {
+      include: [{ model: db.TeamMember, as: 'members', attributes: ['id', 'teamId', 'userId', 'role'] }],
+    });
+    if (!myTeam) {
+      return res.status(404).json({ error: 'Your team was not found.' });
+    }
+
+    const opponents = await db.Team.findAll({
+      where: { id: { [Op.ne]: myTeam.id } },
+      include: [{ model: db.TeamMember, as: 'members', attributes: ['id', 'teamId', 'userId', 'role'] }],
+      order: [['updatedAt', 'DESC']],
+    });
+
+    const opponent = opponents.find((team) => Array.isArray(team.members) && team.members.length > 0) || null;
+    if (!opponent) {
+      return res.status(200).json({
+        matched: false,
+        message: 'No opponent team is currently available.',
+        team: myTeam,
+      });
+    }
+
+    return res.status(200).json({
+      matched: true,
+      team: myTeam,
+      opponent,
+    });
+  } catch (err) {
+    console.error('Error running team matchmaking:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ── POST /api/teams/invite
 // Body: { ownerId }
 // Owner fetches invite code (legacy)

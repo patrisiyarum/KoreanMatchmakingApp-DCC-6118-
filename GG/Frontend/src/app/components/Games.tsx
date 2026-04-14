@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Trophy,
@@ -16,22 +17,33 @@ import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { initialMatches } from '../data/mockData';
-import { createTeam, fetchMyTeam, sendTeamInvite, type TeamRow } from '@/api/teamsApi';
+import {
+  acceptTeamInvite,
+  createTeam,
+  declineTeamInvite,
+  fetchMyTeam,
+  findTeamMatch,
+  getPendingTeamInvites,
+  leaveTeam,
+  sendTeamInvite,
+  type TeamInviteRow,
+  type TeamRow,
+} from '@/api/teamsApi';
+import { getTeamVsBoard, incrementTeamQuestProgress, type TeamVsBoard } from '@/api/questsApi';
 import { getFriendsList, type FriendRow } from '@/api/friendsApi';
+import {
+  acceptChallengeApi,
+  createChallengeApi,
+  declineChallengeApi,
+  getChallengesForUser,
+  submitChallengeScoreApi,
+  type ChallengeRow,
+} from '@/api/challengesApi';
 
 interface VocabQuestion {
   korean: string;
   english: string;
   options: string[];
-}
-
-interface Challenge {
-  id: string;
-  opponentId: string;
-  opponentName: string;
-  status: 'pending' | 'active' | 'completed';
-  myScore?: number;
-  opponentScore?: number;
 }
 
 type ChallengePartner = {
@@ -40,6 +52,16 @@ type ChallengePartner = {
   level: string;
   avatar: string;
 };
+
+function getInviteTeamName(invite: TeamInviteRow, t: (en: string, ko: string) => string) {
+  const teamObj = (invite.team ?? invite.Team) as
+    | { name?: string; teamName?: string; title?: string }
+    | undefined;
+  const fromObj = teamObj?.name || teamObj?.teamName || teamObj?.title;
+  const fromFlat = (invite as unknown as { teamName?: string; team_title?: string }).teamName
+    || (invite as unknown as { teamName?: string; team_title?: string }).team_title;
+  return fromObj || fromFlat || `${t('Team', '팀')} #${invite.teamId}`;
+}
 
 const vocabQuestions: VocabQuestion[] = [
   {
@@ -70,6 +92,7 @@ const vocabQuestions: VocabQuestion[] = [
 ];
 
 export function Games() {
+  const [searchParams] = useSearchParams();
   const { t } = useLanguage();
   const { userId } = useAuth();
   const [view, setView] = useState<'menu' | 'solo' | 'challenge' | 'teams'>('menu');
@@ -79,16 +102,9 @@ export function Games() {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
-  const [challenges, setChallenges] = useState<Challenge[]>([
-    {
-      id: '1',
-      opponentId: 'user-2',
-      opponentName: '지우 (Jiwoo)',
-      status: 'active',
-      myScore: 0,
-      opponentScore: 0,
-    }
-  ]);
+  const [challenges, setChallenges] = useState<ChallengeRow[]>([]);
+  const [challengesLoading, setChallengesLoading] = useState(false);
+  const [activeChallengeId, setActiveChallengeId] = useState<string | null>(null);
 
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [challengePartners, setChallengePartners] = useState<ChallengePartner[]>([]);
@@ -103,6 +119,19 @@ export function Games() {
   const [teamFriendPool, setTeamFriendPool] = useState<FriendRow[]>([]);
   const [teamFriendPoolLoading, setTeamFriendPoolLoading] = useState(false);
   const [invitingFriendId, setInvitingFriendId] = useState<number | null>(null);
+  const [pendingInvitedFriendIds, setPendingInvitedFriendIds] = useState<Set<number>>(new Set());
+  const [teamInvites, setTeamInvites] = useState<TeamInviteRow[]>([]);
+  const [teamInvitesLoading, setTeamInvitesLoading] = useState(false);
+  const [actingTeamInviteId, setActingTeamInviteId] = useState<number | null>(null);
+  const [challengeNotifCount, setChallengeNotifCount] = useState(0);
+  const [teamNotifCount, setTeamNotifCount] = useState(0);
+  const [findingMatch, setFindingMatch] = useState(false);
+  const [matchedOpponentTeam, setMatchedOpponentTeam] = useState<TeamRow | null>(null);
+  const [showMatchFoundModal, setShowMatchFoundModal] = useState(false);
+  const [showQuestRaceModal, setShowQuestRaceModal] = useState(false);
+  const [teamVsBoard, setTeamVsBoard] = useState<TeamVsBoard | null>(null);
+  const [teamVsLoading, setTeamVsLoading] = useState(false);
+  const [activeTeamQuestGameType, setActiveTeamQuestGameType] = useState<string | null>(null);
 
   const refreshTeam = useCallback(async () => {
     if (!userId) {
@@ -127,6 +156,14 @@ export function Games() {
     if (view === 'teams') refreshTeam();
   }, [view, refreshTeam]);
 
+  useEffect(() => {
+    if (view !== 'teams') return;
+    const timer = window.setInterval(() => {
+      void refreshTeam();
+    }, 10000);
+    return () => window.clearInterval(timer);
+  }, [refreshTeam, view]);
+
   const loadTeamFriendPool = useCallback(async () => {
     if (!userId || !apiTeam) {
       setTeamFriendPool([]);
@@ -149,6 +186,87 @@ export function Games() {
       void loadTeamFriendPool();
     }
   }, [view, loadTeamFriendPool]);
+
+  const loadTeamInvites = useCallback(async () => {
+    if (!userId) {
+      setTeamInvites([]);
+      return;
+    }
+    setTeamInvitesLoading(true);
+    try {
+      const invites = await getPendingTeamInvites(userId);
+      setTeamInvites(invites);
+      setTeamNotifCount(invites.length);
+    } catch {
+      setTeamInvites([]);
+      setTeamNotifCount(0);
+    } finally {
+      setTeamInvitesLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    if (view === 'teams') {
+      void loadTeamInvites();
+    }
+  }, [loadTeamInvites, view]);
+
+  useEffect(() => {
+    if (!apiTeam?.id || !matchedOpponentTeam?.id || view !== 'teams') {
+      setTeamVsBoard(null);
+      return;
+    }
+    void (async () => {
+      setTeamVsLoading(true);
+      try {
+        const board = await getTeamVsBoard(apiTeam.id, matchedOpponentTeam.id);
+        setTeamVsBoard(board);
+      } finally {
+        setTeamVsLoading(false);
+      }
+    })();
+  }, [apiTeam?.id, matchedOpponentTeam?.id, view]);
+
+  useEffect(() => {
+    const openBattle = searchParams.get('teamBattle');
+    const opponentTeamId = Number(searchParams.get('opponentTeamId') || 0);
+    const opponentName = searchParams.get('opponentName') || '';
+    if (openBattle !== '1' || !opponentTeamId) return;
+
+    setView('teams');
+    setMatchedOpponentTeam({
+      id: opponentTeamId,
+      name: opponentName || `Team ${opponentTeamId}`,
+      members: [],
+    });
+    setShowMatchFoundModal(true);
+  }, [searchParams]);
+
+  const loadChallenges = useCallback(async () => {
+    if (!userId) {
+      setChallenges([]);
+      return;
+    }
+    setChallengesLoading(true);
+    try {
+      const rows = await getChallengesForUser(userId);
+      setChallenges(rows);
+      const myTurns = rows.filter((c) => {
+        const isChallenger = Number(c.challengerId) === Number(userId);
+        if (c.status === 'pending') return !isChallenger;
+        if (c.status === 'accepted' || c.status === 'in_progress') {
+          return isChallenger ? c.challengerScore == null : c.challengedScore == null;
+        }
+        return false;
+      }).length;
+      setChallengeNotifCount(myTurns);
+    } catch {
+      setChallenges([]);
+      setChallengeNotifCount(0);
+    } finally {
+      setChallengesLoading(false);
+    }
+  }, [userId]);
 
   const loadChallengePartners = useCallback(async () => {
     if (!userId) {
@@ -177,13 +295,26 @@ export function Games() {
     }
   }, [view, showChallengeModal, loadChallengePartners]);
 
+  useEffect(() => {
+    if (view === 'challenge') {
+      void loadChallenges();
+    }
+  }, [loadChallenges, view]);
+
+  useEffect(() => {
+    if (!userId) return;
+    void loadChallenges();
+    void loadTeamInvites();
+  }, [loadChallenges, loadTeamInvites, userId, view]);
+
   const question = vocabQuestions[currentQuestion];
 
   const handleAnswer = (answer: string) => {
     setSelectedAnswer(answer);
     setShowFeedback(true);
-
-    if (answer === question.english) {
+    const isCorrect = answer === question.english;
+    const nextScore = isCorrect ? score + 1 : score;
+    if (isCorrect) {
       setScore(prev => prev + 1);
     }
 
@@ -193,6 +324,40 @@ export function Games() {
         setSelectedAnswer(null);
         setShowFeedback(false);
       } else {
+        if (activeChallengeId && userId) {
+          void (async () => {
+            const ok = await submitChallengeScoreApi(activeChallengeId, userId, nextScore);
+            if (ok) {
+              toast.success(t('Turn submitted. Now waiting for your partner.', '내 차례를 제출했습니다. 이제 상대 차례입니다.'));
+              void loadChallenges();
+              setView('challenge');
+              setGameMode('menu');
+            } else {
+              toast.error(t('Could not submit challenge score', '대결 점수를 제출하지 못했습니다'));
+              setGameMode('results');
+            }
+            setActiveChallengeId(null);
+          })();
+          return;
+        }
+        if (activeTeamQuestGameType && userId) {
+          void (async () => {
+            const ok = await incrementTeamQuestProgress(userId, activeTeamQuestGameType);
+            if (ok) {
+              toast.success(t('Team quest progress updated!', '팀 퀘스트 진행도가 업데이트되었습니다!'));
+              if (apiTeam?.id && matchedOpponentTeam?.id) {
+                const board = await getTeamVsBoard(apiTeam.id, matchedOpponentTeam.id);
+                setTeamVsBoard(board);
+              }
+            } else {
+              toast.error(t('Could not update team quest progress', '팀 퀘스트 진행도를 업데이트하지 못했습니다'));
+            }
+            setActiveTeamQuestGameType(null);
+            setView('teams');
+            setGameMode('menu');
+          })();
+          return;
+        }
         setGameMode('results');
       }
     }, 1500);
@@ -204,6 +369,7 @@ export function Games() {
     setScore(0);
     setSelectedAnswer(null);
     setShowFeedback(false);
+    setActiveTeamQuestGameType(null);
     setView('menu');
   };
 
@@ -253,8 +419,13 @@ export function Games() {
             <button
               type="button"
               onClick={() => setView('challenge')}
-              className="w-full bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-5 sm:p-6 hover:shadow-lg transition-shadow text-left group"
+              className="relative w-full bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-5 sm:p-6 hover:shadow-lg transition-shadow text-left group"
             >
+              {challengeNotifCount > 0 ? (
+                <span className="absolute top-3 right-3 min-w-[1.2rem] h-[1.2rem] px-1 rounded-full bg-white text-orange-600 text-[10px] leading-[1.2rem] text-center font-bold">
+                  {challengeNotifCount > 9 ? '9+' : challengeNotifCount}
+                </span>
+              ) : null}
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
@@ -274,8 +445,13 @@ export function Games() {
             <button
               type="button"
               onClick={() => setView('teams')}
-              className="w-full bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl p-5 sm:p-6 hover:shadow-lg transition-shadow text-left group"
+              className="relative w-full bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl p-5 sm:p-6 hover:shadow-lg transition-shadow text-left group"
             >
+              {teamNotifCount > 0 ? (
+                <span className="absolute top-3 right-3 min-w-[1.2rem] h-[1.2rem] px-1 rounded-full bg-white text-blue-600 text-[10px] leading-[1.2rem] text-center font-bold">
+                  {teamNotifCount > 9 ? '9+' : teamNotifCount}
+                </span>
+              ) : null}
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
@@ -287,6 +463,16 @@ export function Games() {
                   <p className="text-sm text-blue-100">
                     {t('Form teams and compete against others', '팀을 만들어 다른 팀과 대결')}
                   </p>
+                  {teamInvites.length > 0 ? (
+                    <p className="mt-1 text-xs text-blue-100/95">
+                      {t('Invites:', '초대:')}{' '}
+                      {teamInvites
+                        .slice(0, 2)
+                        .map((invite) => getInviteTeamName(invite, t))
+                        .join(', ')}
+                      {teamInvites.length > 2 ? ` +${teamInvites.length - 2}` : ''}
+                    </p>
+                  ) : null}
                 </div>
                 <ArrowRight className="w-6 h-6 text-white group-hover:translate-x-1 transition-transform" />
               </div>
@@ -327,7 +513,33 @@ export function Games() {
           </button>
 
           <div className="space-y-4">
-            {challenges.map(challenge => (
+            {challengesLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-orange-600" />
+              </div>
+            ) : null}
+            {challenges.map(challenge => {
+              const isChallenger = Number(challenge.challengerId) === Number(userId);
+              const opponentName = isChallenger
+                ? `${challenge.challenged?.firstName || ''} ${challenge.challenged?.lastName || ''}`.trim() || `User ${challenge.challengedId}`
+                : `${challenge.challenger?.firstName || ''} ${challenge.challenger?.lastName || ''}`.trim() || `User ${challenge.challengerId}`;
+              const myScore = isChallenger ? challenge.challengerScore : challenge.challengedScore;
+              const opponentScore = isChallenger ? challenge.challengedScore : challenge.challengerScore;
+              const myTurn =
+                challenge.status === 'pending'
+                  ? !isChallenger
+                  : challenge.status === 'accepted' || challenge.status === 'in_progress'
+                    ? myScore == null
+                    : false;
+              const statusLabel =
+                challenge.status === 'pending'
+                  ? myTurn ? t('My turn', '내 차례') : t('Waiting for opponent', '상대 차례')
+                  : challenge.status === 'accepted' || challenge.status === 'in_progress'
+                    ? myTurn ? t('My turn', '내 차례') : t("Opponent's turn", '상대 차례')
+                    : challenge.status === 'completed'
+                      ? t('Completed', '완료')
+                      : t('Ended', '종료');
+              return (
               <div
                 key={challenge.id}
                 className="bg-white rounded-2xl border border-neutral-200 p-6"
@@ -335,44 +547,82 @@ export function Games() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="font-semibold text-neutral-900 mb-1">
-                      {t('VS', '대')} {challenge.opponentName}
+                      {t('VS', '대')} {opponentName}
                     </h3>
                     <span className={`text-xs px-2 py-1 rounded-full ${
-                      challenge.status === 'active' ? 'bg-orange-100 text-orange-700' :
+                      challenge.status === 'in_progress' || challenge.status === 'accepted' ? 'bg-orange-100 text-orange-700' :
                       challenge.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                       'bg-neutral-100 text-neutral-700'
                     }`}>
-                      {challenge.status === 'active' ? t('Active', '진행중') :
-                       challenge.status === 'pending' ? t('Pending', '대기중') :
-                       t('Completed', '완료')}
+                      {statusLabel}
                     </span>
                   </div>
                   <Swords className="w-6 h-6 text-orange-600" />
                 </div>
 
-                {challenge.status === 'active' && (
+                {challenge.status !== 'completed' && challenge.status !== 'declined' && challenge.status !== 'expired' && (
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-neutral-600">{t('Your Score', '내 점수')}</span>
-                      <span className="text-2xl font-bold text-blue-600">{challenge.myScore}</span>
+                      <span className="text-2xl font-bold text-blue-600">{myScore ?? 0}</span>
                     </div>
                     <div className="flex items-center justify-between mb-4">
                       <span className="text-sm text-neutral-600">{t('Opponent Score', '상대 점수')}</span>
-                      <span className="text-2xl font-bold text-orange-600">{challenge.opponentScore}</span>
+                      <span className="text-2xl font-bold text-orange-600">{opponentScore ?? 0}</span>
                     </div>
-                    <button
-                      onClick={() => {
-                        setView('solo');
-                        setGameMode('vocab');
-                      }}
-                      className="w-full bg-orange-600 text-white py-3 rounded-lg font-medium hover:bg-orange-700"
-                    >
-                      {t('Continue Challenge', '대결 계속하기')}
-                    </button>
+                    {challenge.status === 'pending' && myTurn ? (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!userId) return;
+                            const ok = await declineChallengeApi(String(challenge.id), userId);
+                            if (ok) {
+                              toast.success(t('Challenge declined', '대결을 거절했습니다'));
+                              void loadChallenges();
+                            }
+                          }}
+                          className="flex-1 bg-neutral-200 text-neutral-900 py-3 rounded-lg font-medium"
+                        >
+                          {t('Decline', '거절')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!userId) return;
+                            const ok = await acceptChallengeApi(String(challenge.id), userId);
+                            if (ok) {
+                              toast.success(t('Challenge accepted', '대결을 수락했습니다'));
+                              void loadChallenges();
+                            }
+                          }}
+                          className="flex-1 bg-orange-600 text-white py-3 rounded-lg font-medium hover:bg-orange-700"
+                        >
+                          {t('Accept', '수락')}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          if (!myTurn) {
+                            toast.message(t("It's your partner's turn", '상대 차례입니다'));
+                            return;
+                          }
+                          setActiveChallengeId(String(challenge.id));
+                          setView('solo');
+                          setGameMode('vocab');
+                        }}
+                        disabled={!myTurn}
+                        className="w-full bg-orange-600 text-white py-3 rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50"
+                      >
+                        {myTurn ? t('Continue Challenge', '대결 계속하기') : t("Waiting for opponent", '상대 차례')}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {showChallengeModal && (
@@ -381,6 +631,23 @@ export function Games() {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 className="bg-white rounded-2xl p-6 max-w-md w-full"
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter') return;
+                  if (!selectedChallengePartnerId || !userId) return;
+                  e.preventDefault();
+                  const selected = challengePartners.find((p) => p.id === selectedChallengePartnerId);
+                  if (!selected) return;
+                  void (async () => {
+                    const created = await createChallengeApi(userId, selected.id);
+                    if (created) {
+                      setShowChallengeModal(false);
+                      toast.success(t('Challenge sent! Waiting for their turn.', '대결을 보냈습니다! 상대 차례를 기다리세요.'));
+                      void loadChallenges();
+                    } else {
+                      toast.error(t('Could not create challenge', '대결을 만들지 못했습니다'));
+                    }
+                  })();
+                }}
               >
                 <h3 className="text-xl font-bold text-neutral-900 mb-4">
                   {t('Challenge a Partner', '파트너에게 도전')}
@@ -435,19 +702,17 @@ export function Games() {
                         toast.error(t('Choose a partner first', '먼저 파트너를 선택하세요'));
                         return;
                       }
-                      setChallenges((prev) => [
-                        {
-                          id: `challenge-${Date.now()}`,
-                          opponentId: selected.id,
-                          opponentName: selected.name,
-                          status: 'active',
-                          myScore: 0,
-                          opponentScore: 0,
-                        },
-                        ...prev,
-                      ]);
-                      setShowChallengeModal(false);
-                      toast.success(t('Challenge started!', '대결이 시작되었습니다!'));
+                      if (!userId) return;
+                      void (async () => {
+                        const created = await createChallengeApi(userId, selected.id);
+                        if (created) {
+                          setShowChallengeModal(false);
+                          toast.success(t('Challenge sent! Waiting for their turn.', '대결을 보냈습니다! 상대 차례를 기다리세요.'));
+                          void loadChallenges();
+                        } else {
+                          toast.error(t('Could not create challenge', '대결을 만들지 못했습니다'));
+                        }
+                      })();
                     }}
                     disabled={!selectedChallengePartnerId}
                     className="flex-1 bg-orange-600 text-white py-3 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
@@ -525,6 +790,76 @@ export function Games() {
             </div>
           ) : (
             <div className="space-y-4">
+              {teamInvitesLoading ? (
+                <div className="flex justify-center py-3">
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                </div>
+              ) : null}
+              {teamInvites.length > 0 ? (
+                <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                  <h4 className="text-sm font-semibold text-blue-900 mb-3">
+                    {t('Team invites for you', '받은 팀 초대')}
+                  </h4>
+                  <div className="space-y-3">
+                    {teamInvites.map((invite) => (
+                      <div key={invite.id} className="rounded-xl border border-blue-200 bg-white px-3 py-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-neutral-900 truncate">
+                              {getInviteTeamName(invite, t)}
+                            </p>
+                            <p className="text-xs text-neutral-600 truncate mt-0.5">
+                              {t('Invited by', '초대한 사람')}:{' '}
+                              {`${invite.inviter?.firstName || ''} ${invite.inviter?.lastName || ''}`.trim() ||
+                                t('Team owner', '팀장')}
+                            </p>
+                          </div>
+                          <span className="text-xs rounded-full bg-blue-100 text-blue-700 px-2 py-0.5 shrink-0">
+                            {t('Pending', '대기중')}
+                          </span>
+                        </div>
+                        <div className="mt-3 flex gap-2">
+                          <button
+                            type="button"
+                            disabled={actingTeamInviteId === invite.id}
+                            onClick={async () => {
+                              if (!userId) return;
+                              setActingTeamInviteId(invite.id);
+                              const ok = await declineTeamInvite(invite.id, userId);
+                              setActingTeamInviteId(null);
+                              if (ok) {
+                                toast.success(t('Invite declined', '초대를 거절했습니다'));
+                                void loadTeamInvites();
+                              }
+                            }}
+                            className="flex-1 rounded-lg border border-neutral-300 bg-white py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                          >
+                            {t('Decline', '거절')}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={actingTeamInviteId === invite.id}
+                            onClick={async () => {
+                              if (!userId) return;
+                              setActingTeamInviteId(invite.id);
+                              const res = await acceptTeamInvite(invite.id, userId);
+                              setActingTeamInviteId(null);
+                              if (res?.team) {
+                                toast.success(t('Joined team', '팀에 참가했습니다'));
+                                void refreshTeam();
+                                void loadTeamInvites();
+                              }
+                            }}
+                            className="flex-1 rounded-lg bg-blue-600 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                          >
+                            {t('Accept', '수락')}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               {apiTeam ? (
                 <div className="bg-white rounded-2xl border border-neutral-200 p-6">
                   <div className="flex items-start justify-between mb-4">
@@ -611,12 +946,21 @@ export function Games() {
                             </span>
                             <button
                               type="button"
-                              disabled={myTeamRole !== 'owner' || invitingFriendId === Number(friend.id)}
+                              disabled={
+                                myTeamRole !== 'owner' ||
+                                invitingFriendId === Number(friend.id) ||
+                                pendingInvitedFriendIds.has(Number(friend.id))
+                              }
                               onClick={async () => {
                                 if (!userId) return;
                                 setInvitingFriendId(Number(friend.id));
                                 try {
                                   await sendTeamInvite(userId, String(friend.id));
+                                  setPendingInvitedFriendIds((prev) => {
+                                    const next = new Set(prev);
+                                    next.add(Number(friend.id));
+                                    return next;
+                                  });
                                   toast.success(t('Invite sent', '초대를 보냈습니다'));
                                 } catch (err: unknown) {
                                   const ax = err as { response?: { data?: { error?: string } }; message?: string };
@@ -635,7 +979,9 @@ export function Games() {
                               {invitingFriendId === Number(friend.id) ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                               ) : null}
-                              {t('Invite', '초대')}
+                              {pendingInvitedFriendIds.has(Number(friend.id))
+                                ? t('Pending', '대기중')
+                                : t('Invite', '초대')}
                             </button>
                           </div>
                         ))}
@@ -645,18 +991,92 @@ export function Games() {
 
                   <button
                     type="button"
-                    onClick={() =>
-                      toast.message(t('Finding opponents…', '상대 찾는 중…'), {
-                        description: t(
-                          'Team matchmaking will pair you when another team is ready. Play solo or 1v1 while you wait.',
-                          '다른 팀이 준비되면 매칭됩니다. 그동안 혼자 또는 1대1을 즐겨 보세요.'
-                        ),
-                      })
-                    }
-                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700"
+                    onClick={async () => {
+                      if (!userId) return;
+                      const ok = await leaveTeam(userId);
+                      if (!ok) {
+                        toast.error(t('Could not leave team', '팀에서 나가지 못했습니다'));
+                        return;
+                      }
+                      toast.success(t('You left the team', '팀에서 나왔습니다'));
+                      setMatchedOpponentTeam(null);
+                      setTeamVsBoard(null);
+                      setShowMatchFoundModal(false);
+                      setShowQuestRaceModal(false);
+                      await refreshTeam();
+                      await loadTeamInvites();
+                    }}
+                    className="mb-4 w-full rounded-lg border border-red-300 bg-white text-red-600 py-2.5 text-sm font-semibold hover:bg-red-50"
                   >
-                    {t('Find Match', '매치 찾기')}
+                    {t('Leave Team', '팀 나가기')}
                   </button>
+
+                  {!matchedOpponentTeam ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!userId) return;
+                        setFindingMatch(true);
+                        try {
+                          const res = await findTeamMatch(userId);
+                          if (res?.matched && res.opponent) {
+                            setMatchedOpponentTeam(res.opponent);
+                            setShowMatchFoundModal(true);
+                            setShowQuestRaceModal(false);
+                            toast.success(
+                              t('Matched against team', '상대 팀 매칭됨') + `: ${res.opponent.name || 'Opponent'}`
+                            );
+                          } else {
+                            setMatchedOpponentTeam(null);
+                            setShowMatchFoundModal(false);
+                            setShowQuestRaceModal(false);
+                            toast.message(
+                              t('No opponent team is ready yet', '아직 준비된 상대 팀이 없습니다'),
+                              {
+                                description: t(
+                                  'Ask another team to open Team Battles and tap Find Match.',
+                                  '다른 팀이 Team Battles에서 매치 찾기를 누르도록 해보세요.'
+                                ),
+                              }
+                            );
+                          }
+                        } finally {
+                          setFindingMatch(false);
+                        }
+                      }}
+                      className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                      disabled={findingMatch}
+                    >
+                      {findingMatch ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                      {t('Find Match', '매치 찾기')}
+                    </button>
+                  ) : (
+                    <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wide text-indigo-600 font-semibold">
+                            {t('Quest Race Live', '퀘스트 레이스 진행 중')}
+                          </p>
+                          <p className="mt-1 text-sm text-neutral-800">
+                            <span className="font-bold">{apiTeam.name}</span> VS{' '}
+                            <span className="font-bold">{matchedOpponentTeam.name}</span>
+                          </p>
+                        </div>
+                        <span className="text-xs rounded-full bg-indigo-100 text-indigo-700 px-2 py-1 font-semibold">
+                          {t('Active', '진행중')}
+                        </span>
+                      </div>
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={() => setShowQuestRaceModal(true)}
+                          className="w-full rounded-lg bg-indigo-600 text-white py-2.5 text-sm font-semibold hover:bg-indigo-700"
+                        >
+                          {t('Open Quest Race', '퀘스트 레이스 열기')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-neutral-300 bg-white/80 p-8 text-center text-neutral-600 text-sm">
@@ -669,12 +1089,188 @@ export function Games() {
             </div>
           )}
 
+          {showMatchFoundModal && apiTeam && matchedOpponentTeam ? (
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-6">
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+              >
+                <p className="text-xs uppercase tracking-wide text-indigo-600 font-semibold mb-2">
+                  {t('Match Found', '매치 성사')}
+                </p>
+                <h3 className="text-xl font-bold text-neutral-900 mb-2">
+                  {apiTeam.name} <span className="text-indigo-600">VS</span> {matchedOpponentTeam.name}
+                </h3>
+                <p className="text-sm text-neutral-600 mb-4">
+                  {t(
+                    'Battle started. Open Team Quest Race below to begin tasks.',
+                    '대결이 시작되었습니다. 아래 팀 퀘스트 레이스에서 과제를 시작하세요.'
+                  )}
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowMatchFoundModal(false)}
+                    className="flex-1 rounded-lg bg-neutral-200 text-neutral-900 py-2.5 text-sm font-medium hover:bg-neutral-300"
+                  >
+                    {t('Close', '닫기')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMatchFoundModal(false);
+                      setShowQuestRaceModal(true);
+                    }}
+                    className="flex-1 rounded-lg bg-indigo-600 text-white py-2.5 text-sm font-semibold hover:bg-indigo-700"
+                  >
+                    {t('Go to Quest Race', '퀘스트 레이스로 이동')}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          ) : null}
+
+          {showQuestRaceModal && apiTeam && matchedOpponentTeam ? (
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-6">
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-xl max-h-[80vh] overflow-y-auto"
+              >
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-indigo-600 font-semibold">
+                      {t('Team Quest Race', '팀 퀘스트 레이스')}
+                    </p>
+                    <h3 className="text-lg font-bold text-neutral-900 mt-1">
+                      {apiTeam.name} <span className="text-indigo-600">VS</span> {matchedOpponentTeam.name}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowQuestRaceModal(false)}
+                    className="rounded-lg bg-neutral-200 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-300"
+                  >
+                    {t('Close', '닫기')}
+                  </button>
+                </div>
+                <p className="text-xs text-neutral-600 mb-3">
+                  {t(
+                    'Complete quests before the other team. If both finish, earliest completion wins.',
+                    '상대 팀보다 먼저 퀘스트를 완료하세요. 둘 다 완료하면 더 빨리 끝낸 팀이 승리합니다.'
+                  )}
+                </p>
+                <div className="space-y-3">
+                  {teamVsLoading ? (
+                    <div className="flex justify-center py-6">
+                      <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+                    </div>
+                  ) : null}
+                  {(teamVsBoard?.quests ?? []).map((quest) => (
+                    <div key={`modal-quest-${quest.questId}`} className="rounded-xl border border-neutral-200 p-3 bg-neutral-50">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-neutral-900">{quest.title}</p>
+                          <p className="text-xs text-neutral-600">{quest.description}</p>
+                        </div>
+                        <span
+                          className={`text-[10px] px-2 py-1 rounded-full font-semibold ${
+                            quest.leader === 'team'
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : quest.leader === 'opponent'
+                                ? 'bg-rose-100 text-rose-700'
+                                : 'bg-neutral-200 text-neutral-700'
+                          }`}
+                        >
+                          {quest.leader === 'team'
+                            ? t('Your team leads', '내 팀 우세')
+                            : quest.leader === 'opponent'
+                              ? t('Opponent leads', '상대 팀 우세')
+                              : t('Tied', '동점')}
+                        </span>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <p className="text-neutral-600">{apiTeam.name}</p>
+                          <p className="font-semibold text-neutral-900">
+                            {quest.team.progress}/{quest.goal}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-neutral-600">{matchedOpponentTeam.name}</p>
+                          <p className="font-semibold text-neutral-900">
+                            {quest.opponent.progress}/{quest.goal}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const modeMap: Record<string, 'vocab'> = {
+                            'term-matching': 'vocab',
+                            'grammar-quiz': 'vocab',
+                            'pronunciation-drill': 'vocab',
+                          };
+                          const targetMode = modeMap[String(quest.gameType || '')] || 'vocab';
+                          setShowQuestRaceModal(false);
+                          setActiveChallengeId(null);
+                          setActiveTeamQuestGameType(String(quest.gameType || 'term-matching'));
+                          setView('solo');
+                          setGameMode(targetMode);
+                          setCurrentQuestion(0);
+                          setScore(0);
+                          setSelectedAnswer(null);
+                          setShowFeedback(false);
+                        }}
+                        className="mt-3 w-full rounded-lg bg-indigo-600 text-white py-2 text-xs font-semibold hover:bg-indigo-700"
+                      >
+                        {t('Start Task', '과제 시작')}
+                      </button>
+                    </div>
+                  ))}
+                  {!teamVsLoading && (teamVsBoard?.quests?.length ?? 0) === 0 ? (
+                    <p className="text-xs text-neutral-600">
+                      {t('No team quests available yet.', '아직 팀 퀘스트가 없습니다.')}
+                    </p>
+                  ) : null}
+                </div>
+              </motion.div>
+            </div>
+          ) : null}
+
           {showTeamModal && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 className="bg-white rounded-2xl p-6 max-w-md w-full"
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter') return;
+                  if (creatingTeam || !userId || !newTeamName.trim()) return;
+                  e.preventDefault();
+                  void (async () => {
+                    setCreatingTeam(true);
+                    try {
+                      const { inviteCode } = await createTeam(userId, newTeamName.trim());
+                      toast.success(
+                        t('Team created!', '팀이 만들어졌습니다!') +
+                          (inviteCode ? ` Code: ${inviteCode}` : '')
+                      );
+                      setShowTeamModal(false);
+                      await refreshTeam();
+                    } catch (err: unknown) {
+                      const ax = err as { response?: { data?: { error?: string } }; message?: string };
+                      toast.error(
+                        ax.response?.data?.error ||
+                          ax.message ||
+                          t('Could not create team', '팀을 만들 수 없습니다')
+                      );
+                    } finally {
+                      setCreatingTeam(false);
+                    }
+                  })();
+                }}
               >
                 <h3 className="text-xl font-bold text-neutral-900 mb-4">
                   {t('Create New Team', '새 팀 만들기')}

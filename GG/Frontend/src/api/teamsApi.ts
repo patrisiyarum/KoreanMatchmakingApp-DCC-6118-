@@ -33,6 +33,16 @@ export type TeamInviteRow = {
   inviteeId: number;
   status: 'pending' | 'accepted' | 'declined';
   team?: TeamRow;
+  Team?: TeamRow;
+  inviter?: { id: number; firstName?: string; lastName?: string };
+  Inviter?: { id: number; firstName?: string; lastName?: string };
+};
+
+export type TeamMatchResponse = {
+  matched: boolean;
+  message?: string;
+  team?: TeamRow;
+  opponent?: TeamRow;
 };
 
 export async function fetchMyTeam(userId: string): Promise<{
@@ -66,8 +76,49 @@ export async function sendTeamInvite(ownerId: string, inviteeId: string) {
 export async function getPendingTeamInvites(userId: string): Promise<TeamInviteRow[]> {
   try {
     const res = await http.get<{ invites?: TeamInviteRow[] }>(`/api/teams/invites/${userId}`);
-    return Array.isArray(res?.invites) ? res.invites : [];
+    const rows = Array.isArray(res?.invites) ? res.invites : [];
+    return rows.map((row) => ({
+      ...row,
+      team: row.team ?? row.Team,
+      inviter: row.inviter ?? row.Inviter,
+    }));
   } catch {
     return [];
+  }
+}
+
+export async function acceptTeamInvite(inviteId: number, userId: string): Promise<{ team?: TeamRow } | null> {
+  try {
+    return await http.post<{ team?: TeamRow }>(`/api/teams/invites/${inviteId}/accept`, {
+      userId: Number(userId),
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function declineTeamInvite(inviteId: number, userId: string): Promise<boolean> {
+  try {
+    await http.post(`/api/teams/invites/${inviteId}/decline`, { userId: Number(userId) });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function findTeamMatch(userId: string): Promise<TeamMatchResponse | null> {
+  try {
+    return await http.get<TeamMatchResponse>(`/api/teams/matchmake/${userId}`);
+  } catch {
+    return null;
+  }
+}
+
+export async function leaveTeam(userId: string): Promise<boolean> {
+  try {
+    await http.delete('/api/teams/leave', { data: { userId: Number(userId) } });
+    return true;
+  } catch {
+    return false;
   }
 }

@@ -7,6 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { publicAssetUrl } from '../utils/profileImage';
 import {
   createProfile,
+  fetchUserGameStats,
   fetchProfileOptions,
   fetchUserAccount,
   fetchUserProfilePayload,
@@ -51,6 +52,13 @@ export function Profile() {
   const [gender, setGender] = useState('Other');
   const [profession, setProfession] = useState('Other');
   const [interests, setInterests] = useState<string[]>([]);
+  const [gameStats, setGameStats] = useState<{
+    gamesPlayed: number;
+    termMatching: number;
+    grammarQuiz: number;
+    pronunciation: number;
+    perfectRounds: number;
+  } | null>(null);
   const warnedBioColumnRef = useRef(false);
 
   const optionSet = new Set<string>([...PROFILE_INTEREST_OPTIONS]);
@@ -71,14 +79,26 @@ export function Profile() {
     setLoading(true);
     let profile: ProfileRow | null = null;
     try {
-      const [account, profileRow, options, interestNames] = await Promise.all([
+      const [account, profileRow, statsRes, options, interestNames] = await Promise.all([
         fetchUserAccount(userId),
         fetchUserProfilePayload(userId),
+        fetchUserGameStats(userId),
         fetchProfileOptions(),
         fetchUserInterestNames(userId).catch(() => [] as string[]),
       ]);
       profile = profileRow;
       setOpts(options);
+      setGameStats(
+        statsRes?.gameActivity
+          ? {
+              gamesPlayed: statsRes.gameActivity.gamesPlayed || 0,
+              termMatching: statsRes.gameActivity.termMatching || 0,
+              grammarQuiz: statsRes.gameActivity.grammarQuiz || 0,
+              pronunciation: statsRes.gameActivity.pronunciation || 0,
+              perfectRounds: statsRes.gameActivity.perfectRounds || 0,
+            }
+          : null
+      );
       if (account) {
         setFirstName(account.firstName || '');
         setLastName(account.lastName || '');
@@ -355,6 +375,25 @@ export function Profile() {
                 <option>English</option>
               </select>
             </div>
+          </div>
+
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+            <p className="text-sm font-semibold text-neutral-900 mb-2">
+              {t('Game stats', '게임 통계')}
+            </p>
+            {gameStats ? (
+              <div className="grid grid-cols-2 gap-2 text-xs text-neutral-700">
+                <div>{t('Games played', '플레이한 게임')}: <span className="font-semibold">{gameStats.gamesPlayed}</span></div>
+                <div>{t('Perfect rounds', '퍼펙트 라운드')}: <span className="font-semibold">{gameStats.perfectRounds}</span></div>
+                <div>{t('Term matching', '단어 매칭')}: <span className="font-semibold">{gameStats.termMatching}</span></div>
+                <div>{t('Grammar quiz', '문법 퀴즈')}: <span className="font-semibold">{gameStats.grammarQuiz}</span></div>
+                <div>{t('Pronunciation', '발음')}: <span className="font-semibold">{gameStats.pronunciation}</span></div>
+              </div>
+            ) : (
+              <p className="text-xs text-neutral-600">
+                {t('No game stats yet.', '아직 게임 통계가 없습니다.')}
+              </p>
+            )}
           </div>
 
           <div>

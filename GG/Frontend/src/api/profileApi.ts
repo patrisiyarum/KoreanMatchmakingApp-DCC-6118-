@@ -34,6 +34,21 @@ export type ProfileOptions = {
   commitmentLevel: { min: number; max: number; default: number };
 };
 
+export type UserGameStats = {
+  gamesPlayed: number;
+  termMatching: number;
+  grammarQuiz: number;
+  pronunciation: number;
+  perfectRounds: number;
+};
+
+export type UserGameStatsPayload = {
+  xp?: number;
+  level?: number;
+  xpToNext?: number;
+  gameActivity?: UserGameStats | null;
+};
+
 export async function fetchUserAccount(userId: string): Promise<UserAccountRow | null> {
   try {
     const data = await http.get<UserAccountRow>(`/api/getUser/${userId}`);
@@ -49,6 +64,14 @@ export async function fetchUserProfilePayload(userId: string): Promise<ProfileRo
       `/api/v1/getUserProfile/${userId}`
     );
     return res?.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchUserGameStats(userId: string): Promise<UserGameStatsPayload | null> {
+  try {
+    return await http.get<UserGameStatsPayload>(`/api/games/user-stats/${userId}`);
   } catch {
     return null;
   }

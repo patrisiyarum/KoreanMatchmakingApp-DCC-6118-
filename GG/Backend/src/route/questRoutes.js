@@ -9,6 +9,45 @@ import db from '../models/index.js';
 
 const router = express.Router();
 
+const TEAM_BATTLE_QUEST_TEMPLATES = [
+  {
+    title: 'Vocabulary Sprint',
+    description: 'Complete 8 vocabulary rounds before the other team.',
+    type: 'team',
+    gameType: 'term-matching',
+    goal: 8,
+    xpReward: 120,
+    resetType: 'weekly',
+  },
+  {
+    title: 'Grammar Clash',
+    description: 'Finish 6 grammar rounds and beat the other team score.',
+    type: 'team',
+    gameType: 'grammar-quiz',
+    goal: 6,
+    xpReward: 120,
+    resetType: 'weekly',
+  },
+  {
+    title: 'Pronunciation Relay',
+    description: 'Complete 6 pronunciation drills as a team.',
+    type: 'team',
+    gameType: 'pronunciation-drill',
+    goal: 6,
+    xpReward: 120,
+    resetType: 'weekly',
+  },
+];
+
+async function ensureTeamBattleQuests() {
+  for (const template of TEAM_BATTLE_QUEST_TEMPLATES) {
+    await db.Quest.findOrCreate({
+      where: { title: template.title, type: 'team' },
+      defaults: { ...template, isActive: true },
+    });
+  }
+}
+
 // ── Helper: check and handle daily/weekly resets ──
 const shouldReset = (progress, resetType) => {
   if (resetType === 'permanent' || !progress.lastResetAt) return false;
@@ -274,6 +313,106 @@ router.get('/team/:teamId', async (req, res) => {
     return res.status(200).json({ quests: results });
   } catch (err) {
     console.error('Error fetching team quests:', err?.message || err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/quests/team-vs/:teamId/:opponentTeamId
+// Returns a head-to-head quest board for two teams.
+router.get('/team-vs/:teamId/:opponentTeamId', async (req, res) => {
+  try {
+    const teamId = Number(req.params.teamId);
+    const opponentTeamId = Number(req.params.opponentTeamId);
+    if (!teamId || Number.isNaN(teamId) || !opponentTeamId || Number.isNaN(opponentTeamId)) {
+      return res.status(400).json({ error: 'Invalid team IDs' });
+    }
+    if (teamId === opponentTeamId) {
+      return res.status(400).json({ error: 'Team IDs must be different' });
+    }
+
+    const [team, opponentTeam] = await Promise.all([
+      db.Team.findByPk(teamId, { attributes: ['id', 'name', 'totalXP'] }),
+      db.Team.findByPk(opponentTeamId, { attributes: ['id', 'name', 'totalXP'] }),
+    ]);
+    if (!team || !opponentTeam) {
+      return res.status(404).json({ error: 'Team not found' });
+    }
+
+    await ensureTeamBattleQuests();
+    const quests = await db.Quest.findAll({
+      where: { isActive: true, type: 'team' },
+      order: [['id', 'ASC']],
+    });
+
+    const board = await Promise.all(
+      quests.map(async (quest) => {
+        const [myProgress] = await db.TeamQuestProgress.findOrCreate({
+          where: { teamId, questId: quest.id },
+          defaults: { progress: 0, completed: false, lastResetAt: new Date() },
+        });
+        const [opponentProgress] = await db.TeamQuestProgress.findOrCreate({
+          where: { teamId: opponentTeamId, questId: quest.id },
+          defaults: { progress: 0, completed: false, lastResetAt: new Date() },
+        });
+
+        if (shouldReset(myProgress, quest.resetType)) {
+          await myProgress.update({ progress: 0, completed: false, completedAt: null, lastResetAt: new Date() });
+        }
+        if (shouldReset(opponentProgress, quest.resetType)) {
+          await opponentProgress.update({ progress: 0, completed: false, completedAt: null, lastResetAt: new Date() });
+        }
+
+        const myPct = Math.min(100, Math.round(((myProgress.progress || 0) / Math.max(1, quest.goal || 1)) * 100));
+        const opponentPct = Math.min(100, Math.round(((opponentProgress.progress || 0) / Math.max(1, quest.goal || 1)) * 100));
+
+        let leader = 'tied';
+        if (myProgress.completed && opponentProgress.completed) {
+          leader = new Date(myProgress.completedAt) <= new Date(opponentProgress.completedAt) ? 'team' : 'opponent';
+        } else if (myProgress.completed) {
+          leader = 'team';
+        } else if (opponentProgress.completed) {
+          leader = 'opponent';
+        } else if (myProgress.progress > opponentProgress.progress) {
+          leader = 'team';
+        } else if (opponentProgress.progress > myProgress.progress) {
+          leader = 'opponent';
+        }
+
+        return {
+          questId: quest.id,
+          title: quest.title,
+          description: quest.description,
+          gameType: quest.gameType,
+          goal: quest.goal,
+          xpReward: quest.xpReward,
+          team: {
+            progress: myProgress.progress,
+            completed: myProgress.completed,
+            completedAt: myProgress.completedAt,
+            percent: myPct,
+          },
+          opponent: {
+            progress: opponentProgress.progress,
+            completed: opponentProgress.completed,
+            completedAt: opponentProgress.completedAt,
+            percent: opponentPct,
+          },
+          leader,
+        };
+      })
+    );
+
+    return res.status(200).json({
+      team,
+      opponentTeam,
+      scoring: {
+        finishPriority: 'First completion wins tie-breakers',
+        scorePriority: 'Higher progress wins when unfinished',
+      },
+      quests: board,
+    });
+  } catch (err) {
+    console.error('Error fetching team-vs quests:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

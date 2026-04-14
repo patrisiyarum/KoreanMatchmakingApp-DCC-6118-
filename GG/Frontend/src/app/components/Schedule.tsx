@@ -47,6 +47,8 @@ export function Schedule() {
   const [overlayPartnerId, setOverlayPartnerId] = useState<string>('');
   const [loadAvail, setLoadAvail] = useState(false);
   const [savingAvail, setSavingAvail] = useState(false);
+  const [isPaintingAvailability, setIsPaintingAvailability] = useState(false);
+  const [paintAvailabilityTo, setPaintAvailabilityTo] = useState<boolean>(false);
 
   const [meetings, setMeetings] = useState<Meeting[]>([
     {
@@ -67,6 +69,7 @@ export function Schedule() {
   const [modalSelectedTime, setModalSelectedTime] = useState<string | null>(null);
   const [modalTopic, setModalTopic] = useState('');
   const [scheduling, setScheduling] = useState(false);
+  const [isDraggingModalSlot, setIsDraggingModalSlot] = useState(false);
 
   const loadMine = useCallback(async () => {
     if (!userId) return;
@@ -165,10 +168,10 @@ export function Schedule() {
     return cls;
   };
 
-  const pickModalSlot = (day: string, time: string) => {
+  const pickModalSlot = (day: string, time: string, showRecommendationToast = true) => {
     const key = `${day}-${time}`;
     const bothFree = myKeys.has(key) && modalPartnerKeys.has(key);
-    if (!bothFree) {
+    if (showRecommendationToast && !bothFree) {
       toast.message(
         t(
           'Scheduled anyway — highlighted both-free slots are recommended.',
@@ -233,15 +236,43 @@ export function Schedule() {
     }
   };
 
-  const toggleMySlot = (day: string, time: string) => {
+  const beginAvailabilityPaint = (day: string, time: string) => {
     const key = `${day}-${time}`;
+    const shouldEnable = !myKeys.has(key);
+    setPaintAvailabilityTo(shouldEnable);
+    setIsPaintingAvailability(true);
     setMyKeys((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (shouldEnable) next.add(key);
+      else next.delete(key);
       return next;
     });
   };
+
+  const paintAvailabilityCell = (day: string, time: string) => {
+    if (!isPaintingAvailability) return;
+    const key = `${day}-${time}`;
+    setMyKeys((prev) => {
+      const next = new Set(prev);
+      if (paintAvailabilityTo) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (!isPaintingAvailability) return;
+    const endPaint = () => setIsPaintingAvailability(false);
+    window.addEventListener('mouseup', endPaint);
+    return () => window.removeEventListener('mouseup', endPaint);
+  }, [isPaintingAvailability]);
+
+  useEffect(() => {
+    if (!isDraggingModalSlot) return;
+    const endDrag = () => setIsDraggingModalSlot(false);
+    window.addEventListener('mouseup', endDrag);
+    return () => window.removeEventListener('mouseup', endDrag);
+  }, [isDraggingModalSlot]);
 
   const saveAvailability = async () => {
     if (!userId) return;
@@ -383,13 +414,13 @@ export function Schedule() {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr>
-                      <th className="px-2 py-1 text-left text-xs font-medium text-neutral-700 border-b">
+                      <th className="px-2 py-0.5 text-left text-xs font-medium text-neutral-700 border-b">
                         {t('Time', '시간')}
                       </th>
                       {GRID_DAYS.map((day, index) => (
                         <th
                           key={day}
-                          className="px-1 py-1 text-center text-xs font-medium text-neutral-700 border-b"
+                          className="px-1 py-0.5 text-center text-xs font-medium text-neutral-700 border-b"
                         >
                           {language === 'ko' ? daysOfWeekKo[index] : day.slice(0, 3)}
                         </th>
@@ -399,14 +430,16 @@ export function Schedule() {
                   <tbody>
                     {GRID_HOURS.map((time) => (
                       <tr key={time}>
-                        <td className="px-2 py-1 text-xs text-neutral-600 border-b whitespace-nowrap">{time}</td>
+                        <td className="px-2 py-0.5 text-xs text-neutral-600 border-b whitespace-nowrap">{time}</td>
                         {GRID_DAYS.map((day) => (
                           <td key={`${day}-${time}`} className="p-0.5 border-b">
                             <button
                               type="button"
                               title={`${day} ${time}`}
-                              onClick={() => toggleMySlot(day, time)}
-                              className={`w-full h-7 sm:h-8 rounded transition-colors ${cellClass(day, time)}`}
+                              onMouseDown={() => beginAvailabilityPaint(day, time)}
+                              onMouseEnter={() => paintAvailabilityCell(day, time)}
+                              onMouseUp={() => setIsPaintingAvailability(false)}
+                              className={`w-full h-6 sm:h-7 rounded transition-colors cursor-pointer ${cellClass(day, time)}`}
                             />
                           </td>
                         ))}
@@ -549,13 +582,13 @@ export function Schedule() {
                     <table className="w-full border-collapse min-w-[600px]">
                       <thead>
                         <tr>
-                          <th className="px-2 py-1 text-left text-xs font-medium text-neutral-700 border-b bg-neutral-50">
+                          <th className="px-2 py-0.5 text-left text-xs font-medium text-neutral-700 border-b bg-neutral-50">
                             {t('Time', '시간')}
                           </th>
                           {GRID_DAYS.map((day, index) => (
                             <th
                               key={day}
-                              className="px-1 py-1 text-center text-xs font-medium text-neutral-700 border-b bg-neutral-50"
+                              className="px-1 py-0.5 text-center text-xs font-medium text-neutral-700 border-b bg-neutral-50"
                             >
                               {language === 'ko' ? daysOfWeekKo[index] : day.slice(0, 3)}
                             </th>
@@ -565,7 +598,7 @@ export function Schedule() {
                       <tbody>
                         {GRID_HOURS.map((time) => (
                           <tr key={time}>
-                            <td className="px-2 py-1 text-xs text-neutral-600 border-b whitespace-nowrap">
+                            <td className="px-2 py-0.5 text-xs text-neutral-600 border-b whitespace-nowrap">
                               {time}
                             </td>
                             {GRID_DAYS.map((day) => (
@@ -573,8 +606,15 @@ export function Schedule() {
                                 <button
                                   type="button"
                                   title={`${day} ${time}`}
-                                  onClick={() => pickModalSlot(day, time)}
-                                  className={`w-full h-7 sm:h-8 rounded transition-colors ${modalCellClass(day, time)}`}
+                                  onMouseDown={() => {
+                                    setIsDraggingModalSlot(true);
+                                    pickModalSlot(day, time, true);
+                                  }}
+                                  onMouseEnter={() => {
+                                    if (isDraggingModalSlot) pickModalSlot(day, time, false);
+                                  }}
+                                  onMouseUp={() => setIsDraggingModalSlot(false)}
+                                  className={`w-full h-6 sm:h-7 rounded transition-colors cursor-pointer ${modalCellClass(day, time)}`}
                                 />
                               </td>
                             ))}

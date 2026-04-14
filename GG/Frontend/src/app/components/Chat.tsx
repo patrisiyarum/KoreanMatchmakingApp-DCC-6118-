@@ -2,12 +2,12 @@ import { useState, useRef, useEffect } from 'react';
 import { useParams, Link } from 'react-router';
 import { motion } from 'motion/react';
 import { ArrowLeft, Send, Loader2 } from 'lucide-react';
-import { mockMessages, potentialPartners, initialMatches } from '../data/mockData';
 import { Message } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { getFriendsList, type FriendRow } from '@/api/friendsApi';
 import { publicAssetUrl } from '../utils/profileImage';
+import { createChat, getChatsForUser, getMessages, sendMessage } from '@/api/chatApi';
 
 type ChatPartner = {
   id: string;
@@ -24,11 +24,10 @@ export function Chat() {
   const [newMessage, setNewMessage] = useState('');
   const [partner, setPartner] = useState<ChatPartner | null>(null);
   const [loadingPartner, setLoadingPartner] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(true);
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [chatId, setChatId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setMessages(mockMessages[partnerId || ''] || []);
-  }, [partnerId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,22 +39,6 @@ export function Chat() {
         return;
       }
       setLoadingPartner(true);
-
-      const fromMock = [...potentialPartners, ...initialMatches.map((m) => m.user)].find(
-        (u) => String(u.id) === String(partnerId)
-      );
-      if (fromMock) {
-        if (!cancelled) {
-          setPartner({
-            id: String(fromMock.id),
-            name: fromMock.name,
-            avatar: fromMock.avatar,
-            profileImage: fromMock.profileImage ?? null,
-          });
-          setLoadingPartner(false);
-        }
-        return;
-      }
 
       if (!userId) {
         if (!cancelled) {
@@ -92,28 +75,146 @@ export function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = () => {
-    if (!newMessage.trim()) return;
+  useEffect(() => {
+    let cancelled = false;
 
-    const message: Message = {
-      id: `msg-${Date.now()}`,
-      senderId: userId || 'user-1',
-      text: newMessage,
+    async function loadConversation() {
+      if (!userId || !partnerId) {
+        if (!cancelled) {
+          setChatId(null);
+          setMessages([]);
+          setLoadingMessages(false);
+        }
+        return;
+      }
+
+      setLoadingMessages(true);
+      try {
+        const chats = await getChatsForUser(userId);
+        let existingChat = chats.find((c) => {
+          const sender = String(c.senderId);
+          const receiver = String(c.receiverId);
+          return (
+            (sender === String(userId) && receiver === String(partnerId)) ||
+            (sender === String(partnerId) && receiver === String(userId))
+          );
+        });
+
+        if (!existingChat) {
+          const created = await createChat(userId, String(partnerId));
+          if (created) existingChat = created;
+        }
+
+        if (!existingChat) {
+          if (!cancelled) {
+            setChatId(null);
+            setMessages([]);
+            setLoadingMessages(false);
+          }
+          return;
+        }
+
+        const activeChatId = Number(existingChat.id);
+        const rows = await getMessages(activeChatId);
+        if (cancelled) return;
+
+        setChatId(activeChatId);
+        setMessages(
+          rows
+            .map((row) => ({
+              id: String(row.id),
+              senderId: String(row.senderId),
+              text: String(row.text ?? ''),
+              timestamp: row.createdAt ? new Date(row.createdAt) : new Date(),
+            }))
+            .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+        );
+      } catch {
+        if (!cancelled) {
+          setChatId(null);
+          setMessages([]);
+        }
+      } finally {
+        if (!cancelled) setLoadingMessages(false);
+      }
+    }
+
+    void loadConversation();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, partnerId]);
+
+  useEffect(() => {
+    if (!chatId) return;
+
+    let cancelled = false;
+    const intervalId = window.setInterval(async () => {
+      try {
+        const rows = await getMessages(chatId);
+        if (cancelled) return;
+
+        const mapped = rows
+          .map((row) => ({
+            id: String(row.id),
+            senderId: String(row.senderId),
+            text: String(row.text ?? ''),
+            timestamp: row.createdAt ? new Date(row.createdAt) : new Date(),
+          }))
+          .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+        setMessages((prev) => {
+          const tempMessages = prev.filter((msg) => msg.id.startsWith('temp-'));
+          return [...mapped, ...tempMessages];
+        });
+      } catch {
+        // Silent retry on next polling tick.
+      }
+    }, 3000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [chatId]);
+
+  const handleSend = async () => {
+    const text = newMessage.trim();
+    if (!text || !userId || !chatId || sendingMessage) return;
+
+    const optimisticMessage: Message = {
+      id: `temp-${Date.now()}`,
+      senderId: String(userId),
+      text,
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, message]);
+    setMessages((prev) => [...prev, optimisticMessage]);
     setNewMessage('');
+    setSendingMessage(true);
 
-    setTimeout(() => {
-      const autoReply: Message = {
-        id: `msg-${Date.now() + 1}`,
-        senderId: partnerId || '',
-        text: "That's great! Let's practice more! 더 연습해요! 😊",
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, autoReply]);
-    }, 1500);
+    try {
+      const saved = await sendMessage(chatId, userId, text);
+      if (!saved) return;
+
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === optimisticMessage.id
+            ? {
+                id: String(saved.id),
+                senderId: String(saved.senderId),
+                text: String(saved.text ?? text),
+                timestamp: saved.createdAt ? new Date(saved.createdAt) : optimisticMessage.timestamp,
+              }
+            : msg
+        )
+      );
+    } catch {
+      setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessage.id));
+      setNewMessage(text);
+    } finally {
+      setSendingMessage(false);
+    }
   };
 
   if (loadingPartner) {
@@ -159,6 +260,11 @@ export function Chat() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {loadingMessages ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-violet-600" />
+          </div>
+        ) : null}
         {messages.map((message, index) => {
           const isOwn = message.senderId === (userId || 'user-1');
 
@@ -197,14 +303,15 @@ export function Chat() {
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            onKeyDown={(e) => e.key === 'Enter' && void handleSend()}
             placeholder={t('Type a message...', '메시지를 입력하세요...')}
             className="w-full pl-4 pr-14 py-3.5 rounded-full border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            disabled={loadingMessages || sendingMessage || !chatId}
           />
           <button
             type="button"
-            onClick={handleSend}
-            disabled={!newMessage.trim()}
+            onClick={() => void handleSend()}
+            disabled={!newMessage.trim() || loadingMessages || sendingMessage || !chatId}
             className="absolute right-1.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed transition-colors"
             aria-label={t('Send', '보내기')}
           >

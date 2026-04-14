@@ -1,10 +1,33 @@
 'use strict';
 
+/** MySQL DDL is not fully transactional; a failed run can leave tables/indexes without a SequelizeMeta row. */
+async function tableExists(queryInterface, tableName) {
+  const dialect = queryInterface.sequelize.getDialect();
+  if (dialect === 'mysql') {
+    const [rows] = await queryInterface.sequelize.query(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
+       WHERE TABLE_SCHEMA = DATABASE() AND LOWER(TABLE_NAME) = LOWER(:t)`,
+      { replacements: { t: tableName } }
+    );
+    return rows.length > 0;
+  }
+  const tables = await queryInterface.showAllTables();
+  const want = String(tableName).toLowerCase();
+  return tables.some((t) => String(t).toLowerCase() === want);
+}
+
+async function indexExists(queryInterface, tableName, indexName) {
+  const indexes = await queryInterface.showIndex(tableName);
+  const want = String(indexName).toLowerCase();
+  return indexes.some((ix) => String(ix.name).toLowerCase() === want);
+}
+
 module.exports = {
   async up(queryInterface, Sequelize) {
 
     // ── Quest definitions ──
-    await queryInterface.createTable('Quest', {
+    if (!(await tableExists(queryInterface, 'Quest'))) {
+      await queryInterface.createTable('Quest', {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
@@ -58,10 +81,12 @@ module.exports = {
       },
       createdAt: { type: Sequelize.DATE, allowNull: false },
       updatedAt: { type: Sequelize.DATE, allowNull: false },
-    });
+      });
+ }
 
     // ── Individual user progress per quest ──
-    await queryInterface.createTable('UserQuestProgress', {
+    if (!(await tableExists(queryInterface, 'UserQuestProgress'))) {
+      await queryInterface.createTable('UserQuestProgress', {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
@@ -106,16 +131,20 @@ module.exports = {
       },
       createdAt: { type: Sequelize.DATE, allowNull: false },
       updatedAt: { type: Sequelize.DATE, allowNull: false },
-    });
+      });
+    }
 
     // Unique constraint — one progress row per user per quest
-    await queryInterface.addIndex('UserQuestProgress', ['userId', 'questId'], {
-      unique: true,
-      name: 'unique_user_quest',
-    });
+    if (!(await indexExists(queryInterface, 'UserQuestProgress', 'unique_user_quest'))) {
+      await queryInterface.addIndex('UserQuestProgress', ['userId', 'questId'], {
+        unique: true,
+        name: 'unique_user_quest',
+      });
+    }
 
     // ── Team progress per quest ──
-    await queryInterface.createTable('TeamQuestProgress', {
+    if (!(await tableExists(queryInterface, 'TeamQuestProgress'))) {
+      await queryInterface.createTable('TeamQuestProgress', {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
@@ -156,13 +185,16 @@ module.exports = {
       },
       createdAt: { type: Sequelize.DATE, allowNull: false },
       updatedAt: { type: Sequelize.DATE, allowNull: false },
-    });
+      });
+    }
 
     // Unique constraint — one progress row per team per quest
-    await queryInterface.addIndex('TeamQuestProgress', ['teamId', 'questId'], {
-      unique: true,
-      name: 'unique_team_quest',
-    });
+    if (!(await indexExists(queryInterface, 'TeamQuestProgress', 'unique_team_quest'))) {
+      await queryInterface.addIndex('TeamQuestProgress', ['teamId', 'questId'], {
+        unique: true,
+        name: 'unique_team_quest',
+      });
+    }
   },
 
   async down(queryInterface) {

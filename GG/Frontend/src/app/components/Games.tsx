@@ -18,6 +18,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { initialMatches } from '../data/mockData';
 import { createTeam, fetchMyTeam, type TeamRow } from '@/api/teamsApi';
+import { getFriendsList, type FriendRow } from '@/api/friendsApi';
 import {
   fetchUserInterestNames,
   saveMatchmakingBioAndInterests,
@@ -40,6 +41,13 @@ interface Challenge {
   myScore?: number;
   opponentScore?: number;
 }
+
+type ChallengePartner = {
+  id: string;
+  name: string;
+  level: string;
+  avatar: string;
+};
 
 const vocabQuestions: VocabQuestion[] = [
   {
@@ -91,6 +99,9 @@ export function Games() {
   ]);
 
   const [showChallengeModal, setShowChallengeModal] = useState(false);
+  const [challengePartners, setChallengePartners] = useState<ChallengePartner[]>([]);
+  const [challengePartnersLoading, setChallengePartnersLoading] = useState(false);
+  const [selectedChallengePartnerId, setSelectedChallengePartnerId] = useState<string | null>(null);
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [apiTeam, setApiTeam] = useState<TeamRow | null>(null);
@@ -151,6 +162,33 @@ export function Games() {
   useEffect(() => {
     if (view === 'teams' && userId) loadTeamMatchmakingProfile();
   }, [view, userId, loadTeamMatchmakingProfile]);
+
+  const loadChallengePartners = useCallback(async () => {
+    if (!userId) {
+      setChallengePartners([]);
+      setChallengePartnersLoading(false);
+      return;
+    }
+    setChallengePartnersLoading(true);
+    try {
+      const rows = await getFriendsList(userId);
+      const mapped = rows.map(friendRowToChallengePartner);
+      setChallengePartners(mapped);
+      setSelectedChallengePartnerId((prev) => prev ?? mapped[0]?.id ?? null);
+    } catch {
+      setChallengePartners([]);
+      setSelectedChallengePartnerId(null);
+      toast.error(t('Could not load partners', '파트너를 불러오지 못했습니다'));
+    } finally {
+      setChallengePartnersLoading(false);
+    }
+  }, [userId, t]);
+
+  useEffect(() => {
+    if (view === 'challenge' || showChallengeModal) {
+      void loadChallengePartners();
+    }
+  }, [view, showChallengeModal, loadChallengePartners]);
 
   const toggleTeamInterest = (label: string) => {
     setTeamInterests((prev) =>
@@ -369,20 +407,36 @@ export function Games() {
                   {t('Challenge a Partner', '파트너에게 도전')}
                 </h3>
                 <div className="space-y-3 mb-6">
-                  {initialMatches.map(match => (
-                    <button
-                      key={match.user.id}
-                      className="w-full p-4 rounded-lg border border-neutral-200 hover:bg-neutral-50 text-left"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="text-3xl">{match.user.avatar}</div>
-                        <div>
-                          <div className="font-semibold text-neutral-900">{match.user.name}</div>
-                          <div className="text-sm text-neutral-600">{match.user.level}</div>
+                  {challengePartnersLoading ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="w-6 h-6 animate-spin text-orange-600" />
+                    </div>
+                  ) : challengePartners.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-neutral-300 p-4 text-sm text-neutral-600 text-center">
+                      {t('No accepted partners yet.', '아직 수락된 파트너가 없습니다.')}
+                    </div>
+                  ) : (
+                    challengePartners.map((partner) => (
+                      <button
+                        key={partner.id}
+                        type="button"
+                        onClick={() => setSelectedChallengePartnerId(partner.id)}
+                        className={`w-full p-4 rounded-lg border text-left transition-colors ${
+                          selectedChallengePartnerId === partner.id
+                            ? 'border-orange-500 bg-orange-50'
+                            : 'border-neutral-200 hover:bg-neutral-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="text-3xl">{partner.avatar}</div>
+                          <div>
+                            <div className="font-semibold text-neutral-900">{partner.name}</div>
+                            <div className="text-sm text-neutral-600">{partner.level}</div>
+                          </div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    ))
+                  )}
                 </div>
                 <div className="flex gap-3">
                   <button
@@ -392,8 +446,32 @@ export function Games() {
                     {t('Cancel', '취소')}
                   </button>
                   <button
-                    onClick={() => setShowChallengeModal(false)}
-                    className="flex-1 bg-orange-600 text-white py-3 rounded-lg font-medium"
+                    onClick={() => {
+                      if (!selectedChallengePartnerId) {
+                        toast.error(t('Choose a partner first', '먼저 파트너를 선택하세요'));
+                        return;
+                      }
+                      const selected = challengePartners.find((p) => p.id === selectedChallengePartnerId);
+                      if (!selected) {
+                        toast.error(t('Choose a partner first', '먼저 파트너를 선택하세요'));
+                        return;
+                      }
+                      setChallenges((prev) => [
+                        {
+                          id: `challenge-${Date.now()}`,
+                          opponentId: selected.id,
+                          opponentName: selected.name,
+                          status: 'active',
+                          myScore: 0,
+                          opponentScore: 0,
+                        },
+                        ...prev,
+                      ]);
+                      setShowChallengeModal(false);
+                      toast.success(t('Challenge started!', '대결이 시작되었습니다!'));
+                    }}
+                    disabled={!selectedChallengePartnerId}
+                    className="flex-1 bg-orange-600 text-white py-3 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {t('Challenge', '도전')}
                   </button>
@@ -874,4 +952,18 @@ export function Games() {
       </div>
     </div>
   );
+}
+
+function friendRowToChallengePartner(friend: FriendRow): ChallengePartner {
+  const first = String(friend.firstName || '').trim();
+  const last = String(friend.lastName || '').trim();
+  const name = `${first} ${last}`.trim() || 'Partner';
+  const seed = Number(friend.id) || 0;
+  const avatarPool = ['👤', '🦊', '🐱', '🐼', '🐯', '🐻', '🐰', '🐨'];
+  return {
+    id: String(friend.id),
+    name,
+    level: 'Partner',
+    avatar: avatarPool[Math.abs(seed) % avatarPool.length],
+  };
 }

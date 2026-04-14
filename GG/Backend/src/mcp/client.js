@@ -1,8 +1,54 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { partnerMatching } from "./tools/partnerMatching.js";
+import { scheduleMeeting } from "./tools/scheduleMeeting.js";
+import { summarizePracticeSession } from "./tools/summarizePracticeSession.js";
 
 let mcpClientInstance = null;
 let mcpClientPromise = null;
+
+/** Matches `server.js`: MCP HTTP server is off in production unless ENABLE_MCP=1. */
+function isMcpHttpServerEnabled() {
+  return process.env.NODE_ENV !== "production" || process.env.ENABLE_MCP === "1";
+}
+
+/**
+ * MCP `tools/call` returns CallToolResult; `aiAssistantController.formatToolResponse` expects the tool payload (matches, error, etc.).
+ */
+function normalizeToolResult(raw) {
+  if (!raw || typeof raw !== "object") return raw;
+  if (raw.structuredContent && typeof raw.structuredContent === "object") {
+    return raw.structuredContent;
+  }
+  const c0 = raw.content?.[0];
+  if (c0?.type === "text" && typeof c0.text === "string") {
+    try {
+      const parsed = JSON.parse(c0.text);
+      if (parsed && typeof parsed === "object") return parsed;
+    } catch {
+      /* not JSON */
+    }
+  }
+  const { content, structuredContent, isError, _meta, ...rest } = raw;
+  if (Object.keys(rest).length) return rest;
+  return raw;
+}
+
+async function callToolWithInProcessFallback(name, args, directFn) {
+  if (!isMcpHttpServerEnabled()) {
+    return directFn();
+  }
+  try {
+    const client = await getMcpClient();
+    const raw = await client.callTool({ name, arguments: args });
+    return normalizeToolResult(raw);
+  } catch (err) {
+    console.warn(
+      `[MCP] ${name} failed (${err?.message || err}); running in-process tool instead.`
+    );
+    return directFn();
+  }
+}
 
 export async function getMcpClient() {
   // If client already exists and is connected, return it
@@ -17,7 +63,7 @@ export async function getMcpClient() {
   mcpClientPromise = (async () => {
     try {
       const transport = new StreamableHTTPClientTransport(
-        new URL("http://localhost:4000/mcp") // MCP server endpoint
+        new URL(process.env.MCP_URL || "http://127.0.0.1:4000/mcp")
       );
 
       const client = new Client(
@@ -55,11 +101,12 @@ export async function callPronunciationHelp(audioPart, userId) {
   }
 
   try {
-
-    const client = await getMcpClient();
     const args = { audioPart: audioPart, userId: userId };
-    const result = await client.callTool({ name: "pronunciationHelp", arguments: args });
-    return result;
+    return await callToolWithInProcessFallback(
+      "pronunciationHelp",
+      args,
+      async () => ({ error: "pronunciationHelp requires MCP server in this deployment" })
+    );
 
   } catch (error) {
     console.error("Error calling pronunciationHelp tool:", error);
@@ -82,7 +129,6 @@ export async function callPartnerMatching(userId, criteria = {}) {
   }
 
   try {
-    const client = await getMcpClient();
     const args = { userId: numericUserId };
     
     if (criteria && (criteria.zodiac || criteria.mbti)) {
@@ -91,9 +137,9 @@ export async function callPartnerMatching(userId, criteria = {}) {
       if (criteria.mbti) args.criteria.mbti = criteria.mbti;
     }
     
-    const result = await client.callTool({ name: "partnerMatching", arguments: args });
-    
-    return result;
+    return await callToolWithInProcessFallback("partnerMatching", args, async () =>
+      partnerMatching(args)
+    );
   } catch (error) {
     console.error("Error calling partnerMatching tool:", error);
     return {
@@ -107,18 +153,15 @@ export async function callSummarizePracticeSession(chatId, requestingUserId) {
   // Ensure requestingUserId is a number
   console.log(chatId);
   try {
-    const client = await getMcpClient();
-    
     const args = {
       chatId: chatId,
       userId: requestingUserId,
     };
-    const result = await client.callTool({ 
-      name: "summarizePracticeSession", 
-      arguments: args 
-    });
-    
-    return result;
+    return await callToolWithInProcessFallback(
+      "summarizePracticeSession",
+      args,
+      async () => summarizePracticeSession(args)
+    );
   } catch (error) {
     console.error("Error calling summarizePracticeSession tool:", error);
     return {
@@ -150,8 +193,6 @@ export async function callScheduleMeeting(userId, targetUserName, preferredDay =
   }
 
   try {
-    const client = await getMcpClient();
-    
     const args = {
       userId: numericUserId,
       targetUserName: targetUserName
@@ -165,12 +206,9 @@ export async function callScheduleMeeting(userId, targetUserName, preferredDay =
       args.preferredTime = preferredTime;
     }
     
-    const result = await client.callTool({ 
-      name: "scheduleMeeting", 
-      arguments: args 
-    });
-    
-    return result;
+    return await callToolWithInProcessFallback("scheduleMeeting", args, async () =>
+      scheduleMeeting(args)
+    );
   } catch (error) {
     console.error("Error calling scheduleMeeting tool:", error);
     return {

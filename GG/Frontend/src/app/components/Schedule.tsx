@@ -38,6 +38,13 @@ function formatMeetingDate(isoDate: string, lang: 'en' | 'ko') {
   return d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
 }
 
+function shortPartnerName(name: string) {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return 'Meeting';
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[1].charAt(0)}.`;
+}
+
 export function Schedule() {
   const { userId } = useAuth();
   const { t, language } = useLanguage();
@@ -352,6 +359,17 @@ export function Schedule() {
     return set;
   }, [meetings]);
 
+  const meetingBySlot = useMemo(() => {
+    const map = new Map<string, Meeting[]>();
+    meetings.forEach((meeting) => {
+      const key = `${meeting.dayOfWeek}-${meeting.time}`;
+      const prev = map.get(key) || [];
+      prev.push(meeting);
+      map.set(key, prev);
+    });
+    return map;
+  }, [meetings]);
+
   const cellClass = (day: string, time: string) => {
     const key = `${day}-${time}`;
     const mine = myKeys.has(key);
@@ -362,7 +380,7 @@ export function Schedule() {
     else if (mine) base = 'bg-blue-600 hover:bg-blue-700';
     else if (theirs) base = 'bg-amber-400 hover:bg-amber-500';
     else base = 'bg-neutral-100 hover:bg-neutral-200';
-    if (hasMeeting) base += ' ring-2 ring-rose-500 ring-inset';
+    if (hasMeeting) base += ' ring-2 ring-red-600 ring-inset';
     return base;
   };
 
@@ -471,16 +489,16 @@ export function Schedule() {
                   <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                 </div>
               ) : (
-                <table className="w-full border-collapse">
+                <table className="w-full border-separate border-spacing-0 table-fixed">
                   <thead>
                     <tr>
-                      <th className="px-2 py-0.5 text-left text-xs font-medium text-neutral-700 border-b">
+                      <th className="px-2 py-1 text-left text-xs font-medium text-neutral-700 border-b border-neutral-200 bg-[#f8f9fa]">
                         {t('Time', '시간')}
                       </th>
                       {GRID_DAYS.map((day, index) => (
                         <th
                           key={day}
-                          className="px-1 py-0.5 text-center text-xs font-medium text-neutral-700 border-b"
+                          className="px-1 py-1 text-center text-xs font-medium text-neutral-700 border-b border-neutral-200 bg-[#f8f9fa]"
                         >
                           {language === 'ko' ? daysOfWeekKo[index] : day.slice(0, 3)}
                         </th>
@@ -490,17 +508,32 @@ export function Schedule() {
                   <tbody>
                     {GRID_HOURS.map((time) => (
                       <tr key={time}>
-                        <td className="px-2 py-0.5 text-xs text-neutral-600 border-b whitespace-nowrap">{time}</td>
+                        <td className="px-2 py-1 text-xs text-neutral-600 border-b border-neutral-200 whitespace-nowrap bg-white">
+                          {time}
+                        </td>
                         {GRID_DAYS.map((day) => (
-                          <td key={`${day}-${time}`} className="p-0.5 border-b">
+                          <td key={`${day}-${time}`} className="p-0.5 border-b border-neutral-200 bg-white">
                             <button
                               type="button"
-                              title={`${day} ${time}`}
+                              title={`${day} ${time}${
+                                (meetingBySlot.get(`${day}-${time}`) || []).length
+                                  ? ` • ${meetingBySlot
+                                      .get(`${day}-${time}`)!
+                                      .map((m) => m.partnerName)
+                                      .join(', ')}`
+                                  : ''
+                              }`}
                               onMouseDown={() => beginAvailabilityPaint(day, time)}
                               onMouseEnter={() => paintAvailabilityCell(day, time)}
                               onMouseUp={() => setIsPaintingAvailability(false)}
-                              className={`w-full h-6 sm:h-7 rounded transition-colors cursor-pointer ${cellClass(day, time)}`}
-                            />
+                              className={`w-full h-6 sm:h-7 rounded transition-colors cursor-pointer relative overflow-hidden ${cellClass(day, time)}`}
+                            >
+                              {(meetingBySlot.get(`${day}-${time}`) || []).length ? (
+                                <span className="absolute inset-x-0.5 top-0.5 px-1 rounded bg-red-600 text-white text-[9px] leading-3 truncate">
+                                  {shortPartnerName(meetingBySlot.get(`${day}-${time}`)![0].partnerName)}
+                                </span>
+                              ) : null}
+                            </button>
                           </td>
                         ))}
                       </tr>
@@ -524,13 +557,33 @@ export function Schedule() {
                 <span className="text-neutral-600">{t('Both free', '둘 다 가능')}</span>
               </div>
               <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-red-600 rounded" />
+                <span className="text-neutral-600">{t('Scheduled meeting', '예약된 미팅')}</span>
+              </div>
+              <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-neutral-100 rounded border border-neutral-200" />
                 <span className="text-neutral-600">{t('Not available', '불가')}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-neutral-100 rounded border-2 border-rose-500" />
-                <span className="text-neutral-600">{t('Scheduled meeting', '예약된 미팅')}</span>
-              </div>
+            </div>
+
+            <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50/60 p-3">
+              <p className="text-xs font-semibold text-blue-800 mb-2">
+                {t('Scheduled this week', '이번 주 예약')}
+              </p>
+              {meetings.length > 0 ? (
+                <div className="space-y-1.5">
+                  {meetings.slice(0, 4).map((meeting) => (
+                    <div key={`availability-list-${meeting.id}`} className="text-xs text-blue-900">
+                      <span className="font-medium">{meeting.partnerName}</span>
+                      <span className="text-blue-700"> · {meeting.dayOfWeek} {meeting.time}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-blue-700">
+                  {t('No meetings yet this week.', '이번 주 예약된 미팅이 없습니다.')}
+                </p>
+              )}
             </div>
           </motion.div>
         )}

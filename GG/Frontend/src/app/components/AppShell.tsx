@@ -1,5 +1,16 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router';
-import { Home, Search, Gamepad2, MessageSquare, Calendar, Languages, Bot, LogOut, UserCircle } from 'lucide-react';
+import {
+  Home,
+  Search,
+  Gamepad2,
+  MessageSquare,
+  Calendar,
+  Languages,
+  Bot,
+  LogOut,
+  UserCircle,
+  ArrowLeft,
+} from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslator } from '../context/TranslatorContext';
 import { useAIAssistant } from '../context/AIAssistantContext';
@@ -28,6 +39,15 @@ export function AppShell() {
       <header className="shrink-0 border-b border-neutral-200 bg-white">
         <div className="px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
           <div className="min-w-0">
+            {location.pathname !== '/home' ? (
+              <Link
+                to="/home"
+                className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium mb-1"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>{t('Back to Home', '홈으로 돌아가기')}</span>
+              </Link>
+            ) : null}
             <h1 className="text-lg sm:text-xl font-semibold text-neutral-900 truncate">
               LangMatch <span className="text-blue-600">언어교환</span>
             </h1>

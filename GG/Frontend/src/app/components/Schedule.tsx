@@ -58,6 +58,7 @@ export function Schedule() {
   const [modalTopic, setModalTopic] = useState('');
   const [scheduling, setScheduling] = useState(false);
   const [isDraggingModalSlot, setIsDraggingModalSlot] = useState(false);
+  const [highlightMeetingId, setHighlightMeetingId] = useState<string | null>(null);
 
   const loadMine = useCallback(async () => {
     if (!userId) return;
@@ -353,6 +354,24 @@ export function Schedule() {
       .join(', ')}`;
   };
 
+  const openMeetingFromSlot = (day: string, time: string) => {
+    const entries = meetingBySlot.get(`${day}-${time}`) || [];
+    const target = entries[0];
+    if (!target) return;
+    setView('meetings');
+    setHighlightMeetingId(target.id);
+  };
+
+  useEffect(() => {
+    if (view !== 'meetings' || !highlightMeetingId) return;
+    const el = document.getElementById(`meeting-card-${highlightMeetingId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    const timer = window.setTimeout(() => setHighlightMeetingId(null), 2200);
+    return () => window.clearTimeout(timer);
+  }, [highlightMeetingId, view]);
+
   const cellClass = (day: string, time: string) => {
     const key = `${day}-${time}`;
     const mine = myKeys.has(key);
@@ -460,14 +479,34 @@ export function Schedule() {
                         </td>
                         {GRID_DAYS.map((day) => (
                           <td key={`${day}-${time}`} className="p-0.5 border-b border-neutral-200 bg-white">
+                            {(() => {
+                              const slotMeetings = meetingBySlot.get(`${day}-${time}`) || [];
+                              const hasMeeting = slotMeetings.length > 0;
+                              return (
                             <button
                               type="button"
                               title={meetingHoverLabel(day, time)}
-                              onMouseDown={() => beginAvailabilityPaint(day, time)}
+                              onMouseDown={() => {
+                                if (hasMeeting) return;
+                                beginAvailabilityPaint(day, time);
+                              }}
                               onMouseEnter={() => paintAvailabilityCell(day, time)}
                               onMouseUp={() => setIsPaintingAvailability(false)}
-                              className={`w-full h-6 sm:h-7 rounded transition-colors cursor-pointer ${cellClass(day, time)}`}
-                            />
+                              onClick={() => {
+                                if (hasMeeting) openMeetingFromSlot(day, time);
+                              }}
+                              className={`group w-full h-6 sm:h-7 rounded transition-colors cursor-pointer relative ${cellClass(day, time)}`}
+                            >
+                              {hasMeeting ? (
+                                <span className="pointer-events-none absolute left-1/2 top-0 z-20 hidden -translate-x-1/2 -translate-y-full rounded bg-neutral-900 px-2 py-1 text-[10px] text-white shadow-md group-hover:block whitespace-nowrap">
+                                  {slotMeetings
+                                    .map((m) => `${t('With', '상대')}: ${m.partnerName}`)
+                                    .join(' | ')}
+                                </span>
+                              ) : null}
+                            </button>
+                              );
+                            })()}
                           </td>
                         ))}
                       </tr>
@@ -513,7 +552,12 @@ export function Schedule() {
             {meetings.map((meeting) => (
               <div
                 key={meeting.id}
-                className="bg-white rounded-2xl border border-neutral-200 p-6"
+                id={`meeting-card-${meeting.id}`}
+                className={`bg-white rounded-2xl border p-6 transition-all ${
+                  highlightMeetingId === meeting.id
+                    ? 'border-red-400 ring-2 ring-red-200'
+                    : 'border-neutral-200'
+                }`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>

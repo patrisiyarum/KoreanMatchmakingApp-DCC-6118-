@@ -139,6 +139,12 @@ export function MyPartners() {
   const displayName = (first?: string, last?: string, fallback = 'Partner') =>
     `${first || ''} ${last || ''}`.trim() || fallback;
 
+  const fallbackAvatarEmoji = (seed: number | string) => {
+    const pool = ['🐶', '🐱', '🦊', '🐻', '🐼', '🐯', '🐰', '🐨', '🦁', '🐸'];
+    const n = Number(seed) || 0;
+    return pool[Math.abs(n) % pool.length];
+  };
+
   const handleAccept = async (requestId: number) => {
     if (!userId) return;
     setActingRequestId(requestId);
@@ -279,7 +285,9 @@ export function MyPartners() {
                   className="w-14 h-14 rounded-full object-cover border border-neutral-200"
                 />
               ) : (
-                <div className="w-14 h-14 rounded-full bg-neutral-100 text-2xl flex items-center justify-center">👤</div>
+                <div className="w-14 h-14 rounded-full bg-neutral-100 text-2xl flex items-center justify-center">
+                  {fallbackAvatarEmoji(friend.id)}
+                </div>
               )}
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-neutral-900 mb-1">

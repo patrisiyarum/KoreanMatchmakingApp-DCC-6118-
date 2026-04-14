@@ -345,6 +345,14 @@ export function Schedule() {
     return map;
   }, [meetings]);
 
+  const meetingHoverLabel = (day: string, time: string) => {
+    const entries = meetingBySlot.get(`${day}-${time}`) || [];
+    if (!entries.length) return `${day} ${time}`;
+    return `${day} ${time} • ${entries
+      .map((m) => t('Scheduled with', '예약 상대') + ` ${m.partnerName}`)
+      .join(', ')}`;
+  };
+
   const cellClass = (day: string, time: string) => {
     const key = `${day}-${time}`;
     const mine = myKeys.has(key);
@@ -454,14 +462,7 @@ export function Schedule() {
                           <td key={`${day}-${time}`} className="p-0.5 border-b border-neutral-200 bg-white">
                             <button
                               type="button"
-                              title={`${day} ${time}${
-                                (meetingBySlot.get(`${day}-${time}`) || []).length
-                                  ? ` • ${meetingBySlot
-                                      .get(`${day}-${time}`)!
-                                      .map((m) => m.partnerName)
-                                      .join(', ')}`
-                                  : ''
-                              }`}
+                              title={meetingHoverLabel(day, time)}
                               onMouseDown={() => beginAvailabilityPaint(day, time)}
                               onMouseEnter={() => paintAvailabilityCell(day, time)}
                               onMouseUp={() => setIsPaintingAvailability(false)}

@@ -59,6 +59,7 @@ export function Schedule() {
   const [scheduling, setScheduling] = useState(false);
   const [isDraggingModalSlot, setIsDraggingModalSlot] = useState(false);
   const [highlightMeetingId, setHighlightMeetingId] = useState<string | null>(null);
+  const [highlightSlotKey, setHighlightSlotKey] = useState<string | null>(null);
 
   const loadMine = useCallback(async () => {
     if (!userId) return;
@@ -349,8 +350,9 @@ export function Schedule() {
   const meetingHoverLabel = (day: string, time: string) => {
     const entries = meetingBySlot.get(`${day}-${time}`) || [];
     if (!entries.length) return `${day} ${time}`;
-    return `${day} ${time} • ${entries
-      .map((m) => t('Scheduled with', '예약 상대') + ` ${m.partnerName}`)
+    const names = [...new Set(entries.map((m) => m.partnerName).filter(Boolean))];
+    return `${day} ${time} • ${names
+      .map((name) => t('Scheduled with', '예약 상대') + ` ${name}`)
       .join(', ')}`;
   };
 
@@ -360,6 +362,12 @@ export function Schedule() {
     if (!target) return;
     setView('meetings');
     setHighlightMeetingId(target.id);
+  };
+
+  const jumpBackToAvailabilityFromMeeting = (meeting: Meeting) => {
+    const slotKey = `${meeting.dayOfWeek}-${meeting.time}`;
+    setView('availability');
+    setHighlightSlotKey(slotKey);
   };
 
   useEffect(() => {
@@ -372,12 +380,20 @@ export function Schedule() {
     return () => window.clearTimeout(timer);
   }, [highlightMeetingId, view]);
 
+  useEffect(() => {
+    if (view !== 'availability' || !highlightSlotKey) return;
+    const timer = window.setTimeout(() => setHighlightSlotKey(null), 2200);
+    return () => window.clearTimeout(timer);
+  }, [highlightSlotKey, view]);
+
   const cellClass = (day: string, time: string) => {
     const key = `${day}-${time}`;
     const mine = myKeys.has(key);
     const hasMeeting = meetingKeys.has(key);
+    const isHighlightedSlot = highlightSlotKey === key;
     if (hasMeeting) return 'bg-red-600 hover:bg-red-700';
-    if (mine) return 'bg-blue-600 hover:bg-blue-700';
+    if (mine) return isHighlightedSlot ? 'bg-blue-700 ring-2 ring-blue-300 ring-inset' : 'bg-blue-600 hover:bg-blue-700';
+    if (isHighlightedSlot) return 'bg-neutral-200 ring-2 ring-blue-300 ring-inset';
     return 'bg-neutral-100 hover:bg-neutral-200';
   };
 
@@ -485,7 +501,7 @@ export function Schedule() {
                               return (
                             <button
                               type="button"
-                              title={meetingHoverLabel(day, time)}
+                              aria-label={meetingHoverLabel(day, time)}
                               onMouseDown={() => {
                                 if (hasMeeting) return;
                                 beginAvailabilityPaint(day, time);
@@ -499,8 +515,8 @@ export function Schedule() {
                             >
                               {hasMeeting ? (
                                 <span className="pointer-events-none absolute left-1/2 top-0 z-20 hidden -translate-x-1/2 -translate-y-full rounded bg-neutral-900 px-2 py-1 text-[10px] text-white shadow-md group-hover:block whitespace-nowrap">
-                                  {slotMeetings
-                                    .map((m) => `${t('With', '상대')}: ${m.partnerName}`)
+                                  {[...new Set(slotMeetings.map((m) => m.partnerName).filter(Boolean))]
+                                    .map((name) => `${t('With', '상대')}: ${name}`)
                                     .join(' | ')}
                                 </span>
                               ) : null}
@@ -556,8 +572,17 @@ export function Schedule() {
                 className={`bg-white rounded-2xl border p-6 transition-all ${
                   highlightMeetingId === meeting.id
                     ? 'border-red-400 ring-2 ring-red-200'
-                    : 'border-neutral-200'
+                    : 'border-neutral-200 hover:border-blue-300'
                 }`}
+                role="button"
+                tabIndex={0}
+                onClick={() => jumpBackToAvailabilityFromMeeting(meeting)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    jumpBackToAvailabilityFromMeeting(meeting);
+                  }
+                }}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
@@ -601,6 +626,21 @@ export function Schedule() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               className="bg-white rounded-2xl p-4 sm:p-5 max-w-5xl w-full max-h-[92vh] overflow-y-auto my-auto shadow-xl"
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return;
+                if (
+                  scheduling ||
+                  !userId ||
+                  !modalPartnerId ||
+                  !modalSelectedDay ||
+                  !modalSelectedTime ||
+                  !friends.length
+                ) {
+                  return;
+                }
+                e.preventDefault();
+                void submitScheduleMeeting();
+              }}
             >
               <h3 className="text-xl font-bold text-neutral-900 mb-1">
                 {t('Schedule Meeting', '미팅 예약')}

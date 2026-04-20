@@ -18,10 +18,11 @@ import { useAIAssistant } from '../context/AIAssistantContext';
 import { useAuth } from '../context/AuthContext';
 import { AIAssistant } from './AIAssistant';
 import { Translator } from './Translator';
+import { getFriendRequests } from '@/api/friendsApi';
 import { getChatsForUser, getMessages } from '@/api/chatApi';
 import { getMeetingsForUserApi } from '@/api/meetingsApi';
 import { getPendingTeamInvites } from '@/api/teamsApi';
-import { getIncomingPendingChallenges } from '@/api/challengesApi';
+import { getChallengesForUser } from '@/api/challengesApi';
 
 export function AppShell() {
   const location = useLocation();
@@ -61,11 +62,12 @@ export function AppShell() {
       return;
     }
     try {
-      const [chats, meetings, teamInvites, challengeInvites] = await Promise.all([
+      const [reqs, chats, meetings, teamInvites, challengeRows] = await Promise.all([
+        getFriendRequests(userId),
         getChatsForUser(userId),
         getMeetingsForUserApi(userId),
         getPendingTeamInvites(userId),
-        getIncomingPendingChallenges(userId),
+        getChallengesForUser(userId),
       ]);
 
       const seenMap = getSeenMap();
@@ -87,15 +89,24 @@ export function AppShell() {
       );
 
       const unreadChats = unreadByChat.reduce((sum, value) => sum + value, 0);
+      const pendingIncomingRequests = reqs.incoming.filter((r) => r.status === 'pending').length;
       const scheduleSeenAt = getScheduleSeenAt();
       const unseenMeetings = meetings.filter((meeting) => {
         if (!scheduleSeenAt) return true;
         const createdAt = meeting.createdAt ? new Date(meeting.createdAt).getTime() : 0;
         return createdAt > new Date(scheduleSeenAt).getTime();
       }).length;
-      const gameInvitesCount = teamInvites.length + challengeInvites.length;
+      const challengeTurnsCount = challengeRows.filter((c) => {
+        const isChallenger = Number(c.challengerId) === Number(userId);
+        if (c.status === 'pending') return !isChallenger;
+        if (c.status === 'accepted' || c.status === 'in_progress') {
+          return isChallenger ? c.challengerScore == null : c.challengedScore == null;
+        }
+        return false;
+      }).length;
+      const gameInvitesCount = teamInvites.length + challengeTurnsCount;
 
-      setPartnersNotifCount(unreadChats);
+      setPartnersNotifCount(unreadChats + pendingIncomingRequests);
       setScheduleNotifCount(unseenMeetings);
       setGamesNotifCount(gameInvitesCount);
     } catch {
@@ -146,7 +157,7 @@ export function AppShell() {
         );
         if (!cancelled) {
           window.localStorage.setItem(`chatSeenAt:${userId}`, JSON.stringify(seenMap));
-          setPartnersNotifCount(0);
+          void loadNotifications();
         }
       } catch {
         // Silent fallback.

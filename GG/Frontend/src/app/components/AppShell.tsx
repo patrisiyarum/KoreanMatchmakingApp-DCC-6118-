@@ -200,10 +200,10 @@ export function AppShell() {
             <button
               type="button"
               onClick={() => {
-                if (location.pathname === '/profile') {
+                if (location.pathname === '/view-profile') {
                   navigate('/home');
                 } else {
-                  navigate('/profile');
+                  navigate('/view-profile');
                 }
               }}
               className="p-2 rounded-lg hover:bg-neutral-100 transition-colors"

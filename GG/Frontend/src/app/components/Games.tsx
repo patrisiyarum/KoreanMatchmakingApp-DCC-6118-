@@ -653,21 +653,21 @@ export function Games() {
                 setView('solo');
                 setGameMode('menu');
               }}
-              className="w-full bg-white rounded-2xl border border-neutral-200 p-5 sm:p-6 hover:shadow-md transition-shadow text-left group"
+              className="w-full bg-gradient-to-br from-emerald-600 to-green-600 rounded-2xl p-5 sm:p-6 hover:shadow-lg transition-shadow text-left group"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
-                  <BookOpen className="w-6 h-6 text-neutral-600" />
+                <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                  <BookOpen className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg sm:text-xl font-semibold text-neutral-900 mb-0.5">
+                  <h3 className="text-lg sm:text-xl font-semibold text-white mb-0.5">
                     {t('Games', '게임')}
                   </h3>
-                  <p className="text-sm text-neutral-600">
+                  <p className="text-sm text-green-100">
                     {t('Term matching, grammar quiz, and pronunciation drill', '단어 매칭 · 문법 퀴즈 · 발음 드릴')}
                   </p>
                 </div>
-                <ArrowRight className="w-5 h-5 text-neutral-400 group-hover:text-neutral-700 transition-colors shrink-0" />
+                <ArrowRight className="w-5 h-5 text-white/80 group-hover:text-white transition-colors shrink-0" />
               </div>
             </button>
 

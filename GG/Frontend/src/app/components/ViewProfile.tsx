@@ -254,7 +254,16 @@ export function ViewProfile() {
 
           {/* ── Game Stats ── */}
           <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-            <p className="text-sm font-semibold text-neutral-900 mb-2">{t('Game Stats', '게임 통계')}</p>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold text-neutral-900">{t('Game stats', '게임 통계')}</p>
+              <button
+                type="button"
+                onClick={() => navigate(userId ? `/games/profile/${userId}` : '/games/profile')}
+                className="text-sm font-semibold text-blue-700 hover:text-blue-800"
+              >
+                {t('Games profile', '게임 프로필')}
+              </button>
+            </div>
             {gameStats ? (
               <div className="grid grid-cols-2 gap-2 text-xs text-neutral-700">
                 <div>{t('Games played', '플레이한 게임')}: <span className="font-semibold">{gameStats.gamesPlayed}</span></div>

@@ -9,7 +9,8 @@ import { Games } from './components/Games';
 import { Chat } from './components/Chat';
 import { Schedule } from './components/Schedule';
 import { DashboardHome } from './components/DashboardHome';
-import { Profile } from './components/Profile';
+import { ViewProfile } from './components/ViewProfile';
+import { EditProfile } from './components/EditProfile';
 import { GamesProfile } from './components/GamesProfile';
 import { AgoraCall } from './components/AgoraCall';
 import { Login } from './components/Login';
@@ -32,7 +33,8 @@ export const router = createBrowserRouter([
             children: [
               { path: 'home', Component: DashboardHome },
               { path: 'create-profile', Component: CreateProfile },
-              { path: 'profile', Component: Profile },
+              { path: 'view-profile', Component: ViewProfile },
+              { path: 'edit-profile', Component: EditProfile },
               { path: 'discover', Component: Discover },
               { path: 'partners', Component: MyPartners },
               { path: 'games', Component: Games },

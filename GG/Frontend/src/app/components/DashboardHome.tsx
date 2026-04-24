@@ -6,7 +6,7 @@ export function DashboardHome() {
   const { t } = useLanguage();
   const cards = [
     {
-      to: '/profile',
+      to: '/view-profile',
       title: t('Your profile', '내 프로필'),
       sub: t(
         'Customize your profile, languages, interests, bio, and photo',

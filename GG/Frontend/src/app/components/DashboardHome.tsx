@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { ChevronRight, Gamepad2, PhoneCall, UserRound } from 'lucide-react';
+import { ChevronRight, Gamepad2, PhoneCall, Search, UserRound, Users } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 export function DashboardHome() {
@@ -18,24 +18,18 @@ export function DashboardHome() {
       to: '/discover',
       title: t('Discover partners', '파트너 찾기'),
       sub: t('Swipe and match', '스와이프로 매칭'),
-      icon: null,
+      icon: Search,
     },
     {
       to: '/partners',
       title: t('My partners', '내 파트너'),
       sub: t('Chat and play games', '채팅 · 게임'),
-      icon: null,
-    },
-    {
-      to: '/schedule',
-      title: t('Schedule', '일정'),
-      sub: t('Availability & meetings', '가능 시간 · 미팅'),
-      icon: null,
+      icon: Users,
     },
     {
       to: '/schedule',
       title: t('Calls & meetings', '통화 · 미팅'),
-      sub: t('Plan voice/video practice sessions on your calendar', '캘린더에서 음성/영상 연습 세션을 계획하세요'),
+      sub: t('Availability, scheduling, and call links in one place', '가능 시간 · 예약 · 통화 링크를 한 곳에서 관리'),
       icon: PhoneCall,
     },
     {

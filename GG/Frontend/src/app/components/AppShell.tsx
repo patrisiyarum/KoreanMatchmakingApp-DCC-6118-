@@ -10,7 +10,6 @@ import {
   Bot,
   LogOut,
   UserCircle,
-  ArrowLeft,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslator } from '../context/TranslatorContext';
@@ -172,7 +171,7 @@ export function AppShell() {
     { path: '/home', icon: Home, label: t('Home', '홈'), notifCount: 0 },
     { path: '/discover', icon: Search, label: t('Discover', '발견'), notifCount: 0 },
     { path: '/partners', icon: MessageSquare, label: t('Partners', '파트너'), notifCount: partnersNotifCount },
-    { path: '/schedule', icon: Calendar, label: t('Schedule', '일정'), notifCount: scheduleNotifCount },
+    { path: '/schedule', icon: Calendar, label: t('Calls & meetings', '통화 · 미팅'), notifCount: scheduleNotifCount },
     { path: '/games', icon: Gamepad2, label: t('Games', '게임'), notifCount: gamesNotifCount },
   ];
 
@@ -244,16 +243,6 @@ export function AppShell() {
       <main className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain">
         <Outlet />
       </main>
-
-      {location.pathname !== '/home' ? (
-        <Link
-          to="/home"
-          className="fixed right-4 bottom-24 z-40 inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-blue-700 sm:right-6"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>{t('Back to Home', '홈으로 돌아가기')}</span>
-        </Link>
-      ) : null}
 
       <nav className="shrink-0 border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around px-1 sm:px-2 py-2 sm:py-3">

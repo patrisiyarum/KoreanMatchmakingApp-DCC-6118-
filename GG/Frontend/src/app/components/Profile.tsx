@@ -329,7 +329,7 @@ export function Profile() {
   const photoSrc = publicAssetUrl(profileImage);
 
   return (
-    <div className="size-full flex items-center justify-center p-4">
+    <div className="size-full flex items-start justify-center p-4 sm:pt-6">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl border border-neutral-200 p-5 space-y-5">
           <div className="flex flex-col items-center text-center">
@@ -419,7 +419,7 @@ export function Profile() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3 space-y-4">
+          <div className="mt-8 rounded-xl border border-neutral-200 bg-neutral-50 p-4 space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-neutral-900">
@@ -429,9 +429,11 @@ export function Profile() {
                   {t('These options power matching and your public profile.', '이 옵션들은 매칭과 공개 프로필에 반영됩니다.')}
                 </p>
               </div>
-              <Link to="/games" className="text-xs font-semibold text-blue-700 hover:text-blue-800 whitespace-nowrap">
-                {t('Game stats', '게임 통계')}
-              </Link>
+              <div className="flex items-center gap-3 whitespace-nowrap">
+                <Link to={userId ? `/games/profile/${userId}` : '/games/profile'} className="text-xs font-semibold text-blue-700 hover:text-blue-800">
+                  {t('Games profile', '게임 프로필')}
+                </Link>
+              </div>
             </div>
 
             {!opts ? (

@@ -30,6 +30,12 @@ export function discoverRowToUser(row: Record<string, unknown>): User {
   const n = Number(id) || 0;
   const emoji = AVATAR_FALLBACK[n % AVATAR_FALLBACK.length];
   const bioRaw = String(row.bio ?? row.Bio ?? '').trim();
+  const gameLevelRaw = Number(row.level);
+  const topBadges = String(row.badgeIcons ?? '')
+    .split(' ')
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .slice(0, 3);
   return {
     id,
     name,
@@ -38,6 +44,8 @@ export function discoverRowToUser(row: Record<string, unknown>): User {
     interests,
     bio: bioRaw || '—',
     level: profToLevel(String(row.target_language_proficiency ?? '')),
+    gameLevel: Number.isFinite(gameLevelRaw) ? gameLevelRaw : undefined,
+    topBadges,
     avatar: emoji,
     profileImage: pic,
   };

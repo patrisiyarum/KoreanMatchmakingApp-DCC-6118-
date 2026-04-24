@@ -222,6 +222,9 @@ export function Discover() {
                 )}
               </div>
               <h3 className="text-2xl font-bold text-white mb-1">{currentPartner.name}</h3>
+              <p className="text-white/85 text-sm font-medium mb-1">
+                {t('Level', '레벨')}: {currentPartner.gameLevel ?? '—'}
+              </p>
               <div className="flex items-center justify-center gap-2 text-white/90 text-sm">
                 <span>{currentPartner.nativeLanguage}</span>
                 <span>↔</span>
@@ -233,6 +236,33 @@ export function Discover() {
               <div>
                 <div className="text-xs font-medium text-neutral-500 mb-1">LEVEL</div>
                 <div className="text-sm text-neutral-900">{currentPartner.level}</div>
+              </div>
+
+              <div>
+                <div className="text-xs font-medium text-neutral-500 mb-2">
+                  {t('GAME PROFILE', '게임 프로필')}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {(currentPartner.topBadges || []).length ? (
+                    (currentPartner.topBadges || []).slice(0, 3).map((icon, idx) => (
+                      <span
+                        key={`${currentPartner.id}-badge-${idx}`}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-100 text-sm"
+                        title={t('Top badge', '대표 배지')}
+                      >
+                        {icon}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-neutral-500">{t('No badges yet', '아직 배지 없음')}</span>
+                  )}
+                </div>
+                <Link
+                  to={`/games/profile/${currentPartner.id}`}
+                  className="mt-2 inline-flex text-xs font-semibold text-violet-700 hover:text-violet-800"
+                >
+                  {t('View games profile', '게임 프로필 보기')}
+                </Link>
               </div>
 
               <div>

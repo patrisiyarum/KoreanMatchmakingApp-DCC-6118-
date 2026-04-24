@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
-import { useParams, Link } from 'react-router';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { useParams, Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { ArrowLeft, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Phone, Send, Loader2 } from 'lucide-react';
 import { Message } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +18,7 @@ type ChatPartner = {
 
 export function Chat() {
   const { partnerId } = useParams();
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const { userId } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -28,6 +29,18 @@ export function Chat() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [chatId, setChatId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const directCallId = useMemo(() => {
+    const me = Number(userId || 0);
+    const them = Number(partnerId || 0);
+    if (!me || !them) return null;
+    const low = Math.min(me, them);
+    const high = Math.max(me, them);
+    return `direct-${low}-${high}`;
+  }, [partnerId, userId]);
+
+  const goBack = () => {
+    navigate(-1);
+  };
 
   const markChatSeen = (targetChatId: number, seenAt: Date) => {
     if (!userId) return;
@@ -245,9 +258,9 @@ export function Chat() {
       <div className="size-full flex items-center justify-center">
         <div className="text-center">
           <p className="text-neutral-600">Partner not found</p>
-          <Link to="/partners" className="text-blue-600 hover:underline mt-2 inline-block">
+          <button type="button" onClick={goBack} className="text-blue-600 hover:underline mt-2 inline-block">
             Go back
-          </Link>
+          </button>
         </div>
       </div>
     );
@@ -256,9 +269,9 @@ export function Chat() {
   return (
     <div className="size-full flex flex-col bg-white">
       <div className="border-b border-neutral-200 px-4 py-3 flex items-center gap-3 bg-white">
-        <Link to="/partners" className="text-neutral-600 hover:text-neutral-900">
+        <button type="button" onClick={goBack} className="text-neutral-600 hover:text-neutral-900">
           <ArrowLeft className="w-6 h-6" />
-        </Link>
+        </button>
         {publicAssetUrl(partner.profileImage) ? (
           <img
             src={publicAssetUrl(partner.profileImage)}
@@ -272,6 +285,14 @@ export function Chat() {
           <h3 className="font-semibold text-neutral-900 truncate">{partner.name}</h3>
           <p className="text-xs text-emerald-600 font-medium">{t('Online', '온라인')}</p>
         </div>
+        <Link
+          to={directCallId ? `/call/${directCallId}` : '/schedule'}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+          aria-label={t('Start call now', '지금 통화 시작')}
+          title={t('Start call now', '지금 통화 시작')}
+        >
+          <Phone className="w-4 h-4" />
+        </Link>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

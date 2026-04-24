@@ -7,7 +7,6 @@ import { useLanguage } from '../context/LanguageContext';
 import { publicAssetUrl } from '../utils/profileImage';
 import {
   createProfile,
-  fetchUserGameStats,
   fetchProfileOptions,
   fetchUserAccount,
   fetchUserProfilePayload,
@@ -28,6 +27,56 @@ function profilePayloadHasBioKey(profile: Record<string, unknown> | null | undef
 }
 
 const PROFICIENCIES = ['Beginner', 'Elementary', 'Intermediate', 'Proficient', 'Fluent'];
+
+const MBTI_OPTIONS = [
+  'INTJ',
+  'INFJ',
+  'ISTJ',
+  'ISTP',
+  'INTP',
+  'INFP',
+  'ISFJ',
+  'ISFP',
+  'ENTJ',
+  'ENFJ',
+  'ESTJ',
+  'ESTP',
+  'ENTP',
+  'ENFP',
+  'ESFJ',
+  'ESFP',
+];
+
+const ZODIAC_OPTIONS = [
+  'Aries',
+  'Taurus',
+  'Gemini',
+  'Cancer',
+  'Leo',
+  'Virgo',
+  'Libra',
+  'Scorpio',
+  'Sagittarius',
+  'Capricorn',
+  'Aquarius',
+  'Pisces',
+];
+
+const TIME_ZONES = ['UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'Asia/Seoul'];
+
+const GENDERS = ['Male', 'Female', 'Other'];
+
+const PROFESSIONS = [
+  'Education',
+  'Engineering',
+  'Retail',
+  'Finance',
+  'Law',
+  'Medicine',
+  'Scientist',
+  'Marketing',
+  'Other',
+];
 
 export function Profile() {
   const navigate = useNavigate();
@@ -52,13 +101,10 @@ export function Profile() {
   const [gender, setGender] = useState('Other');
   const [profession, setProfession] = useState('Other');
   const [interests, setInterests] = useState<string[]>([]);
-  const [gameStats, setGameStats] = useState<{
-    gamesPlayed: number;
-    termMatching: number;
-    grammarQuiz: number;
-    pronunciation: number;
-    perfectRounds: number;
-  } | null>(null);
+  const [mbti, setMbti] = useState('INTJ');
+  const [zodiac, setZodiac] = useState('Aries');
+  const [defaultTimeZone, setDefaultTimeZone] = useState('UTC');
+  const [visibility, setVisibility] = useState<'Show' | 'Hide'>('Show');
   const warnedBioColumnRef = useRef(false);
 
   const optionSet = new Set<string>([...PROFILE_INTEREST_OPTIONS]);
@@ -79,26 +125,14 @@ export function Profile() {
     setLoading(true);
     let profile: ProfileRow | null = null;
     try {
-      const [account, profileRow, statsRes, options, interestNames] = await Promise.all([
+      const [account, profileRow, options, interestNames] = await Promise.all([
         fetchUserAccount(userId),
         fetchUserProfilePayload(userId),
-        fetchUserGameStats(userId),
         fetchProfileOptions(),
         fetchUserInterestNames(userId).catch(() => [] as string[]),
       ]);
       profile = profileRow;
       setOpts(options);
-      setGameStats(
-        statsRes?.gameActivity
-          ? {
-              gamesPlayed: statsRes.gameActivity.gamesPlayed || 0,
-              termMatching: statsRes.gameActivity.termMatching || 0,
-              grammarQuiz: statsRes.gameActivity.grammarQuiz || 0,
-              pronunciation: statsRes.gameActivity.pronunciation || 0,
-              perfectRounds: statsRes.gameActivity.perfectRounds || 0,
-            }
-          : null
-      );
       if (account) {
         setFirstName(account.firstName || '');
         setLastName(account.lastName || '');
@@ -120,6 +154,10 @@ export function Profile() {
         setAge(profile.age ?? 22);
         setGender(profile.gender || 'Other');
         setProfession(profile.profession || 'Other');
+        setMbti(profile.mbti || 'INTJ');
+        setZodiac(profile.zodiac || 'Aries');
+        setDefaultTimeZone(profile.default_time_zone || 'UTC');
+        setVisibility((profile.visibility === 'Hide' ? 'Hide' : 'Show') as 'Show' | 'Hide');
       } else {
         setHasProfile(false);
         setBio('');
@@ -127,6 +165,10 @@ export function Profile() {
         setLearningGoal(options?.learningGoals[0] || '');
         setCommunicationStyle(options?.communicationStyles[0] || '');
         setCommitmentLevel(options?.commitmentLevel.default ?? 3);
+        setMbti('INTJ');
+        setZodiac('Aries');
+        setDefaultTimeZone('UTC');
+        setVisibility('Show');
       }
     } catch (e) {
       console.error(e);
@@ -163,10 +205,10 @@ export function Profile() {
           age,
           gender,
           profession,
-          mbti: 'INTJ',
-          zodiac: 'Aries',
-          default_time_zone: 'UTC',
-          visibility: 'Show',
+          mbti,
+          zodiac,
+          default_time_zone: defaultTimeZone,
+          visibility,
           learning_goal: learningGoal || opts!.learningGoals[0],
           communication_style: communicationStyle || opts!.communicationStyles[0],
           commitment_level: commitmentLevel,
@@ -207,10 +249,10 @@ export function Profile() {
           age,
           gender,
           profession,
-          mbti: 'INTJ',
-          zodiac: 'Aries',
-          default_time_zone: 'UTC',
-          visibility: 'Show',
+          mbti,
+          zodiac,
+          default_time_zone: defaultTimeZone,
+          visibility,
         });
         if (res.errorCode !== 0) {
           toast.error(
@@ -287,7 +329,7 @@ export function Profile() {
   const photoSrc = publicAssetUrl(profileImage);
 
   return (
-    <div className="size-full flex items-center justify-center p-4">
+    <div className="size-full flex items-start justify-center p-4 sm:pt-6">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl border border-neutral-200 p-5 space-y-5">
           <div className="flex flex-col items-center text-center">
@@ -377,40 +419,215 @@ export function Profile() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-            <p className="text-sm font-semibold text-neutral-900 mb-2">
-              {t('Game stats', '게임 통계')}
-            </p>
-            {gameStats ? (
-              <div className="grid grid-cols-2 gap-2 text-xs text-neutral-700">
-                <div>{t('Games played', '플레이한 게임')}: <span className="font-semibold">{gameStats.gamesPlayed}</span></div>
-                <div>{t('Perfect rounds', '퍼펙트 라운드')}: <span className="font-semibold">{gameStats.perfectRounds}</span></div>
-                <div>{t('Term matching', '단어 매칭')}: <span className="font-semibold">{gameStats.termMatching}</span></div>
-                <div>{t('Grammar quiz', '문법 퀴즈')}: <span className="font-semibold">{gameStats.grammarQuiz}</span></div>
-                <div>{t('Pronunciation', '발음')}: <span className="font-semibold">{gameStats.pronunciation}</span></div>
+          <div className="mt-8 rounded-xl border border-neutral-200 bg-neutral-50 p-4 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-neutral-900">
+                  {t('Profile customization', '프로필 맞춤 설정')}
+                </p>
+                <p className="text-xs text-neutral-600 mt-0.5">
+                  {t('These options power matching and your public profile.', '이 옵션들은 매칭과 공개 프로필에 반영됩니다.')}
+                </p>
               </div>
-            ) : (
-              <p className="text-xs text-neutral-600">
-                {t('No game stats yet.', '아직 게임 통계가 없습니다.')}
-              </p>
-            )}
-          </div>
+              <div className="flex items-center gap-3 whitespace-nowrap">
+                <Link to={userId ? `/games/profile/${userId}` : '/games/profile'} className="text-xs font-semibold text-blue-700 hover:text-blue-800">
+                  {t('Games profile', '게임 프로필')}
+                </Link>
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
-              {t('My Level', '레벨')} <span className="text-neutral-500">{t('레벨', '레벨')}</span>
-            </label>
-            <select
-              value={proficiency}
-              onChange={(e) => setProficiency(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {PROFICIENCIES.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
+            {!opts ? (
+              <p className="text-xs text-neutral-600">
+                {t('Loading customization options…', '맞춤 옵션을 불러오는 중…')}
+              </p>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    {t('Target language level', '목표 언어 수준')}
+                  </label>
+                  <select
+                    value={proficiency}
+                    onChange={(e) => setProficiency(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    {PROFICIENCIES.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    {t('Learning goal', '학습 목표')}
+                  </label>
+                  <select
+                    value={learningGoal}
+                    onChange={(e) => setLearningGoal(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    {opts.learningGoals.map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    {t('Communication style', '소통 스타일')}
+                  </label>
+                  <select
+                    value={communicationStyle}
+                    onChange={(e) => setCommunicationStyle(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    {opts.communicationStyles.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    {t('Weekly commitment', '주간 참여도')} ({opts.commitmentLevel.min}–{opts.commitmentLevel.max})
+                  </label>
+                  <input
+                    type="range"
+                    min={opts.commitmentLevel.min}
+                    max={opts.commitmentLevel.max}
+                    step={1}
+                    value={commitmentLevel}
+                    onChange={(e) => setCommitmentLevel(Number(e.target.value))}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-neutral-600 mt-1">
+                    {t('Selected', '선택')}: <span className="font-semibold">{commitmentLevel}</span>
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      {t('Age', '나이')}
+                    </label>
+                    <input
+                      type="number"
+                      min={13}
+                      max={120}
+                      value={age}
+                      onChange={(e) => setAge(Number(e.target.value))}
+                      className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      {t('Gender', '성별')}
+                    </label>
+                    <select
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      {GENDERS.map((g) => (
+                        <option key={g} value={g}>
+                          {g}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    {t('Profession', '직업')}
+                  </label>
+                  <select
+                    value={profession}
+                    onChange={(e) => setProfession(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    {PROFESSIONS.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      {t('MBTI', 'MBTI')}
+                    </label>
+                    <select
+                      value={mbti}
+                      onChange={(e) => setMbti(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      {MBTI_OPTIONS.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      {t('Zodiac', '별자리')}
+                    </label>
+                    <select
+                      value={zodiac}
+                      onChange={(e) => setZodiac(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      {ZODIAC_OPTIONS.map((z) => (
+                        <option key={z} value={z}>
+                          {z}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      {t('Time zone', '시간대')}
+                    </label>
+                    <select
+                      value={defaultTimeZone}
+                      onChange={(e) => setDefaultTimeZone(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      {TIME_ZONES.map((tz) => (
+                        <option key={tz} value={tz}>
+                          {tz}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      {t('Profile visibility', '프로필 공개')}
+                    </label>
+                    <select
+                      value={visibility}
+                      onChange={(e) => setVisibility(e.target.value as 'Show' | 'Hide')}
+                      className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="Show">{t('Show', '공개')}</option>
+                      <option value="Hide">{t('Hide', '비공개')}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>

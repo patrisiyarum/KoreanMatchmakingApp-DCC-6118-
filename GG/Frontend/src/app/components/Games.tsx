@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Trophy,
@@ -12,6 +12,8 @@ import {
   Gamepad2,
   BookOpen,
   Loader2,
+  FileText,
+  Mic,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
@@ -39,11 +41,14 @@ import {
   submitChallengeScoreApi,
   type ChallengeRow,
 } from '@/api/challengesApi';
+import { fetchUserGameStats } from '@/api/profileApi';
+import { getUserBadges, type UserBadgeRow } from '@/api/badgesApi';
 
-interface VocabQuestion {
-  korean: string;
-  english: string;
+interface QuizQuestion {
+  prompt: string;
+  answer: string;
   options: string[];
+  hint?: string;
 }
 
 type ChallengePartner = {
@@ -63,33 +68,96 @@ function getInviteTeamName(invite: TeamInviteRow, t: (en: string, ko: string) =>
   return fromObj || fromFlat || `${t('Team', '팀')} #${invite.teamId}`;
 }
 
-const vocabQuestions: VocabQuestion[] = [
+const termMatchingQuestions: QuizQuestion[] = [
   {
-    korean: '안녕하세요',
-    english: 'Hello',
+    prompt: '안녕하세요',
+    answer: 'Hello',
     options: ['Hello', 'Goodbye', 'Thank you', 'Please']
   },
   {
-    korean: '감사합니다',
-    english: 'Thank you',
+    prompt: '감사합니다',
+    answer: 'Thank you',
     options: ['Sorry', 'Thank you', 'Welcome', 'Excuse me']
   },
   {
-    korean: '사랑해요',
-    english: 'I love you',
+    prompt: '사랑해요',
+    answer: 'I love you',
     options: ['I love you', 'I like you', 'I miss you', 'I need you']
   },
   {
-    korean: '배고파요',
-    english: 'I\'m hungry',
+    prompt: '배고파요',
+    answer: 'I\'m hungry',
     options: ['I\'m tired', 'I\'m hungry', 'I\'m thirsty', 'I\'m cold']
   },
   {
-    korean: '물',
-    english: 'Water',
+    prompt: '물',
+    answer: 'Water',
     options: ['Water', 'Fire', 'Earth', 'Air']
   },
+  { prompt: '학교', answer: 'School', options: ['School', 'Hospital', 'Station', 'Library'] },
+  { prompt: '친구', answer: 'Friend', options: ['Teacher', 'Friend', 'Family', 'Neighbor'] },
+  { prompt: '오늘', answer: 'Today', options: ['Yesterday', 'Tomorrow', 'Today', 'Morning'] },
+  { prompt: '내일', answer: 'Tomorrow', options: ['Tomorrow', 'Now', 'Tonight', 'Week'] },
+  { prompt: '책', answer: 'Book', options: ['Pen', 'Book', 'Notebook', 'Dictionary'] },
+  { prompt: '커피', answer: 'Coffee', options: ['Tea', 'Coffee', 'Water', 'Juice'] },
+  { prompt: '고양이', answer: 'Cat', options: ['Dog', 'Cat', 'Bird', 'Rabbit'] },
+  { prompt: '빨리', answer: 'Quickly', options: ['Slowly', 'Quickly', 'Quietly', 'Brightly'] },
+  { prompt: '행복해요', answer: 'I am happy', options: ['I am sad', 'I am happy', 'I am tired', 'I am sick'] },
+  { prompt: '왼쪽', answer: 'Left', options: ['Right', 'Center', 'Left', 'Top'] },
+  { prompt: '오른쪽', answer: 'Right', options: ['Left', 'Right', 'Front', 'Back'] },
 ];
+
+const grammarQuizQuestions: QuizQuestion[] = [
+  { prompt: '저는 학교___ 가요.', answer: '에', options: ['에', '를', '은', '와'], hint: 'Choose the correct particle.' },
+  { prompt: '어제 영화를 ___ 봤어요.', answer: '봤어요', options: ['볼 거예요', '봐요', '봤어요', '봅니다'] },
+  { prompt: '한국어가 ___ 어렵지 않아요.', answer: '생각보다', options: ['가장', '아직', '생각보다', '바로'] },
+  { prompt: '지금 뭐 ___ 있어요?', answer: '하고', options: ['하다', '하고', '해요', '했어'] },
+  { prompt: '오늘은 날씨가 ___ 좋네요.', answer: '정말', options: ['정말', '아직', '혹시', '조금도'] },
+  { prompt: '저는 한국어를 ___ 있어요.', answer: '배우고', options: ['배우고', '배우다', '배웠고', '배우면'] },
+  { prompt: '친구를 만나___ 카페에 갔어요.', answer: '서', options: ['고', '서', '면', '나'] },
+  { prompt: '시간이 없어서 숙제를 못 ___ .', answer: '했어요', options: ['해요', '했어요', '할게요', '하면'] },
+  { prompt: '주말마다 운동을 ___ .', answer: '해요', options: ['해요', '했어요', '할 거예요', '하네요'] },
+  { prompt: '이 문제는 생각보다 ___ .', answer: '쉬워요', options: ['쉽다', '쉬워요', '쉬웠어요', '쉽고'] },
+  { prompt: '배가 아파서 약을 ___ .', answer: '먹었어요', options: ['먹어요', '먹고', '먹었어요', '먹을래요'] },
+  { prompt: '지하철을 타___ 회사에 가요.', answer: '고', options: ['고', '서', '면', '다가'] },
+];
+
+const pronunciationDrillQuestions: QuizQuestion[] = [
+  { prompt: 'Choose the closest sound: "ㅂ" at word start', answer: 'Between B and P', options: ['Between B and P', 'Always P', 'Always B', 'Like F'] },
+  { prompt: 'Best Romanization for "안녕"', answer: 'annyeong', options: ['annyeong', 'anyeongh', 'anyoung', 'anniong'] },
+  { prompt: 'How is final "ㅅ" usually pronounced in batchim?', answer: 'Like t', options: ['Like s', 'Like d', 'Like t', 'Silent'] },
+  { prompt: 'What helps Korean rhythm most?', answer: 'Syllable timing', options: ['Stress timing', 'Syllable timing', 'Random pauses', 'Speaking faster'] },
+  { prompt: 'In "감사합니다", stress should be…', answer: 'Even and flowing', options: ['Heavy first syllable', 'Heavy last syllable', 'Even and flowing', 'No pauses at all'] },
+  { prompt: 'Which pair is most easily confused by beginners?', answer: 'ㅓ / ㅗ', options: ['ㄱ / ㅋ', 'ㅁ / ㅂ', 'ㅓ / ㅗ', 'ㄴ / ㄷ'] },
+  { prompt: 'For clearer Korean vowels, focus on…', answer: 'Mouth shape consistency', options: ['Talking louder', 'Mouth shape consistency', 'Speaking faster', 'Adding English stress'] },
+  { prompt: 'Best pacing for beginner pronunciation practice?', answer: 'Slow and steady', options: ['Very fast', 'Random speed', 'Slow and steady', 'Whisper only'] },
+  { prompt: 'In final consonants, Korean often reduces sounds to…', answer: 'A small final set', options: ['Full English-like endings', 'A small final set', 'No consonants at all', 'Always voiced endings'] },
+  { prompt: 'Most useful feedback loop?', answer: 'Record and compare', options: ['Only read silently', 'Record and compare', 'Skip listening', 'Memorize without speaking'] },
+  { prompt: 'Best way to improve intonation quickly?', answer: 'Shadow native audio', options: ['Avoid listening', 'Shadow native audio', 'Only study grammar', 'Speak once a week'] },
+  { prompt: 'When unsure about 받침, you should…', answer: 'Check a native sample and repeat', options: ['Ignore it', 'Check a native sample and repeat', 'Replace with English sound', 'Drop final consonants always'] },
+];
+
+const QUESTION_SETS: Record<'vocab' | 'grammar' | 'pronunciation', QuizQuestion[]> = {
+  vocab: termMatchingQuestions,
+  grammar: grammarQuizQuestions,
+  pronunciation: pronunciationDrillQuestions,
+};
+
+const QUIZ_ROUND_SIZE = 5;
+
+function shuffled<T>(arr: T[]): T[] {
+  const next = [...arr];
+  for (let i = next.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [next[i], next[j]] = [next[j], next[i]];
+  }
+  return next;
+}
+
+function makeRoundQuestions(type: 'vocab' | 'grammar' | 'pronunciation') {
+  const all = QUESTION_SETS[type];
+  return shuffled(all).slice(0, Math.min(QUIZ_ROUND_SIZE, all.length));
+}
 
 export function Games() {
   const [searchParams] = useSearchParams();
@@ -97,6 +165,8 @@ export function Games() {
   const { userId } = useAuth();
   const [view, setView] = useState<'menu' | 'solo' | 'challenge' | 'teams'>('menu');
   const [gameMode, setGameMode] = useState<'menu' | 'vocab' | 'results'>('menu');
+  const [soloGameType, setSoloGameType] = useState<'vocab' | 'grammar' | 'pronunciation'>('vocab');
+  const [roundQuestions, setRoundQuestions] = useState<QuizQuestion[]>(() => makeRoundQuestions('vocab'));
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -132,6 +202,18 @@ export function Games() {
   const [teamVsBoard, setTeamVsBoard] = useState<TeamVsBoard | null>(null);
   const [teamVsLoading, setTeamVsLoading] = useState(false);
   const [activeTeamQuestGameType, setActiveTeamQuestGameType] = useState<string | null>(null);
+  const [playerStatsLoading, setPlayerStatsLoading] = useState(false);
+  const [playerXp, setPlayerXp] = useState<number | null>(null);
+  const [playerLevel, setPlayerLevel] = useState<number | null>(null);
+  const [playerXpToNext, setPlayerXpToNext] = useState<number | null>(null);
+  const [playerBadges, setPlayerBadges] = useState<UserBadgeRow[]>([]);
+  const [playerActivity, setPlayerActivity] = useState<{
+    gamesPlayed: number;
+    termMatching: number;
+    grammarQuiz: number;
+    pronunciation: number;
+    perfectRounds: number;
+  } | null>(null);
 
   const refreshTeam = useCallback(async () => {
     if (!userId) {
@@ -152,9 +234,58 @@ export function Games() {
     }
   }, [userId]);
 
+  const loadPlayerGamePanel = useCallback(async () => {
+    if (!userId) {
+      setPlayerXp(null);
+      setPlayerLevel(null);
+      setPlayerXpToNext(null);
+      setPlayerBadges([]);
+      setPlayerActivity(null);
+      return;
+    }
+    setPlayerStatsLoading(true);
+    try {
+      const [stats, badges] = await Promise.all([fetchUserGameStats(userId), getUserBadges(userId)]);
+      setPlayerXp(typeof stats?.xp === 'number' ? stats.xp : null);
+      setPlayerLevel(typeof stats?.level === 'number' ? stats.level : null);
+      setPlayerXpToNext(typeof stats?.xpToNext === 'number' ? stats.xpToNext : null);
+      setPlayerBadges(badges);
+      setPlayerActivity(
+        stats?.gameActivity
+          ? {
+              gamesPlayed: stats.gameActivity.gamesPlayed || 0,
+              termMatching: stats.gameActivity.termMatching || 0,
+              grammarQuiz: stats.gameActivity.grammarQuiz || 0,
+              pronunciation: stats.gameActivity.pronunciation || 0,
+              perfectRounds: stats.gameActivity.perfectRounds || 0,
+            }
+          : null
+      );
+    } catch {
+      setPlayerXp(null);
+      setPlayerLevel(null);
+      setPlayerXpToNext(null);
+      setPlayerBadges([]);
+      setPlayerActivity(null);
+    } finally {
+      setPlayerStatsLoading(false);
+    }
+  }, [userId]);
+
   useEffect(() => {
     if (view === 'teams') refreshTeam();
   }, [view, refreshTeam]);
+
+  useEffect(() => {
+    if (view === 'menu') void loadPlayerGamePanel();
+  }, [loadPlayerGamePanel, view]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void loadPlayerGamePanel();
+    }, 8000);
+    return () => window.clearInterval(timer);
+  }, [loadPlayerGamePanel]);
 
   useEffect(() => {
     if (view !== 'teams') return;
@@ -228,6 +359,15 @@ export function Games() {
   }, [apiTeam?.id, matchedOpponentTeam?.id, view]);
 
   useEffect(() => {
+    const requestedView = searchParams.get('view');
+    if (requestedView === 'challenge') {
+      setView('challenge');
+      return;
+    }
+    if (requestedView === 'teams') {
+      setView('teams');
+      return;
+    }
     const openBattle = searchParams.get('teamBattle');
     const opponentTeamId = Number(searchParams.get('opponentTeamId') || 0);
     const opponentName = searchParams.get('opponentName') || '';
@@ -307,19 +447,31 @@ export function Games() {
     void loadTeamInvites();
   }, [loadChallenges, loadTeamInvites, userId, view]);
 
-  const question = vocabQuestions[currentQuestion];
+  const activeQuestions = roundQuestions.length ? roundQuestions : makeRoundQuestions(soloGameType);
+  const question = activeQuestions[currentQuestion] || activeQuestions[0];
+
+  const startSoloGame = (type: 'vocab' | 'grammar' | 'pronunciation') => {
+    setSoloGameType(type);
+    setRoundQuestions(makeRoundQuestions(type));
+    setCurrentQuestion(0);
+    setScore(0);
+    setSelectedAnswer(null);
+    setShowFeedback(false);
+    setGameMode('vocab');
+    setView('solo');
+  };
 
   const handleAnswer = (answer: string) => {
     setSelectedAnswer(answer);
     setShowFeedback(true);
-    const isCorrect = answer === question.english;
+    const isCorrect = answer === question.answer;
     const nextScore = isCorrect ? score + 1 : score;
     if (isCorrect) {
       setScore(prev => prev + 1);
     }
 
     setTimeout(() => {
-      if (currentQuestion < vocabQuestions.length - 1) {
+      if (currentQuestion < activeQuestions.length - 1) {
         setCurrentQuestion(prev => prev + 1);
         setSelectedAnswer(null);
         setShowFeedback(false);
@@ -330,6 +482,7 @@ export function Games() {
             if (ok) {
               toast.success(t('Turn submitted. Now waiting for your partner.', '내 차례를 제출했습니다. 이제 상대 차례입니다.'));
               void loadChallenges();
+              void loadPlayerGamePanel();
               setView('challenge');
               setGameMode('menu');
             } else {
@@ -345,6 +498,7 @@ export function Games() {
             const ok = await incrementTeamQuestProgress(userId, activeTeamQuestGameType);
             if (ok) {
               toast.success(t('Team quest progress updated!', '팀 퀘스트 진행도가 업데이트되었습니다!'));
+              void loadPlayerGamePanel();
               if (apiTeam?.id && matchedOpponentTeam?.id) {
                 const board = await getTeamVsBoard(apiTeam.id, matchedOpponentTeam.id);
                 setTeamVsBoard(board);
@@ -391,28 +545,129 @@ export function Games() {
             </p>
           </div>
 
+          <div className="mb-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-neutral-900">
+                  {t('Your games profile', '내 게임 프로필')}
+                </p>
+                <p className="text-xs text-neutral-600 mt-0.5">
+                  {t('Level, XP, badges, and activity.', '레벨, XP, 배지, 활동입니다.')}
+                </p>
+              </div>
+              <Link
+                to={userId ? `/games/profile/${userId}` : '/games/profile'}
+                className="text-xs font-semibold text-blue-700 hover:text-blue-800 whitespace-nowrap"
+              >
+                {t('View games profile', '게임 프로필 보기')}
+              </Link>
+            </div>
+
+            {playerStatsLoading ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+              </div>
+            ) : !userId ? (
+              <p className="text-xs text-neutral-600 mt-3">
+                {t('Sign in to see your stats.', '통계를 보려면 로그인하세요.')}
+              </p>
+            ) : (
+              <div className="mt-3 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-xs text-neutral-700">
+                    <span className="font-semibold text-neutral-900">
+                      {t('Level', '레벨')} {playerLevel ?? '—'}
+                    </span>
+                    <span className="text-neutral-400 mx-2">•</span>
+                    <span className="font-mono">
+                      {t('XP', 'XP')} {playerXp ?? '—'}
+                      {playerXpToNext != null ? ` / ${playerXpToNext}` : ''}
+                    </span>
+                  </div>
+                  <Trophy className="w-4 h-4 text-amber-500 shrink-0" />
+                </div>
+
+                {playerXp != null && playerXpToNext != null && playerXpToNext > 0 ? (
+                  <div className="h-2 rounded-full bg-neutral-200 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-blue-600"
+                      style={{
+                        width: `${Math.min(100, Math.round((playerXp / playerXpToNext) * 100))}%`,
+                      }}
+                    />
+                  </div>
+                ) : null}
+
+                {playerBadges.length > 0 ? (
+                  <div>
+                    <p className="text-[11px] font-semibold text-neutral-800 mb-2">
+                      {t('Badges', '배지')}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {playerBadges.slice(0, 8).map((b) => (
+                        <span
+                          key={`${b.id}-${b.earnedAt || ''}`}
+                          className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-[11px] text-neutral-800"
+                          title={b.description || b.name}
+                        >
+                          <span className="text-sm leading-none">{b.icon || '🏅'}</span>
+                          <span className="max-w-[7rem] truncate">{b.name}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-neutral-600">
+                    {t('No badges yet — play games to earn them.', '아직 배지가 없습니다. 게임을 플레이해 획득하세요.')}
+                  </p>
+                )}
+
+                {playerActivity ? (
+                  <div className="grid grid-cols-2 gap-2 text-[11px] text-neutral-700">
+                    <div>
+                      {t('Games', '게임')}: <span className="font-semibold">{playerActivity.gamesPlayed}</span>
+                    </div>
+                    <div>
+                      {t('Perfect', '퍼펙트')}: <span className="font-semibold">{playerActivity.perfectRounds}</span>
+                    </div>
+                    <div>
+                      {t('Terms', '단어')}: <span className="font-semibold">{playerActivity.termMatching}</span>
+                    </div>
+                    <div>
+                      {t('Grammar', '문법')}: <span className="font-semibold">{playerActivity.grammarQuiz}</span>
+                    </div>
+                    <div className="col-span-2">
+                      {t('Pronunciation', '발음')}:{' '}
+                      <span className="font-semibold">{playerActivity.pronunciation}</span>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+
           <div className="space-y-4">
             <button
               type="button"
               onClick={() => {
                 setView('solo');
-                setGameMode('vocab');
+                setGameMode('menu');
               }}
-              className="w-full bg-white rounded-2xl border border-neutral-200 p-5 sm:p-6 hover:shadow-md transition-shadow text-left group"
+              className="w-full bg-gradient-to-br from-emerald-600 to-green-600 rounded-2xl p-5 sm:p-6 hover:shadow-lg transition-shadow text-left group"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
-                  <BookOpen className="w-6 h-6 text-neutral-600" />
+                <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                  <BookOpen className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg sm:text-xl font-semibold text-neutral-900 mb-0.5">
-                    {t('Solo Practice', '혼자 연습')}
+                  <h3 className="text-lg sm:text-xl font-semibold text-white mb-0.5">
+                    {t('Games', '게임')}
                   </h3>
-                  <p className="text-sm text-neutral-600">
-                    {t('Practice vocabulary at your own pace', '나만의 속도로 어휘 연습')}
+                  <p className="text-sm text-green-100">
+                    {t('Term matching, grammar quiz, and pronunciation drill', '단어 매칭 · 문법 퀴즈 · 발음 드릴')}
                   </p>
                 </div>
-                <ArrowRight className="w-5 h-5 text-neutral-400 group-hover:text-neutral-700 transition-colors shrink-0" />
+                <ArrowRight className="w-5 h-5 text-white/80 group-hover:text-white transition-colors shrink-0" />
               </div>
             </button>
 
@@ -533,9 +788,9 @@ export function Games() {
                     : false;
               const statusLabel =
                 challenge.status === 'pending'
-                  ? myTurn ? t('My turn', '내 차례') : t('Waiting for opponent', '상대 차례')
+                  ? myTurn ? t('My turn', '내 차례') : ''
                   : challenge.status === 'accepted' || challenge.status === 'in_progress'
-                    ? myTurn ? t('My turn', '내 차례') : t("Opponent's turn", '상대 차례')
+                    ? myTurn ? t('My turn', '내 차례') : ''
                     : challenge.status === 'completed'
                       ? t('Completed', '완료')
                       : t('Ended', '종료');
@@ -554,7 +809,7 @@ export function Games() {
                       challenge.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                       'bg-neutral-100 text-neutral-700'
                     }`}>
-                      {statusLabel}
+                      {statusLabel || t('In progress', '진행 중')}
                     </span>
                   </div>
                   <Swords className="w-6 h-6 text-orange-600" />
@@ -609,13 +864,12 @@ export function Games() {
                             return;
                           }
                           setActiveChallengeId(String(challenge.id));
-                          setView('solo');
-                          setGameMode('vocab');
+                          startSoloGame('vocab');
                         }}
                         disabled={!myTurn}
                         className="w-full bg-orange-600 text-white py-3 rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50"
                       >
-                        {myTurn ? t('Continue Challenge', '대결 계속하기') : t("Waiting for opponent", '상대 차례')}
+                        {myTurn ? t('Continue Challenge', '대결 계속하기') : t("Opponent's turn", '상대 차례')}
                       </button>
                     )}
                   </div>
@@ -723,6 +977,58 @@ export function Games() {
               </motion.div>
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'solo' && gameMode === 'menu') {
+    return (
+      <div className="size-full flex items-center justify-center p-6 bg-white">
+        <div className="w-full max-w-md space-y-3">
+          <button onClick={resetGame} className="text-sm text-neutral-600 hover:text-neutral-900">
+            ← {t('Back', '뒤로')}
+          </button>
+          <h3 className="text-xl font-bold text-neutral-900">{t('Choose a game mode', '게임 모드 선택')}</h3>
+          <button
+            type="button"
+            onClick={() => startSoloGame('vocab')}
+            className="w-full rounded-xl border border-neutral-200 bg-white p-4 text-left hover:shadow-sm"
+          >
+            <div className="flex items-center gap-3">
+              <BookOpen className="w-5 h-5 text-neutral-700" />
+              <div>
+                <p className="font-semibold text-neutral-900">{t('Term Matching', '단어 매칭')}</p>
+                <p className="text-xs text-neutral-600">{t('Random vocabulary quiz each round', '매 라운드 랜덤 어휘 퀴즈')}</p>
+              </div>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => startSoloGame('grammar')}
+            className="w-full rounded-xl border border-neutral-200 bg-white p-4 text-left hover:shadow-sm"
+          >
+            <div className="flex items-center gap-3">
+              <FileText className="w-5 h-5 text-neutral-700" />
+              <div>
+                <p className="font-semibold text-neutral-900">{t('Grammar Quiz', '문법 퀴즈')}</p>
+                <p className="text-xs text-neutral-600">{t('Sentence patterns and particles', '문장 패턴과 조사')}</p>
+              </div>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => startSoloGame('pronunciation')}
+            className="w-full rounded-xl border border-neutral-200 bg-white p-4 text-left hover:shadow-sm"
+          >
+            <div className="flex items-center gap-3">
+              <Mic className="w-5 h-5 text-neutral-700" />
+              <div>
+                <p className="font-semibold text-neutral-900">{t('Pronunciation Drill', '발음 드릴')}</p>
+                <p className="text-xs text-neutral-600">{t('Sound and rhythm focused', '소리와 리듬 중심')}</p>
+              </div>
+            </div>
+          </button>
         </div>
       </div>
     );
@@ -1207,21 +1513,16 @@ export function Games() {
                       <button
                         type="button"
                         onClick={() => {
-                          const modeMap: Record<string, 'vocab'> = {
+                          const modeMap: Record<string, 'vocab' | 'grammar' | 'pronunciation'> = {
                             'term-matching': 'vocab',
-                            'grammar-quiz': 'vocab',
-                            'pronunciation-drill': 'vocab',
+                            'grammar-quiz': 'grammar',
+                            'pronunciation-drill': 'pronunciation',
                           };
                           const targetMode = modeMap[String(quest.gameType || '')] || 'vocab';
                           setShowQuestRaceModal(false);
                           setActiveChallengeId(null);
                           setActiveTeamQuestGameType(String(quest.gameType || 'term-matching'));
-                          setView('solo');
-                          setGameMode(targetMode);
-                          setCurrentQuestion(0);
-                          setScore(0);
-                          setSelectedAnswer(null);
-                          setShowFeedback(false);
+                          startSoloGame(targetMode);
                         }}
                         className="mt-3 w-full rounded-lg bg-indigo-600 text-white py-2 text-xs font-semibold hover:bg-indigo-700"
                       >
@@ -1343,7 +1644,7 @@ export function Games() {
   }
 
   if (gameMode === 'results') {
-    const percentage = Math.round((score / vocabQuestions.length) * 100);
+    const percentage = Math.round((score / activeQuestions.length) * 100);
 
     return (
       <div className="size-full flex items-center justify-center p-6 bg-gradient-to-b from-yellow-50 to-neutral-50">
@@ -1369,7 +1670,7 @@ export function Games() {
 
           <div className="bg-white rounded-2xl border border-neutral-200 p-8 mb-6">
             <div className="text-5xl font-bold text-purple-600 mb-2">
-              {score}/{vocabQuestions.length}
+              {score}/{activeQuestions.length}
             </div>
             <p className="text-neutral-600">
               {percentage}% {t('correct', '정답')}
@@ -1386,11 +1687,7 @@ export function Games() {
             </button>
             <button
               onClick={() => {
-                setCurrentQuestion(0);
-                setScore(0);
-                setSelectedAnswer(null);
-                setShowFeedback(false);
-                setGameMode('vocab');
+                startSoloGame(soloGameType);
               }}
               className="flex-1 bg-purple-600 text-white py-4 rounded-lg font-medium hover:bg-purple-700 transition-colors"
             >
@@ -1413,7 +1710,7 @@ export function Games() {
             ← {t('Back', '뒤로')}
           </button>
           <div className="text-sm text-neutral-600">
-            {t('Question', '문제')} {currentQuestion + 1}/{vocabQuestions.length}
+            {t('Question', '문제')} {currentQuestion + 1}/{activeQuestions.length}
           </div>
           <div className="flex items-center gap-2 text-sm font-medium text-purple-600">
             <Trophy className="w-4 h-4" />
@@ -1423,18 +1720,23 @@ export function Games() {
 
         <div className="bg-gradient-to-r from-purple-600 to-pink-500 rounded-2xl p-8 mb-6 text-center shadow-md">
           <p className="text-white/80 text-sm mb-2">
-            {t('Translate this word', '이 단어를 번역하세요')}
+            {soloGameType === 'grammar'
+              ? t('Pick the best grammar option', '가장 알맞은 문법을 고르세요')
+              : soloGameType === 'pronunciation'
+                ? t('Choose the best pronunciation answer', '가장 알맞은 발음 답을 고르세요')
+                : t('Translate this word', '이 단어를 번역하세요')}
           </p>
           <h3 className="text-4xl font-bold text-white mb-4">
-            {question.korean}
+            {question.prompt}
           </h3>
+          {question.hint ? <p className="text-white/80 text-xs">{question.hint}</p> : null}
         </div>
 
         <div className="space-y-3">
           <AnimatePresence mode="wait">
             {question.options.map((option, index) => {
               const isSelected = selectedAnswer === option;
-              const isCorrect = option === question.english;
+              const isCorrect = option === question.answer;
               const showCorrect = showFeedback && isCorrect;
               const showWrong = showFeedback && isSelected && !isCorrect;
 

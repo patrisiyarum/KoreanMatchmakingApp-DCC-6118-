@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router';
 import { motion } from 'motion/react';
-import { Calendar, Clock, Loader2, Plus, Users } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Clock, Loader2, Plus, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +31,8 @@ interface Meeting {
 
 const daysOfWeekKo = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
 
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
 function formatMeetingDate(isoDate: string, lang: 'en' | 'ko') {
   const d = new Date(`${isoDate}T12:00:00`);
   if (lang === 'ko') {
@@ -38,7 +41,33 @@ function formatMeetingDate(isoDate: string, lang: 'en' | 'ko') {
   return d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
 }
 
+function mondayOf(date: Date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const day = d.getDay(); // 0 Sunday..6 Saturday
+  const mondayDiff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + mondayDiff);
+  return d;
+}
+
+function normalizeMeetingDayName(raw: string) {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+  const lowered = value.toLowerCase();
+  const exact = GRID_DAYS.find((d) => d.toLowerCase() === lowered);
+  if (exact) return exact;
+  const short = GRID_DAYS.find((d) => d.toLowerCase().slice(0, 3) === lowered.slice(0, 3));
+  if (short) return short;
+  return value;
+}
+
+function normalizeMeetingTimeLabel(raw: string) {
+  const m = String(raw || '').trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return String(raw || '').slice(0, 5);
+  return `${String(Number(m[1])).padStart(2, '0')}:${m[2]}`;
+}
+
 export function Schedule() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { userId } = useAuth();
   const { t, language } = useLanguage();
   const [view, setView] = useState<'availability' | 'meetings'>('availability');
@@ -60,6 +89,8 @@ export function Schedule() {
   const [isDraggingModalSlot, setIsDraggingModalSlot] = useState(false);
   const [highlightMeetingId, setHighlightMeetingId] = useState<string | null>(null);
   const [highlightSlotKey, setHighlightSlotKey] = useState<string | null>(null);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const clickScheduleTimeoutRef = useRef<number | null>(null);
 
   const loadMine = useCallback(async () => {
     if (!userId) return;
@@ -93,6 +124,8 @@ export function Schedule() {
     (rows: MeetingRow[]) => {
       if (!userId) return [] as Meeting[];
       return rows.map((row) => {
+        const normalizedDay = normalizeMeetingDayName(String(row.day_of_week || ''));
+        const normalizedTime = normalizeMeetingTimeLabel(String(row.start_time || ''));
         const partnerId =
           Number(row.user1_id) === Number(userId) ? String(row.user2_id) : String(row.user1_id);
         const friend = friends.find((f) => String(f.id) === partnerId);
@@ -104,11 +137,11 @@ export function Schedule() {
           id: String(row.id),
           partnerId,
           partnerName,
-          dayOfWeek: row.day_of_week,
-          date: nextDateIsoForWeekday(row.day_of_week),
-          time: String(row.start_time || '').slice(0, 5),
+          dayOfWeek: normalizedDay,
+          date: nextDateIsoForWeekday(normalizedDay),
+          time: normalizedTime,
           duration: '60 min',
-          topic: t('Language exchange', '언어 교환'),
+          topic: String(row.topic || t('Language exchange', '언어 교환')),
         };
       });
     },
@@ -178,7 +211,16 @@ export function Schedule() {
     setModalPartnerId(defaultPartner);
     setModalSelectedDay(null);
     setModalSelectedTime(null);
-    setModalTopic('');
+    setModalTopic(t('Language exchange', '언어 교환'));
+    setShowScheduleModal(true);
+  };
+
+  const openScheduleModalForSlot = (day: string, time: string) => {
+    const defaultPartner = modalPartnerId || (friends.length ? String(friends[0].id) : '');
+    setModalPartnerId(defaultPartner);
+    setModalSelectedDay(day);
+    setModalSelectedTime(time);
+    setModalTopic(t('Language exchange', '언어 교환'));
     setShowScheduleModal(true);
   };
 
@@ -187,6 +229,65 @@ export function Schedule() {
     if (!f) return '';
     return [f.firstName, f.lastName].filter(Boolean).join(' ') || f.email || '';
   }, [friends, modalPartnerId]);
+
+  useEffect(() => {
+    const requestedPartnerId = searchParams.get('partnerId');
+    const shouldOpen = searchParams.get('open') === '1';
+    if (!requestedPartnerId || !shouldOpen) return;
+    if (!friends.length) return;
+    const exists = friends.some((f) => String(f.id) === String(requestedPartnerId));
+    setModalPartnerId(exists ? String(requestedPartnerId) : String(friends[0].id));
+    setModalSelectedDay(null);
+    setModalSelectedTime(null);
+    setModalTopic(t('Language exchange', '언어 교환'));
+    setShowScheduleModal(true);
+    setSearchParams({}, { replace: true });
+  }, [friends, searchParams, setSearchParams, t]);
+
+  const weekStartDate = useMemo(() => {
+    const baseMonday = mondayOf(new Date());
+    const d = new Date(baseMonday);
+    d.setDate(d.getDate() + weekOffset * 7);
+    return d;
+  }, [weekOffset]);
+
+  const weekDays = useMemo(
+    () =>
+      GRID_DAYS.map((dayName, index) => {
+        const d = new Date(weekStartDate);
+        d.setDate(weekStartDate.getDate() + index);
+        return {
+          dayName,
+          dateIso: d.toISOString().slice(0, 10),
+          monthDay: language === 'ko'
+            ? `${d.getMonth() + 1}/${d.getDate()}`
+            : d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }),
+        };
+      }),
+    [language, weekStartDate]
+  );
+
+  const weekRangeLabel = useMemo(() => {
+    const start = weekDays[0]?.dateIso;
+    const end = weekDays[6]?.dateIso;
+    if (!start || !end) return '';
+    const s = new Date(`${start}T12:00:00`);
+    const e = new Date(`${end}T12:00:00`);
+    if (language === 'ko') {
+      return `${s.getFullYear()}년 ${s.getMonth() + 1}월 ${s.getDate()}일 - ${e.getMonth() + 1}월 ${e.getDate()}일`;
+    }
+    return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - ${e.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })}`;
+  }, [language, weekDays]);
+
+  const monthPickerValue = useMemo(() => {
+    const y = weekStartDate.getFullYear();
+    const m = String(weekStartDate.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  }, [weekStartDate]);
 
   const modalCellClass = (day: string, time: string) => {
     const key = `${day}-${time}`;
@@ -198,7 +299,7 @@ export function Schedule() {
     else if (mine) cls = 'bg-blue-600 hover:bg-blue-700';
     else if (theirs) cls = 'bg-amber-400 hover:bg-amber-500';
     else cls = 'bg-neutral-100 hover:bg-neutral-200';
-    if (selected) cls += ' ring-2 ring-blue-600 ring-offset-2 ring-inset';
+    if (selected) return 'bg-red-600 hover:bg-red-700 ring-2 ring-red-300 ring-offset-1 ring-inset';
     return cls;
   };
 
@@ -234,17 +335,22 @@ export function Schedule() {
     }
     setScheduling(true);
     try {
+      const selectedDateIso =
+        weekDays.find((d) => d.dayName === modalSelectedDay)?.dateIso ||
+        nextDateIsoForWeekday(modalSelectedDay);
+      const meetingTopic =
+        modalTopic.trim() ||
+        t('Language exchange', '언어 교환');
+
       const data = await createMeetingApi({
         user1_id: u1,
         user2_id: u2,
         day_of_week: modalSelectedDay,
         start_time: gridTimeToApi(modalSelectedTime),
         end_time: gridTimeEndApi(modalSelectedTime),
+        topic: meetingTopic,
       });
-      const dateIso = nextDateIsoForWeekday(modalSelectedDay);
-      const topic =
-        modalTopic.trim() ||
-        t('Language exchange', '언어 교환');
+      const dateIso = selectedDateIso;
       setMeetings((prev) => {
         if (data?.id == null) return prev;
         return [
@@ -257,11 +363,12 @@ export function Schedule() {
             date: dateIso,
             time: modalSelectedTime,
             duration: '60 min',
-            topic,
+            topic: meetingTopic,
           },
         ];
       });
       toast.success(t('Meeting scheduled', '미팅이 예약되었습니다'));
+      setHighlightSlotKey(`${modalSelectedDay}-${modalSelectedTime}`);
       void loadMeetings();
       setShowScheduleModal(false);
     } catch (err: unknown) {
@@ -305,6 +412,14 @@ export function Schedule() {
     window.addEventListener('mouseup', endPaint);
     return () => window.removeEventListener('mouseup', endPaint);
   }, [isPaintingAvailability]);
+
+  useEffect(() => {
+    return () => {
+      if (clickScheduleTimeoutRef.current) {
+        window.clearTimeout(clickScheduleTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!isDraggingModalSlot) return;
@@ -399,13 +514,13 @@ export function Schedule() {
 
   return (
     <div className="size-full overflow-y-auto bg-neutral-50">
-      <div className="max-w-5xl mx-auto p-3 sm:p-4">
+      <div className="max-w-5xl mx-auto p-2 sm:p-3">
         <div className="mb-3">
-          <h2 className="text-2xl font-bold text-neutral-900 mb-1">
-            {t('Schedule', '일정')}
+          <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-1">
+            {t('Calls & meetings', '통화 · 미팅')}
           </h2>
           <p className="text-neutral-600">
-            {t('Manage your availability and meetings', '가능한 시간과 미팅 관리')}
+            {t('Manage availability, meetings, and call links', '가능 시간 · 미팅 · 통화 링크 관리')}
           </p>
         </div>
 
@@ -421,7 +536,7 @@ export function Schedule() {
           >
             <div className="flex items-center gap-2">
               <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              {t('My Availability', '내 가능 시간')}
+              {t('Availability', '가능 시간')}
             </div>
           </button>
           <button
@@ -435,16 +550,56 @@ export function Schedule() {
           >
             <div className="flex items-center gap-2">
               <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              {t('Scheduled Meetings', '예정된 미팅')} ({meetings.length})
+              {t('Meetings', '미팅')} ({meetings.length})
             </div>
           </button>
+        </div>
+
+        <div className="mb-3 flex items-center justify-between rounded-xl border border-neutral-200 bg-white px-3 py-2">
+          <button
+            type="button"
+            onClick={() => setWeekOffset((prev) => prev - 1)}
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm text-neutral-700 hover:bg-neutral-100"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            {t('Prev week', '이전 주')}
+          </button>
+          <div className="text-xs sm:text-sm font-medium text-neutral-800 opacity-0 select-none">{weekRangeLabel}</div>
+          <div className="flex items-center gap-1">
+            <input
+              type="month"
+              value={monthPickerValue}
+              onChange={(e) => {
+                const raw = e.target.value;
+                const m = raw.match(/^(\d{4})-(\d{2})$/);
+                if (!m) return;
+                const year = Number(m[1]);
+                const month = Number(m[2]) - 1;
+                if (!Number.isFinite(year) || !Number.isFinite(month)) return;
+                const baseMonday = mondayOf(new Date());
+                const targetMonday = mondayOf(new Date(year, month, 1));
+                const diffWeeks = Math.round((targetMonday.getTime() - baseMonday.getTime()) / ONE_WEEK_MS);
+                setWeekOffset(diffWeeks);
+              }}
+              className="rounded-md border border-neutral-200 px-2 py-1 text-xs sm:text-sm text-neutral-700"
+              aria-label={t('Jump to month', '월 이동')}
+            />
+            <button
+              type="button"
+              onClick={() => setWeekOffset((prev) => prev + 1)}
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm text-neutral-700 hover:bg-neutral-100"
+            >
+              {t('Next week', '다음 주')}
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {view === 'availability' && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl border border-neutral-200 p-4"
+            className="bg-white rounded-2xl border border-neutral-200 p-3"
           >
             <div className="mb-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
               <div>
@@ -464,6 +619,9 @@ export function Schedule() {
                 </button>
               </div>
             </div>
+            <p className="mb-3 text-xs sm:text-sm text-neutral-600 text-center">
+              {weekRangeLabel}
+            </p>
 
             <div className="overflow-x-auto">
               {loadAvail ? (
@@ -477,12 +635,13 @@ export function Schedule() {
                       <th className="px-2 py-1 text-left text-xs font-medium text-neutral-700 border-b border-neutral-200 bg-[#f8f9fa]">
                         {t('Time', '시간')}
                       </th>
-                      {GRID_DAYS.map((day, index) => (
+                      {weekDays.map((day, index) => (
                         <th
-                          key={day}
+                          key={day.dayName}
                           className="px-1 py-1 text-center text-xs font-medium text-neutral-700 border-b border-neutral-200 bg-[#f8f9fa]"
                         >
-                          {language === 'ko' ? daysOfWeekKo[index] : day.slice(0, 3)}
+                          <div>{language === 'ko' ? daysOfWeekKo[index] : day.dayName.slice(0, 3)}</div>
+                          <div className="text-[10px] font-normal text-neutral-500">{day.monthDay}</div>
                         </th>
                       ))}
                     </tr>
@@ -493,25 +652,56 @@ export function Schedule() {
                         <td className="px-2 py-1 text-xs text-neutral-600 border-b border-neutral-200 whitespace-nowrap bg-white">
                           {time}
                         </td>
-                        {GRID_DAYS.map((day) => (
-                          <td key={`${day}-${time}`} className="p-0.5 border-b border-neutral-200 bg-white">
+                        {weekDays.map((day) => (
+                          <td key={`${day.dayName}-${time}`} className="p-0.5 border-b border-neutral-200 bg-white">
                             {(() => {
-                              const slotMeetings = meetingBySlot.get(`${day}-${time}`) || [];
+                              const slotMeetings = meetingBySlot.get(`${day.dayName}-${time}`) || [];
                               const hasMeeting = slotMeetings.length > 0;
                               return (
                             <button
                               type="button"
-                              aria-label={meetingHoverLabel(day, time)}
+                              aria-label={meetingHoverLabel(day.dayName, time)}
                               onMouseDown={() => {
                                 if (hasMeeting) return;
-                                beginAvailabilityPaint(day, time);
+                                const isBlue = myKeys.has(`${day.dayName}-${time}`);
+                                // Blue cells are reserved for scheduling on single click.
+                                if (!isBlue) {
+                                  beginAvailabilityPaint(day.dayName, time);
+                                }
                               }}
-                              onMouseEnter={() => paintAvailabilityCell(day, time)}
+                              onMouseEnter={() => paintAvailabilityCell(day.dayName, time)}
                               onMouseUp={() => setIsPaintingAvailability(false)}
-                              onClick={() => {
-                                if (hasMeeting) openMeetingFromSlot(day, time);
+                              onDoubleClick={() => {
+                                if (hasMeeting) return;
+                                if (clickScheduleTimeoutRef.current) {
+                                  window.clearTimeout(clickScheduleTimeoutRef.current);
+                                  clickScheduleTimeoutRef.current = null;
+                                }
+                                const key = `${day.dayName}-${time}`;
+                                if (!myKeys.has(key)) return;
+                                setMyKeys((prev) => {
+                                  const next = new Set(prev);
+                                  next.delete(key);
+                                  return next;
+                                });
+                                toast.message(t('Availability removed', '가능 시간이 삭제되었습니다'));
                               }}
-                              className={`group w-full h-6 sm:h-7 rounded transition-colors cursor-pointer relative ${cellClass(day, time)}`}
+                              onClick={() => {
+                                if (hasMeeting) {
+                                  openMeetingFromSlot(day.dayName, time);
+                                  return;
+                                }
+                                if (myKeys.has(`${day.dayName}-${time}`) && friends.length > 0) {
+                                  if (clickScheduleTimeoutRef.current) {
+                                    window.clearTimeout(clickScheduleTimeoutRef.current);
+                                  }
+                                  clickScheduleTimeoutRef.current = window.setTimeout(() => {
+                                    openScheduleModalForSlot(day.dayName, time);
+                                    clickScheduleTimeoutRef.current = null;
+                                  }, 220);
+                                }
+                              }}
+                              className={`group w-full h-5 sm:h-6 rounded transition-colors cursor-pointer relative ${cellClass(day.dayName, time)}`}
                             >
                               {hasMeeting ? (
                                 <span className="pointer-events-none absolute left-1/2 top-0 z-20 hidden -translate-x-1/2 -translate-y-full rounded bg-neutral-900 px-2 py-1 text-[10px] text-white shadow-md group-hover:block whitespace-nowrap">
@@ -535,7 +725,7 @@ export function Schedule() {
             <div className="mt-3 flex flex-wrap items-center gap-3 text-xs sm:text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-blue-600 rounded" />
-                <span className="text-neutral-600">{t('Available', '가능')}</span>
+                <span className="text-neutral-600">{t('Available (click to schedule)', '가능 (클릭해 미팅 예약)')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-red-600 rounded" />
@@ -559,17 +749,17 @@ export function Schedule() {
             <button
               type="button"
               onClick={openScheduleModal}
-              className="w-full bg-blue-600 text-white py-4 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2"
+              className="w-full bg-blue-600 text-white py-3 rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center justify-center gap-2"
             >
               <Plus className="w-5 h-5" />
-              {t('Schedule New Meeting', '새 미팅 예약')}
+              {t('Schedule New Call/Meeting', '새 통화/미팅 예약')}
             </button>
 
             {meetings.map((meeting) => (
               <div
                 key={meeting.id}
                 id={`meeting-card-${meeting.id}`}
-                className={`bg-white rounded-2xl border p-6 transition-all ${
+                className={`bg-white rounded-2xl border p-4 transition-all ${
                   highlightMeetingId === meeting.id
                     ? 'border-red-400 ring-2 ring-red-200'
                     : 'border-neutral-200 hover:border-blue-300'
@@ -594,7 +784,7 @@ export function Schedule() {
                     <span>{t('1-on-1', '1:1')}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-neutral-600">
+                <div className="flex items-center gap-3 text-xs sm:text-sm text-neutral-600">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
                     <span>{formatMeetingDate(meeting.date, language)}</span>
@@ -605,6 +795,15 @@ export function Schedule() {
                       {meeting.time} ({meeting.duration})
                     </span>
                   </div>
+                </div>
+                <div className="mt-3">
+                  <Link
+                    to={`/call/${meeting.id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+                  >
+                    {t('Join in-app call', '앱 내 통화 참여')}
+                  </Link>
                 </div>
               </div>
             ))}
@@ -625,7 +824,7 @@ export function Schedule() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-white rounded-2xl p-4 sm:p-5 max-w-5xl w-full max-h-[92vh] overflow-y-auto my-auto shadow-xl"
+              className="bg-white rounded-2xl p-3 sm:p-4 max-w-5xl w-full max-h-[90vh] overflow-y-auto my-auto shadow-xl"
               onKeyDown={(e) => {
                 if (e.key !== 'Enter') return;
                 if (
@@ -643,7 +842,7 @@ export function Schedule() {
               }}
             >
               <h3 className="text-xl font-bold text-neutral-900 mb-1">
-                {t('Schedule Meeting', '미팅 예약')}
+                {t('Schedule Call/Meeting', '통화/미팅 예약')}
               </h3>
               <div className="space-y-4 mt-4">
                 <div>
@@ -657,7 +856,7 @@ export function Schedule() {
                       setModalSelectedDay(null);
                       setModalSelectedTime(null);
                     }}
-                    className="w-full max-w-md px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full max-w-md px-3 py-2.5 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">{t('— Select friend —', '— 친구 선택 —')}</option>
                     {friends.map((f) => (
@@ -693,12 +892,13 @@ export function Schedule() {
                           <th className="px-2 py-0.5 text-left text-xs font-medium text-neutral-700 border-b bg-neutral-50">
                             {t('Time', '시간')}
                           </th>
-                          {GRID_DAYS.map((day, index) => (
+                          {weekDays.map((day, index) => (
                             <th
-                              key={day}
+                              key={day.dayName}
                               className="px-1 py-0.5 text-center text-xs font-medium text-neutral-700 border-b bg-neutral-50"
                             >
-                              {language === 'ko' ? daysOfWeekKo[index] : day.slice(0, 3)}
+                              <div>{language === 'ko' ? daysOfWeekKo[index] : day.dayName.slice(0, 3)}</div>
+                              <div className="text-[10px] font-normal text-neutral-500">{day.monthDay}</div>
                             </th>
                           ))}
                         </tr>
@@ -709,20 +909,20 @@ export function Schedule() {
                             <td className="px-2 py-0.5 text-xs text-neutral-600 border-b whitespace-nowrap">
                               {time}
                             </td>
-                            {GRID_DAYS.map((day) => (
-                              <td key={`m-${day}-${time}`} className="p-0.5 border-b">
+                            {weekDays.map((day) => (
+                              <td key={`m-${day.dayName}-${time}`} className="p-0.5 border-b">
                                 <button
                                   type="button"
-                                  title={`${day} ${time}`}
+                                  title={`${day.dayName} ${day.dateIso} ${time}`}
                                   onMouseDown={() => {
                                     setIsDraggingModalSlot(true);
-                                    pickModalSlot(day, time, true);
+                                    pickModalSlot(day.dayName, time, true);
                                   }}
                                   onMouseEnter={() => {
-                                    if (isDraggingModalSlot) pickModalSlot(day, time, false);
+                                    if (isDraggingModalSlot) pickModalSlot(day.dayName, time, false);
                                   }}
                                   onMouseUp={() => setIsDraggingModalSlot(false)}
-                                  className={`w-full h-6 sm:h-7 rounded transition-colors cursor-pointer ${modalCellClass(day, time)}`}
+                                  className={`w-full h-5 sm:h-6 rounded transition-colors cursor-pointer ${modalCellClass(day.dayName, time)}`}
                                 />
                               </td>
                             ))}
@@ -758,7 +958,7 @@ export function Schedule() {
                         ? daysOfWeekKo[GRID_DAYS.indexOf(modalSelectedDay as (typeof GRID_DAYS)[number])] ||
                           modalSelectedDay
                         : modalSelectedDay}{' '}
-                      {modalSelectedTime}
+                      {weekDays.find((d) => d.dayName === modalSelectedDay)?.dateIso || ''} {modalSelectedTime}
                     </span>
                   </p>
                 ) : null}
@@ -772,7 +972,7 @@ export function Schedule() {
                     value={modalTopic}
                     onChange={(e) => setModalTopic(e.target.value)}
                     placeholder={t('e.g., Conversation practice', '예: 회화 연습')}
-                    className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>

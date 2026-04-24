@@ -7,6 +7,10 @@ import {
 import { pool } from '../config/connectDB.js'; //TOWNSHEND: this was formally connected to sequelize...
 //but the methods were using .execute method, so I changed the import to the pool object
 import db from '../models/index.js';
+import { createZoomMeeting, hasZoomConfig } from '../Service/zoomService.js';
+import agoraToken from 'agora-token';
+
+const { RtcTokenBuilder, RtcRole } = agoraToken;
 
 const READD_COOLDOWN_HOURS = 24;
 const isPostgres = (process.env.DB_DIALECT || 'mysql') === 'postgres';
@@ -1062,7 +1066,7 @@ function normalizeMeetingTime(t) {
 
 let createMeeting = async (req, res) => {
   try {
-    const { user1_id, user2_id, day_of_week, start_time, end_time } = req.body;
+    const { user1_id, user2_id, day_of_week, start_time, end_time, topic, zoom_link } = req.body;
 
     const u1 = Number(user1_id);
     const u2 = Number(user2_id);
@@ -1093,13 +1097,31 @@ let createMeeting = async (req, res) => {
     const st = normalizeMeetingTime(start_time);
     const et = normalizeMeetingTime(end_time);
 
-    const row = await db.Meeting.create({
-      user1_id: u1,
-      user2_id: u2,
-      day_of_week: String(day_of_week),
-      start_time: st,
-      end_time: et,
-    });
+    let row;
+    try {
+      row = await db.Meeting.create({
+        user1_id: u1,
+        user2_id: u2,
+        day_of_week: String(day_of_week),
+        start_time: st,
+        end_time: et,
+        topic: topic ? String(topic).slice(0, 200) : null,
+        zoom_link: zoom_link ? String(zoom_link).slice(0, 2000) : null,
+      });
+    } catch (createErr) {
+      const rawCreate = createErr?.message || String(createErr);
+      if (/Unknown column\s+'topic'|Unknown column\s+'zoom_link'|ER_BAD_FIELD_ERROR/i.test(rawCreate)) {
+        row = await db.Meeting.create({
+          user1_id: u1,
+          user2_id: u2,
+          day_of_week: String(day_of_week),
+          start_time: st,
+          end_time: et,
+        });
+      } else {
+        throw createErr;
+      }
+    }
 
     return res.status(201).json({
       message: "Meeting created successfully",
@@ -1127,6 +1149,93 @@ let createMeeting = async (req, res) => {
     }
     return res.status(500).json({
       message,
+      error: raw,
+    });
+  }
+};
+
+let createZoomMeetingLink = async (req, res) => {
+  try {
+    const { topic, start_time_iso, timezone, duration_minutes } = req.body || {};
+    if (!start_time_iso) {
+      return res.status(400).json({
+        message: 'Missing required field: start_time_iso',
+      });
+    }
+    if (!hasZoomConfig()) {
+      return res.status(501).json({
+        message: 'Zoom is not configured. Set ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET, and ZOOM_USER_ID.',
+        code: 'ZOOM_NOT_CONFIGURED',
+      });
+    }
+    const meeting = await createZoomMeeting({
+      topic: topic ? String(topic) : 'Language exchange',
+      startTimeIso: String(start_time_iso),
+      durationMinutes: Number(duration_minutes || 60),
+      timezone: timezone ? String(timezone) : 'UTC',
+    });
+    return res.status(200).json({
+      message: 'ok',
+      meetingId: meeting.id,
+      joinUrl: meeting.join_url,
+      startUrl: meeting.start_url,
+      password: meeting.password || null,
+    });
+  } catch (error) {
+    const raw = error?.message || String(error);
+    console.error('Error creating Zoom meeting:', raw);
+    return res.status(500).json({
+      message: 'Failed to create Zoom meeting',
+      error: raw,
+    });
+  }
+};
+
+let createAgoraRtcToken = async (req, res) => {
+  try {
+    const appId = process.env.AGORA_APP_ID || '';
+    const appCertificate = process.env.AGORA_APP_CERTIFICATE || '';
+    if (!appId) {
+      return res.status(501).json({
+        message: 'Agora is not configured. Set AGORA_APP_ID (and AGORA_APP_CERTIFICATE for token mode).',
+        code: 'AGORA_NOT_CONFIGURED',
+      });
+    }
+
+    const { channelName, uid } = req.body || {};
+    if (!channelName) {
+      return res.status(400).json({ message: 'Missing required field: channelName' });
+    }
+    const uidNum = Number(uid || 0);
+    const expireSec = Number(process.env.AGORA_TOKEN_EXPIRE_SECONDS || 3600);
+    const currentTs = Math.floor(Date.now() / 1000);
+    const privilegeExpireTs = currentTs + expireSec;
+    const token = appCertificate
+      ? RtcTokenBuilder.buildTokenWithUid(
+          appId,
+          appCertificate,
+          String(channelName),
+          Number.isFinite(uidNum) ? uidNum : 0,
+          RtcRole.PUBLISHER,
+          privilegeExpireTs
+        )
+      : null;
+    return res.status(200).json({
+      appId,
+      channelName: String(channelName),
+      uid: Number.isFinite(uidNum) ? uidNum : 0,
+      token,
+      expiresAt: privilegeExpireTs,
+      mode: appCertificate ? 'token' : 'appIdOnly',
+      warning: appCertificate
+        ? null
+        : 'AGORA_APP_CERTIFICATE is missing. Using appId-only mode (works only if your Agora project allows token-free access).',
+    });
+  } catch (error) {
+    const raw = error?.message || String(error);
+    console.error('Error creating Agora token:', raw);
+    return res.status(500).json({
+      message: 'Failed to create Agora token',
       error: raw,
     });
   }
@@ -1224,7 +1333,7 @@ let moveMeeting = async (req, res) => {
 const APIController = {
     addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getDiscoverUsers, getUserPreferences, getUserProfile, getProfileCustomizationOptions, updateRating,
     addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList, removeFriend, addTrueFriend, removeTrueFriend,
-    getTrueFriendsList, getUserAvailability, createMeeting, deleteMeeting, moveMeeting,
+    getTrueFriendsList, getUserAvailability, createMeeting, deleteMeeting, moveMeeting, createZoomMeetingLink, createAgoraRtcToken,
     getFriendRequests, acceptFriendRequest, rejectFriendRequest
 };
 export default APIController;

@@ -54,7 +54,15 @@ export default (sequelize, DataTypes) => {
       end_time: {
         type: DataTypes.TIME,
         allowNull: false
-      }
+      },
+      topic: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      zoom_link: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
     },
     {
       sequelize,

@@ -12,6 +12,7 @@ import {
   Gamepad2,
   BookOpen,
   Loader2,
+  Settings,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
@@ -461,7 +462,7 @@ export function Games() {
                 to="/profile"
                 className="text-xs font-semibold text-blue-700 hover:text-blue-800 whitespace-nowrap"
               >
-                {t('View profile', '프로필 보기')}
+                {t('Open profile', '프로필 열기')}
               </Link>
             </div>
 
@@ -546,6 +547,33 @@ export function Games() {
                 ) : null}
               </div>
             )}
+          </div>
+
+          <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0">
+                <span className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-100 text-neutral-700 shrink-0">
+                  <Settings className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-neutral-900">
+                    {t('Profile & matchmaking details', '프로필 · 매칭 정보')}
+                  </p>
+                  <p className="text-xs text-neutral-600 mt-0.5">
+                    {t(
+                      'Languages, goals, style, interests, photo, and visibility — what partners see before you play.',
+                      '언어 · 목표 · 스타일 · 관심사 · 사진 · 공개 설정 — 게임 전 파트너가 보는 정보입니다.'
+                    )}
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/profile"
+                className="text-xs font-semibold text-blue-700 hover:text-blue-800 whitespace-nowrap shrink-0"
+              >
+                {t('Customize', '맞춤 설정')}
+              </Link>
+            </div>
           </div>
 
           <div className="space-y-4">

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Trophy,
@@ -39,6 +39,8 @@ import {
   submitChallengeScoreApi,
   type ChallengeRow,
 } from '@/api/challengesApi';
+import { fetchUserGameStats } from '@/api/profileApi';
+import { getUserBadges, type UserBadgeRow } from '@/api/badgesApi';
 
 interface VocabQuestion {
   korean: string;
@@ -132,6 +134,18 @@ export function Games() {
   const [teamVsBoard, setTeamVsBoard] = useState<TeamVsBoard | null>(null);
   const [teamVsLoading, setTeamVsLoading] = useState(false);
   const [activeTeamQuestGameType, setActiveTeamQuestGameType] = useState<string | null>(null);
+  const [playerStatsLoading, setPlayerStatsLoading] = useState(false);
+  const [playerXp, setPlayerXp] = useState<number | null>(null);
+  const [playerLevel, setPlayerLevel] = useState<number | null>(null);
+  const [playerXpToNext, setPlayerXpToNext] = useState<number | null>(null);
+  const [playerBadges, setPlayerBadges] = useState<UserBadgeRow[]>([]);
+  const [playerActivity, setPlayerActivity] = useState<{
+    gamesPlayed: number;
+    termMatching: number;
+    grammarQuiz: number;
+    pronunciation: number;
+    perfectRounds: number;
+  } | null>(null);
 
   const refreshTeam = useCallback(async () => {
     if (!userId) {
@@ -152,9 +166,51 @@ export function Games() {
     }
   }, [userId]);
 
+  const loadPlayerGamePanel = useCallback(async () => {
+    if (!userId) {
+      setPlayerXp(null);
+      setPlayerLevel(null);
+      setPlayerXpToNext(null);
+      setPlayerBadges([]);
+      setPlayerActivity(null);
+      return;
+    }
+    setPlayerStatsLoading(true);
+    try {
+      const [stats, badges] = await Promise.all([fetchUserGameStats(userId), getUserBadges(userId)]);
+      setPlayerXp(typeof stats?.xp === 'number' ? stats.xp : null);
+      setPlayerLevel(typeof stats?.level === 'number' ? stats.level : null);
+      setPlayerXpToNext(typeof stats?.xpToNext === 'number' ? stats.xpToNext : null);
+      setPlayerBadges(badges);
+      setPlayerActivity(
+        stats?.gameActivity
+          ? {
+              gamesPlayed: stats.gameActivity.gamesPlayed || 0,
+              termMatching: stats.gameActivity.termMatching || 0,
+              grammarQuiz: stats.gameActivity.grammarQuiz || 0,
+              pronunciation: stats.gameActivity.pronunciation || 0,
+              perfectRounds: stats.gameActivity.perfectRounds || 0,
+            }
+          : null
+      );
+    } catch {
+      setPlayerXp(null);
+      setPlayerLevel(null);
+      setPlayerXpToNext(null);
+      setPlayerBadges([]);
+      setPlayerActivity(null);
+    } finally {
+      setPlayerStatsLoading(false);
+    }
+  }, [userId]);
+
   useEffect(() => {
     if (view === 'teams') refreshTeam();
   }, [view, refreshTeam]);
+
+  useEffect(() => {
+    if (view === 'menu') void loadPlayerGamePanel();
+  }, [loadPlayerGamePanel, view]);
 
   useEffect(() => {
     if (view !== 'teams') return;
@@ -389,6 +445,107 @@ export function Games() {
             <p className="text-neutral-600 text-sm">
               {t('Practice and improve your skills', '연습하고 실력을 향상시키세요')}
             </p>
+          </div>
+
+          <div className="mb-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-neutral-900">
+                  {t('Your games profile', '내 게임 프로필')}
+                </p>
+                <p className="text-xs text-neutral-600 mt-0.5">
+                  {t('Level, XP, badges, and activity.', '레벨, XP, 배지, 활동입니다.')}
+                </p>
+              </div>
+              <Link
+                to="/profile"
+                className="text-xs font-semibold text-blue-700 hover:text-blue-800 whitespace-nowrap"
+              >
+                {t('View profile', '프로필 보기')}
+              </Link>
+            </div>
+
+            {playerStatsLoading ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+              </div>
+            ) : !userId ? (
+              <p className="text-xs text-neutral-600 mt-3">
+                {t('Sign in to see your stats.', '통계를 보려면 로그인하세요.')}
+              </p>
+            ) : (
+              <div className="mt-3 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-xs text-neutral-700">
+                    <span className="font-semibold text-neutral-900">
+                      {t('Level', '레벨')} {playerLevel ?? '—'}
+                    </span>
+                    <span className="text-neutral-400 mx-2">•</span>
+                    <span className="font-mono">
+                      {t('XP', 'XP')} {playerXp ?? '—'}
+                      {playerXpToNext != null ? ` / ${playerXpToNext}` : ''}
+                    </span>
+                  </div>
+                  <Trophy className="w-4 h-4 text-amber-500 shrink-0" />
+                </div>
+
+                {playerXp != null && playerXpToNext != null && playerXpToNext > 0 ? (
+                  <div className="h-2 rounded-full bg-neutral-200 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-blue-600"
+                      style={{
+                        width: `${Math.min(100, Math.round((playerXp / playerXpToNext) * 100))}%`,
+                      }}
+                    />
+                  </div>
+                ) : null}
+
+                {playerBadges.length > 0 ? (
+                  <div>
+                    <p className="text-[11px] font-semibold text-neutral-800 mb-2">
+                      {t('Badges', '배지')}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {playerBadges.slice(0, 8).map((b) => (
+                        <span
+                          key={`${b.id}-${b.earnedAt || ''}`}
+                          className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-[11px] text-neutral-800"
+                          title={b.description || b.name}
+                        >
+                          <span className="text-sm leading-none">{b.icon || '🏅'}</span>
+                          <span className="max-w-[7rem] truncate">{b.name}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-neutral-600">
+                    {t('No badges yet — play games to earn them.', '아직 배지가 없습니다. 게임을 플레이해 획득하세요.')}
+                  </p>
+                )}
+
+                {playerActivity ? (
+                  <div className="grid grid-cols-2 gap-2 text-[11px] text-neutral-700">
+                    <div>
+                      {t('Games', '게임')}: <span className="font-semibold">{playerActivity.gamesPlayed}</span>
+                    </div>
+                    <div>
+                      {t('Perfect', '퍼펙트')}: <span className="font-semibold">{playerActivity.perfectRounds}</span>
+                    </div>
+                    <div>
+                      {t('Terms', '단어')}: <span className="font-semibold">{playerActivity.termMatching}</span>
+                    </div>
+                    <div>
+                      {t('Grammar', '문법')}: <span className="font-semibold">{playerActivity.grammarQuiz}</span>
+                    </div>
+                    <div className="col-span-2">
+                      {t('Pronunciation', '발음')}:{' '}
+                      <span className="font-semibold">{playerActivity.pronunciation}</span>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
 
           <div className="space-y-4">

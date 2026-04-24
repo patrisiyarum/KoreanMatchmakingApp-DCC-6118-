@@ -21,6 +21,7 @@ import {
   replaceUserInterestsApi,
   resolveInterestIds,
 } from '@/api/matchmakingProfileApi';
+import { getUserBadges, type UserBadgeRow } from '@/api/badgesApi';
 import { PROFILE_INTEREST_OPTIONS } from '../constants/profileInterests';
 
 function profilePayloadHasBioKey(profile: Record<string, unknown> | null | undefined): boolean {
@@ -52,6 +53,9 @@ export function Profile() {
   const [gender, setGender] = useState('Other');
   const [profession, setProfession] = useState('Other');
   const [interests, setInterests] = useState<string[]>([]);
+  const [gameXp, setGameXp] = useState<number | null>(null);
+  const [gameLevel, setGameLevel] = useState<number | null>(null);
+  const [gameXpToNext, setGameXpToNext] = useState<number | null>(null);
   const [gameStats, setGameStats] = useState<{
     gamesPlayed: number;
     termMatching: number;
@@ -59,6 +63,7 @@ export function Profile() {
     pronunciation: number;
     perfectRounds: number;
   } | null>(null);
+  const [badges, setBadges] = useState<UserBadgeRow[]>([]);
   const warnedBioColumnRef = useRef(false);
 
   const optionSet = new Set<string>([...PROFILE_INTEREST_OPTIONS]);
@@ -79,15 +84,20 @@ export function Profile() {
     setLoading(true);
     let profile: ProfileRow | null = null;
     try {
-      const [account, profileRow, statsRes, options, interestNames] = await Promise.all([
+      const [account, profileRow, statsRes, badgeRows, options, interestNames] = await Promise.all([
         fetchUserAccount(userId),
         fetchUserProfilePayload(userId),
         fetchUserGameStats(userId),
+        getUserBadges(userId),
         fetchProfileOptions(),
         fetchUserInterestNames(userId).catch(() => [] as string[]),
       ]);
       profile = profileRow;
       setOpts(options);
+      setGameXp(typeof statsRes?.xp === 'number' ? statsRes.xp : null);
+      setGameLevel(typeof statsRes?.level === 'number' ? statsRes.level : null);
+      setGameXpToNext(typeof statsRes?.xpToNext === 'number' ? statsRes.xpToNext : null);
+      setBadges(badgeRows);
       setGameStats(
         statsRes?.gameActivity
           ? {
@@ -377,23 +387,97 @@ export function Profile() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-            <p className="text-sm font-semibold text-neutral-900 mb-2">
-              {t('Game stats', '게임 통계')}
-            </p>
-            {gameStats ? (
-              <div className="grid grid-cols-2 gap-2 text-xs text-neutral-700">
-                <div>{t('Games played', '플레이한 게임')}: <span className="font-semibold">{gameStats.gamesPlayed}</span></div>
-                <div>{t('Perfect rounds', '퍼펙트 라운드')}: <span className="font-semibold">{gameStats.perfectRounds}</span></div>
-                <div>{t('Term matching', '단어 매칭')}: <span className="font-semibold">{gameStats.termMatching}</span></div>
-                <div>{t('Grammar quiz', '문법 퀴즈')}: <span className="font-semibold">{gameStats.grammarQuiz}</span></div>
-                <div>{t('Pronunciation', '발음')}: <span className="font-semibold">{gameStats.pronunciation}</span></div>
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-neutral-900">
+                  {t('Games profile', '게임 프로필')}
+                </p>
+                <p className="text-xs text-neutral-600 mt-0.5">
+                  {t('XP, level, badges, and activity from Language Games.', '언어 게임에서의 XP, 레벨, 배지, 활동입니다.')}
+                </p>
+              </div>
+              {gameLevel != null ? (
+                <span className="text-xs font-semibold rounded-full bg-blue-100 text-blue-700 px-2 py-1">
+                  {t('Level', '레벨')} {gameLevel}
+                </span>
+              ) : null}
+            </div>
+
+            {gameXp != null && gameXpToNext != null && gameXpToNext > 0 ? (
+              <div>
+                <div className="flex items-center justify-between text-xs text-neutral-700 mb-1">
+                  <span>{t('XP', 'XP')}</span>
+                  <span className="font-mono">
+                    {gameXp}/{gameXpToNext}
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-neutral-200 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-blue-600"
+                    style={{ width: `${Math.min(100, Math.round((gameXp / gameXpToNext) * 100))}%` }}
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            {badges.length > 0 ? (
+              <div>
+                <p className="text-xs font-semibold text-neutral-800 mb-2">
+                  {t('Badges', '배지')}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {badges.slice(0, 12).map((b) => (
+                    <span
+                      key={`${b.id}-${b.earnedAt || ''}`}
+                      className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2 py-1 text-[11px] text-neutral-800"
+                      title={b.description || b.name}
+                    >
+                      <span className="text-base leading-none">{b.icon || '🏅'}</span>
+                      <span className="max-w-[10rem] truncate">{b.name}</span>
+                    </span>
+                  ))}
+                </div>
               </div>
             ) : (
               <p className="text-xs text-neutral-600">
-                {t('No game stats yet.', '아직 게임 통계가 없습니다.')}
+                {t('No badges earned yet.', '아직 획득한 배지가 없습니다.')}
               </p>
             )}
+
+            <div>
+              <p className="text-xs font-semibold text-neutral-800 mb-2">
+                {t('Activity', '활동')}
+              </p>
+              {gameStats ? (
+                <div className="grid grid-cols-2 gap-2 text-xs text-neutral-700">
+                  <div>
+                    {t('Games played', '플레이한 게임')}:{' '}
+                    <span className="font-semibold">{gameStats.gamesPlayed}</span>
+                  </div>
+                  <div>
+                    {t('Perfect rounds', '퍼펙트 라운드')}:{' '}
+                    <span className="font-semibold">{gameStats.perfectRounds}</span>
+                  </div>
+                  <div>
+                    {t('Term matching', '단어 매칭')}:{' '}
+                    <span className="font-semibold">{gameStats.termMatching}</span>
+                  </div>
+                  <div>
+                    {t('Grammar quiz', '문법 퀴즈')}:{' '}
+                    <span className="font-semibold">{gameStats.grammarQuiz}</span>
+                  </div>
+                  <div className="col-span-2">
+                    {t('Pronunciation', '발음')}:{' '}
+                    <span className="font-semibold">{gameStats.pronunciation}</span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-neutral-600">
+                  {t('No game activity yet.', '아직 게임 활동이 없습니다.')}
+                </p>
+              )}
+            </div>
           </div>
 
           <div>

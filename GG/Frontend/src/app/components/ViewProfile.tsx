@@ -134,7 +134,7 @@ export function ViewProfile() {
 
   const getInitial = () => (firstName ? firstName.charAt(0).toUpperCase() : '?');
 
-  const handleLogout = () => navigate('/');
+  const handleLogout = () => navigate('/login');
 
   const photoSrc = publicAssetUrl(profileImage);
 

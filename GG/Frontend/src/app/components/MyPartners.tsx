@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { motion } from 'motion/react';
-<<<<<<< HEAD
-import { MessageSquare, Gamepad2, Calendar, Loader2, Stamp } from 'lucide-react';
-=======
-import { MessageSquare, Gamepad2, Calendar, Loader2, Trophy } from 'lucide-react';
->>>>>>> main
+import { MessageSquare, Gamepad2, Calendar, Loader2, Trophy, Stamp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -319,7 +315,7 @@ export function MyPartners() {
             <div className="flex items-start gap-4 mb-4">
               {publicAssetUrl(friend.profileImage) ? (
                 <img
-                  src={publicAssetUrl(friend.profileImage)}
+                  src={publicAssetUrl(friend.profileImage) ?? undefined}
                   alt=""
                   className="w-14 h-14 rounded-full object-cover border border-neutral-200"
                 />
@@ -364,7 +360,7 @@ export function MyPartners() {
               </Link>
               <Link
                 to={`/games/profile/${friend.id}`}
-                className="bg-amber-500 text-white py-3 rounded-xl font-medium hover:bg-amber-600 flex items-center justify-center gap-2 transition-colors"
+                className="bg-green-600 text-white py-3 rounded-xl font-medium hover:bg-green-700 flex items-center justify-center gap-2 transition-colors"
               >
                 <Trophy className="w-4 h-4" />
                 <span>{t('Games Profile', '게임 프로필')}</span>

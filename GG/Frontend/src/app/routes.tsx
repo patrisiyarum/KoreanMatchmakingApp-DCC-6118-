@@ -8,6 +8,7 @@ import { MyPartners } from './components/MyPartners';
 import { Games } from './components/Games';
 import { Chat } from './components/Chat';
 import { Schedule } from './components/Schedule';
+import { PostcardHub } from './components/PostcardHub';
 import { DashboardHome } from './components/DashboardHome';
 import { ViewProfile } from './components/ViewProfile';
 import { EditProfile } from './components/EditProfile';
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
               { path: 'schedule', Component: Schedule },
               { path: 'call/:meetingId', Component: AgoraCall },
               { path: 'chat/:partnerId', Component: Chat },
+              { path: 'postcards', Component: PostcardHub },
             ],
           },
         ],

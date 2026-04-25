@@ -187,4 +187,27 @@ router.delete('/team', async (req, res) => {
   }
 });
 
+// ── POST /api/upload/postcard
+// Multipart form: field name = 'image', body 'userId'
+// Stores the file and returns its URL — the path is saved later when the postcard is sent.
+// Max 4 images per postcard enforced at the controller level, not here.
+router.post('/postcard', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided.' });
+    }
+    const { userId } = req.body;
+    if (!userId) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: 'userId is required.' });
+    }
+    const imageUrl = `/uploads/${req.file.filename}`;
+    return res.status(200).json({ imageUrl });
+  } catch (err) {
+    if (req.file) fs.unlinkSync(req.file.path);
+    console.error('Error uploading postcard image:', err);
+    return res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
 export default router;

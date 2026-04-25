@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { motion } from 'motion/react';
-import { MessageSquare, Gamepad2, Calendar, Loader2 } from 'lucide-react';
+import { MessageSquare, Gamepad2, Calendar, Loader2, Stamp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -16,6 +16,7 @@ import {
 } from '@/api/friendsApi';
 import { publicAssetUrl } from '../utils/profileImage';
 import { getChatsForUser, getMessages } from '@/api/chatApi';
+import { getReceivedPostcards } from '@/api/postcardApi';
 
 export function MyPartners() {
   const { t } = useLanguage();
@@ -28,6 +29,7 @@ export function MyPartners() {
   const [unreadPartnerIds, setUnreadPartnerIds] = useState<Set<string>>(new Set());
   const [chatIdByPartner, setChatIdByPartner] = useState<Record<string, number>>({});
   const [latestMessageAtByPartner, setLatestMessageAtByPartner] = useState<Record<string, number>>({});
+  const [unreadPostcardPartnerIds, setUnreadPostcardPartnerIds] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     if (!userId) {
@@ -106,6 +108,27 @@ export function MyPartners() {
     return () => {
       cancelled = true;
     };
+  }, [friends, userId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!userId) {
+        setUnreadPostcardPartnerIds(new Set());
+        return;
+      }
+      try {
+        const postcards = await getReceivedPostcards(userId);
+        const unread = new Set<string>();
+        postcards.forEach((p) => {
+          if (!p.readAt) unread.add(String(p.senderId));
+        });
+        if (!cancelled) setUnreadPostcardPartnerIds(unread);
+      } catch {
+        if (!cancelled) setUnreadPostcardPartnerIds(new Set());
+      }
+    })();
+    return () => { cancelled = true; };
   }, [friends, userId]);
 
   const markPartnerChatSeen = (partnerId: string) => {
@@ -275,8 +298,20 @@ export function MyPartners() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+            className="relative bg-white rounded-2xl border border-neutral-200 p-6 shadow-sm hover:shadow-md transition-shadow"
           >
+            {/* Postcard circle button — top-right corner */}
+            <Link
+              to={`/postcards?to=${friend.id}`}
+              title={t('Send a postcard', '엽서 보내기')}
+              className="absolute top-3 right-3 w-9 h-9 rounded-full bg-amber-500 text-white flex items-center justify-center hover:bg-amber-600 transition-colors shadow-sm"
+            >
+              <Stamp className="w-4 h-4" />
+              {unreadPostcardPartnerIds.has(String(friend.id)) && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 border-2 border-white" />
+              )}
+            </Link>
+
             <div className="flex items-start gap-4 mb-4">
               {publicAssetUrl(friend.profileImage) ? (
                 <img

@@ -8,6 +8,7 @@ import { MyPartners } from './components/MyPartners';
 import { Games } from './components/Games';
 import { Chat } from './components/Chat';
 import { Schedule } from './components/Schedule';
+import { PostcardHub } from './components/PostcardHub';
 import { DashboardHome } from './components/DashboardHome';
 import { Profile } from './components/Profile';
 import { Login } from './components/Login';
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
               { path: 'games', Component: Games },
               { path: 'schedule', Component: Schedule },
               { path: 'chat/:partnerId', Component: Chat },
+              { path: 'postcards', Component: PostcardHub },
             ],
           },
         ],

@@ -20,6 +20,7 @@ import { AIAssistant } from './AIAssistant';
 import { Translator } from './Translator';
 import { getFriendRequests } from '@/api/friendsApi';
 import { getChatsForUser, getMessages } from '@/api/chatApi';
+import { getReceivedPostcards } from '@/api/postcardApi';
 import { getMeetingsForUserApi } from '@/api/meetingsApi';
 import { getPendingTeamInvites } from '@/api/teamsApi';
 import { getChallengesForUser } from '@/api/challengesApi';
@@ -62,12 +63,13 @@ export function AppShell() {
       return;
     }
     try {
-      const [reqs, chats, meetings, teamInvites, challengeRows] = await Promise.all([
+      const [reqs, chats, meetings, teamInvites, challengeRows, receivedPostcards] = await Promise.all([
         getFriendRequests(userId),
         getChatsForUser(userId),
         getMeetingsForUserApi(userId),
         getPendingTeamInvites(userId),
         getChallengesForUser(userId),
+        getReceivedPostcards(userId),
       ]);
 
       const seenMap = getSeenMap();
@@ -106,7 +108,8 @@ export function AppShell() {
       }).length;
       const gameInvitesCount = teamInvites.length + challengeTurnsCount;
 
-      setPartnersNotifCount(unreadChats + pendingIncomingRequests);
+      const unreadPostcards = receivedPostcards.filter((p) => !p.readAt).length;
+      setPartnersNotifCount(unreadChats + pendingIncomingRequests + unreadPostcards);
       setScheduleNotifCount(unseenMeetings);
       setGamesNotifCount(gameInvitesCount);
     } catch {
@@ -260,7 +263,9 @@ export function AppShell() {
           {navItems.map((item) => {
             const isActive =
               item.path === '/partners'
-                ? location.pathname === '/partners' || location.pathname.startsWith('/chat')
+                ? location.pathname === '/partners' ||
+                  location.pathname.startsWith('/chat') ||
+                  location.pathname.startsWith('/postcards')
                 : item.path === '/home'
                   ? location.pathname === '/home' || location.pathname === '/create-profile'
                   : location.pathname === item.path;

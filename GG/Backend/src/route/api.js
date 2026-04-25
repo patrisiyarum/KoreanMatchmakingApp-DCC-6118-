@@ -24,6 +24,7 @@ import challengeRoutes from './challengeRoutes.js';
 import uploadRoutes from './uploadRoutes.js';
 import userController from '../controller/userController.js';
 import { submitFeedback } from '../controller/feedbackController.js';
+import postcardController from '../controller/postcardController.js';
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -139,6 +140,15 @@ const initAPIRoute = (app) => {
     router.get('/conversation/:senderId/:receiverId', chatController.findChat);
     router.post('/messages', messageController.addMessage);
     router.get('/messages/:chatId', messageController.findMessages);
+
+    // Postcards
+    router.post('/postcards', postcardController.sendPostcard);
+    router.get('/postcards/received/:userId', postcardController.getReceived);
+    router.get('/postcards/sent/:userId', postcardController.getSent);
+    router.put('/postcards/:postcardId/read', postcardController.markRead);
+    router.delete('/postcards/:postcardId', postcardController.deletePostcard);
+    router.get('/postcards/limit/:senderId/:receiverId', postcardController.getLimitStatus);
+    router.get('/postcards/recent-media/:userId', postcardController.getRecentMedia);
 
     /** Dashboard summary — mirrors POST /Dashboard body `{ id }` from web.js */
     router.get('/dashboard/:userId', async (req, res) => {

@@ -110,6 +110,8 @@ const initAPIRoute = (app) => {
     router.put('/friendRequests/:requestId/reject', APIController.rejectFriendRequest);
 
     router.post('/createMeeting', APIController.createMeeting);
+    router.post('/zoom/create-meeting', APIController.createZoomMeetingLink);
+    router.post('/agora/token', APIController.createAgoraRtcToken);
     router.delete('/deleteMeeting', APIController.deleteMeeting);
     router.put('/moveMeeting', APIController.moveMeeting);
 

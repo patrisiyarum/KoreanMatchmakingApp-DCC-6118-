@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { motion } from 'motion/react';
+<<<<<<< HEAD
 import { MessageSquare, Gamepad2, Calendar, Loader2, Stamp } from 'lucide-react';
+=======
+import { MessageSquare, Gamepad2, Calendar, Loader2, Trophy } from 'lucide-react';
+>>>>>>> main
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -337,11 +341,11 @@ export function MyPartners() {
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Link
                 to={`/chat/${friend.id}`}
                 onClick={() => markPartnerChatSeen(String(friend.id))}
-                className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 flex items-center justify-center gap-2 transition-colors relative"
+                className="bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 flex items-center justify-center gap-2 transition-colors relative"
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>{t('Chat', '채팅')}</span>
@@ -353,10 +357,17 @@ export function MyPartners() {
               </Link>
               <Link
                 to="/games"
-                className="flex-1 bg-violet-600 text-white py-3 rounded-xl font-medium hover:bg-violet-700 flex items-center justify-center gap-2 transition-colors"
+                className="bg-violet-600 text-white py-3 rounded-xl font-medium hover:bg-violet-700 flex items-center justify-center gap-2 transition-colors"
               >
                 <Gamepad2 className="w-4 h-4" />
                 <span>{t('Game', '게임')}</span>
+              </Link>
+              <Link
+                to={`/games/profile/${friend.id}`}
+                className="bg-amber-500 text-white py-3 rounded-xl font-medium hover:bg-amber-600 flex items-center justify-center gap-2 transition-colors"
+              >
+                <Trophy className="w-4 h-4" />
+                <span>{t('Games Profile', '게임 프로필')}</span>
               </Link>
             </div>
           </motion.div>

@@ -10,7 +10,6 @@ import {
   Bot,
   LogOut,
   UserCircle,
-  ArrowLeft,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslator } from '../context/TranslatorContext';
@@ -35,6 +34,7 @@ export function AppShell() {
   const [partnersNotifCount, setPartnersNotifCount] = useState(0);
   const [scheduleNotifCount, setScheduleNotifCount] = useState(0);
   const [gamesNotifCount, setGamesNotifCount] = useState(0);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const getSeenMap = useCallback((): Record<string, string> => {
     if (!userId) return {};
@@ -175,7 +175,7 @@ export function AppShell() {
     { path: '/home', icon: Home, label: t('Home', '홈'), notifCount: 0 },
     { path: '/discover', icon: Search, label: t('Discover', '발견'), notifCount: 0 },
     { path: '/partners', icon: MessageSquare, label: t('Partners', '파트너'), notifCount: partnersNotifCount },
-    { path: '/schedule', icon: Calendar, label: t('Schedule', '일정'), notifCount: scheduleNotifCount },
+    { path: '/schedule', icon: Calendar, label: t('Calls & meetings', '통화 · 미팅'), notifCount: scheduleNotifCount },
     { path: '/games', icon: Gamepad2, label: t('Games', '게임'), notifCount: gamesNotifCount },
   ];
 
@@ -203,10 +203,10 @@ export function AppShell() {
             <button
               type="button"
               onClick={() => {
-                if (location.pathname === '/profile') {
+                if (location.pathname === '/view-profile') {
                   navigate('/home');
                 } else {
-                  navigate('/profile');
+                  navigate('/view-profile');
                 }
               }}
               className="p-2 rounded-lg hover:bg-neutral-100 transition-colors"
@@ -231,10 +231,7 @@ export function AppShell() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                logout();
-                navigate('/login');
-              }}
+              onClick={() => setShowLogoutModal(true)}
               className="p-2 rounded-lg hover:bg-neutral-100 transition-colors"
               title={t('Log out', '로그아웃')}
             >
@@ -247,16 +244,6 @@ export function AppShell() {
       <main className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain">
         <Outlet />
       </main>
-
-      {location.pathname !== '/home' ? (
-        <Link
-          to="/home"
-          className="fixed right-4 bottom-24 z-40 inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-blue-700 sm:right-6"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>{t('Back to Home', '홈으로 돌아가기')}</span>
-        </Link>
-      ) : null}
 
       <nav className="shrink-0 border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around px-1 sm:px-2 py-2 sm:py-3">
@@ -297,6 +284,39 @@ export function AppShell() {
 
       <AIAssistant />
       <Translator />
+      {showLogoutModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setShowLogoutModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl border border-neutral-200 p-6 w-full max-w-sm mx-4 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-neutral-900">{t('Log out?', '로그아웃?')}</h3>
+            <p className="text-sm text-neutral-600">{t('Are you sure you want to log out?', '정말 로그아웃하시겠습니까?')}</p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 py-2.5 rounded-lg border border-neutral-300 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+              >
+                {t('Cancel', '취소')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  logout();
+                  navigate('/login');
+                }}
+                className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+              >
+                {t('Log Out', '로그아웃')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -71,7 +71,7 @@ Requirements:
 * Git
 * Node.js / Node Package Manager (npm)
 * MySQL (easiest to just install the "full" version)
-* cmake
+* cmake (potential don't need this nor fluent)
 * fluent-ffmpeg
 
 ## DEPENDENCIES 

@@ -22,6 +22,7 @@
     "@babel/preset-env": "7.15.6",
     "@google/generative-ai": "^0.21.0",
     "@modelcontextprotocol/sdk": "^1.21.1",
+    "agora-token": "^2.0.5",
     "app-root-path": "3.0.0",
     "bcryptjs": "^2.4.3",
     "body-parser": "1.19.0",

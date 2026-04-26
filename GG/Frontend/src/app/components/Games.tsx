@@ -14,7 +14,6 @@ import {
   Loader2,
   FileText,
   Mic,
-  Sparkles,
   Target,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -671,22 +670,16 @@ export function Games() {
 
           <div className="mb-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
             <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-indigo-700 ring-1 ring-stone-200">
-                  <Sparkles className="h-3 w-3" />
-                  {t('Games profile', '게임 프로필')}
-                </div>
-                {userId && playerLevel != null ? (
-                  <span className="text-[11px] font-semibold text-neutral-700">
-                    {t('Lv', 'Lv')} {playerLevel}
-                    {playerXp != null && playerXpToNext != null ? (
-                      <span className="ml-1 font-normal text-neutral-500">
-                        · {playerXp}/{playerXpToNext} XP
-                      </span>
-                    ) : null}
-                  </span>
-                ) : null}
-              </div>
+              {userId && playerLevel != null ? (
+                <span className="text-sm font-semibold text-neutral-800">
+                  {t('Lv', 'Lv')} {playerLevel}
+                  {playerXp != null && playerXpToNext != null ? (
+                    <span className="ml-1.5 text-xs font-normal text-neutral-500">
+                      · {playerXp}/{playerXpToNext} XP
+                    </span>
+                  ) : null}
+                </span>
+              ) : <span />}
               <Link
                 to={userId ? `/games/profile/${userId}` : '/games/profile'}
                 className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-700 hover:text-indigo-800 whitespace-nowrap"

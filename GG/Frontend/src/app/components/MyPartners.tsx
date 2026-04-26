@@ -44,7 +44,7 @@ export function MyPartners() {
         return;
       }
       toast.success(t('Challenge sent!', '도전을 보냈습니다!'));
-      navigate('/games?view=teams');
+      navigate('/games?view=challenge');
     } finally {
       setChallengingFriendId(null);
     }

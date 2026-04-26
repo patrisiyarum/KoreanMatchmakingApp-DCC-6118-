@@ -330,9 +330,12 @@ export function MyPartners() {
                 </div>
               )}
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-neutral-900 mb-1">
+                <Link
+                  to={`/games/profile/${friend.id}`}
+                  className="text-lg font-semibold text-neutral-900 mb-1 hover:underline inline-block"
+                >
                   {displayName(friend.firstName, friend.lastName)}
-                </h3>
+                </Link>
                 <div className="flex items-center gap-2 text-xs text-neutral-500">
                   <Calendar className="w-3 h-3" />
                   <span>

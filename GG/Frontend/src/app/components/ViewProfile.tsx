@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Loader2 } from 'lucide-react';
+import { ArrowRight, BookOpen, Gamepad2, Loader2, Mic, Target } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { publicAssetUrl } from '../utils/profileImage';
@@ -253,24 +253,51 @@ export function ViewProfile() {
           </div>
 
           {/* ── Game Stats ── */}
-          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-neutral-900">{t('Game stats', '게임 통계')}</p>
+          <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+            <div className="flex items-center justify-end mb-3">
               <button
                 type="button"
                 onClick={() => navigate(userId ? `/games/profile/${userId}` : '/games/profile')}
-                className="text-sm font-semibold text-blue-700 hover:text-blue-800"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-700 hover:text-indigo-800"
               >
-                {t('Games profile', '게임 프로필')}
+                {t('View profile', '프로필 보기')}
+                <ArrowRight className="h-3 w-3" />
               </button>
             </div>
             {gameStats ? (
-              <div className="grid grid-cols-2 gap-2 text-xs text-neutral-700">
-                <div>{t('Games played', '플레이한 게임')}: <span className="font-semibold">{gameStats.gamesPlayed}</span></div>
-                <div>{t('Perfect rounds', '퍼펙트 라운드')}: <span className="font-semibold">{gameStats.perfectRounds}</span></div>
-                <div>{t('Term matching', '단어 매칭')}: <span className="font-semibold">{gameStats.termMatching}</span></div>
-                <div>{t('Grammar quiz', '문법 퀴즈')}: <span className="font-semibold">{gameStats.grammarQuiz}</span></div>
-                <div>{t('Pronunciation', '발음')}: <span className="font-semibold">{gameStats.pronunciation}</span></div>
+              <div className="grid grid-cols-4 gap-1.5">
+                <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                  <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
+                    <Gamepad2 className="h-3 w-3" />
+                    {t('Games / Perfect', '게임 / 퍼펙트')}
+                  </div>
+                  <div className="mt-0.5 text-sm font-bold text-neutral-900">
+                    {gameStats.gamesPlayed}
+                    <span className="mx-1 text-neutral-400">/</span>
+                    {gameStats.perfectRounds}
+                  </div>
+                </div>
+                <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                  <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
+                    <BookOpen className="h-3 w-3" />
+                    {t('Terms', '단어')}
+                  </div>
+                  <div className="mt-0.5 text-sm font-bold text-neutral-900">{gameStats.termMatching}</div>
+                </div>
+                <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                  <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
+                    <Target className="h-3 w-3" />
+                    {t('Grammar', '문법')}
+                  </div>
+                  <div className="mt-0.5 text-sm font-bold text-neutral-900">{gameStats.grammarQuiz}</div>
+                </div>
+                <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                  <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
+                    <Mic className="h-3 w-3" />
+                    {t('Pron.', '발음')}
+                  </div>
+                  <div className="mt-0.5 text-sm font-bold text-neutral-900">{gameStats.pronunciation}</div>
+                </div>
               </div>
             ) : (
               <p className="text-xs text-neutral-600">{t('No game stats yet.', '아직 게임 통계가 없습니다.')}</p>

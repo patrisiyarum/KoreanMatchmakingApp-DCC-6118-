@@ -25,6 +25,7 @@ import uploadRoutes from './uploadRoutes.js';
 import userController from '../controller/userController.js';
 import { submitFeedback } from '../controller/feedbackController.js';
 import postcardController from '../controller/postcardController.js';
+import callInviteRoutes from './callInviteRoutes.js';
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -218,6 +219,7 @@ const initAPIRoute = (app) => {
     app.use('/api/challenges', challengeRoutes);
     app.use('/api/upload', uploadRoutes);
 
+    app.use('/api/v1/call-invite', callInviteRoutes);
     return app.use('/api/v1/', router)
 
 }

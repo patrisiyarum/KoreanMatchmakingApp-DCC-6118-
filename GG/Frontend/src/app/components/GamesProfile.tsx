@@ -103,6 +103,9 @@ export function GamesProfile() {
   return (
     <div className="size-full overflow-y-auto bg-neutral-50">
       <div className="max-w-2xl mx-auto p-6 space-y-4">
+        <Link to="/partners" className="inline-flex items-center gap-1 text-sm font-semibold text-neutral-600 hover:text-neutral-900">
+          {t('← Back to friends', '← 친구 목록')}
+        </Link>
         <div className="rounded-2xl bg-white border border-neutral-200 p-5">
           <div className="flex items-center justify-between gap-3">
             <div>

@@ -261,8 +261,27 @@ router.get('/search', async (req, res) => {
   }
 });
  
+// Helper: find an active match involving teamId. Returns the TeamMatch row + opponent team id.
+async function findActiveMatchForTeam(teamId) {
+  return db.TeamMatch.findOne({
+    where: {
+      status: 'active',
+      [Op.or]: [{ teamAId: teamId }, { teamBId: teamId }],
+    },
+    order: [['startedAt', 'DESC']],
+  });
+}
+
+async function loadTeamWithMembers(teamId) {
+  if (!teamId) return null;
+  return db.Team.findByPk(teamId, {
+    include: [{ model: db.TeamMember, as: 'members', attributes: ['id', 'teamId', 'userId', 'role'] }],
+  });
+}
+
 // ── GET /api/teams/matchmake/:userId
-// Find a currently available opponent team for the caller's team.
+// If the caller's team is already in an active match, return that match.
+// Otherwise pair with another team that is currently waiting; if none, mark this team waiting.
 router.get('/matchmake/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
@@ -271,35 +290,112 @@ router.get('/matchmake/:userId', async (req, res) => {
       return res.status(404).json({ error: 'You are not in a team.' });
     }
 
-    const myTeam = await db.Team.findByPk(membership.teamId, {
-      include: [{ model: db.TeamMember, as: 'members', attributes: ['id', 'teamId', 'userId', 'role'] }],
-    });
+    const myTeam = await loadTeamWithMembers(membership.teamId);
     if (!myTeam) {
       return res.status(404).json({ error: 'Your team was not found.' });
     }
 
-    const opponents = await db.Team.findAll({
-      where: { id: { [Op.ne]: myTeam.id } },
-      include: [{ model: db.TeamMember, as: 'members', attributes: ['id', 'teamId', 'userId', 'role'] }],
-      order: [['updatedAt', 'DESC']],
-    });
-
-    const opponent = opponents.find((team) => Array.isArray(team.members) && team.members.length > 0) || null;
-    if (!opponent) {
-      return res.status(200).json({
-        matched: false,
-        message: 'No opponent team is currently available.',
-        team: myTeam,
-      });
+    // 1. Already in an active match?
+    const existing = await findActiveMatchForTeam(myTeam.id);
+    if (existing) {
+      const opponentId = existing.teamAId === myTeam.id ? existing.teamBId : existing.teamAId;
+      const opponent = await loadTeamWithMembers(opponentId);
+      return res.status(200).json({ matched: true, team: myTeam, opponent });
     }
 
+    // 2. Any other team currently waiting?
+    const waiting = await db.TeamMatch.findOne({
+      where: {
+        status: 'waiting',
+        teamAId: { [Op.ne]: myTeam.id },
+      },
+      order: [['createdAt', 'ASC']],
+    });
+
+    if (waiting) {
+      waiting.teamBId = myTeam.id;
+      waiting.status = 'active';
+      waiting.startedAt = new Date();
+      await waiting.save();
+      const opponent = await loadTeamWithMembers(waiting.teamAId);
+      return res.status(200).json({ matched: true, team: myTeam, opponent });
+    }
+
+    // 3. Nobody waiting — queue ourselves and tell the caller to keep checking.
+    // Clear any stale waiting rows for our team first.
+    await db.TeamMatch.destroy({ where: { teamAId: myTeam.id, status: 'waiting' } });
+    await db.TeamMatch.create({ teamAId: myTeam.id, status: 'waiting' });
     return res.status(200).json({
-      matched: true,
+      matched: false,
+      message: 'Waiting for an opponent team to join.',
       team: myTeam,
-      opponent,
     });
   } catch (err) {
     console.error('Error running team matchmaking:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── GET /api/teams/current-match/:userId
+// Returns the active match for the caller's team, if any. Used to hydrate the UI on page load.
+router.get('/current-match/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const membership = await db.TeamMember.findOne({ where: { userId } });
+    if (!membership) {
+      return res.status(200).json({ matched: false, team: null, opponent: null });
+    }
+
+    const myTeam = await loadTeamWithMembers(membership.teamId);
+    if (!myTeam) {
+      return res.status(200).json({ matched: false, team: null, opponent: null });
+    }
+
+    const match = await findActiveMatchForTeam(myTeam.id);
+    if (!match) {
+      const waiting = await db.TeamMatch.findOne({
+        where: { teamAId: myTeam.id, status: 'waiting' },
+      });
+      return res.status(200).json({
+        matched: false,
+        waiting: Boolean(waiting),
+        team: myTeam,
+        opponent: null,
+      });
+    }
+
+    const opponentId = match.teamAId === myTeam.id ? match.teamBId : match.teamAId;
+    const opponent = await loadTeamWithMembers(opponentId);
+    return res.status(200).json({ matched: true, team: myTeam, opponent });
+  } catch (err) {
+    console.error('Error fetching current match:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── POST /api/teams/end-match
+// Body: { userId }
+// Ends the caller team's active match (or cancels a waiting entry).
+router.post('/end-match', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const membership = await db.TeamMember.findOne({ where: { userId } });
+    if (!membership) {
+      return res.status(404).json({ error: 'You are not in a team.' });
+    }
+
+    const teamId = membership.teamId;
+    const active = await findActiveMatchForTeam(teamId);
+    if (active) {
+      active.status = 'completed';
+      active.endedAt = new Date();
+      await active.save();
+    }
+    await db.TeamMatch.destroy({ where: { teamAId: teamId, status: 'waiting' } });
+
+    return res.status(200).json({ ended: Boolean(active) });
+  } catch (err) {
+    console.error('Error ending team match:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

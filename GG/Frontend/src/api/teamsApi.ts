@@ -114,6 +114,25 @@ export async function findTeamMatch(userId: string): Promise<TeamMatchResponse |
   }
 }
 
+export type CurrentMatchResponse = TeamMatchResponse & { waiting?: boolean };
+
+export async function getCurrentTeamMatch(userId: string): Promise<CurrentMatchResponse | null> {
+  try {
+    return await http.get<CurrentMatchResponse>(`/api/teams/current-match/${userId}`);
+  } catch {
+    return null;
+  }
+}
+
+export async function endTeamMatch(userId: string): Promise<boolean> {
+  try {
+    await http.post('/api/teams/end-match', { userId: Number(userId) });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function leaveTeam(userId: string): Promise<boolean> {
   try {
     await http.delete('/api/teams/leave', { data: { userId: Number(userId) } });

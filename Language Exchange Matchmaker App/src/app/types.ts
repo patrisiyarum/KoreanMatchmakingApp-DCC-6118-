@@ -29,3 +29,17 @@ export interface GameScore {
   score: number;
   playedAt: Date;
 }
+
+export interface ConversationPrompt {
+  id: string;
+  english: string;
+  korean: string;
+  emoji: string;
+}
+
+export interface ConversationPromptCategory {
+  id: string;
+  label: string;
+  emoji: string;
+  prompts: ConversationPrompt[];
+}

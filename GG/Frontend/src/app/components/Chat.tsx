@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { ArrowLeft, Video, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Video, Send, Loader2, Sparkles } from 'lucide-react';
 import { Message } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,7 @@ import { getFriendsList, type FriendRow } from '@/api/friendsApi';
 import { createChat, getChatsForUser, getMessages, sendMessage } from '@/api/chatApi';
 import { createCallInvite } from '@/api/callInviteApi';
 import { UserAvatar } from './UserAvatar';
+import { ConversationPrompts } from './ConversationPrompts';
 
 type ChatPartner = {
   id: string;
@@ -29,7 +30,9 @@ export function Chat() {
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [chatId, setChatId] = useState<number | null>(null);
+  const [promptsOpen, setPromptsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const directCallId = useMemo(() => {
     const me = Number(userId || 0);
     const them = Number(partnerId || 0);
@@ -206,8 +209,8 @@ export function Chat() {
     };
   }, [chatId]);
 
-  const handleSend = async () => {
-    const text = newMessage.trim();
+  const sendText = async (raw: string, opts: { fromInput?: boolean } = {}) => {
+    const text = raw.trim();
     if (!text || !userId || !chatId || sendingMessage) return;
 
     const optimisticMessage: Message = {
@@ -218,7 +221,8 @@ export function Chat() {
     };
 
     setMessages((prev) => [...prev, optimisticMessage]);
-    setNewMessage('');
+    if (opts.fromInput) setNewMessage('');
+    setPromptsOpen(false);
     setSendingMessage(true);
 
     try {
@@ -240,11 +244,21 @@ export function Chat() {
       markChatSeen(chatId, saved.createdAt ? new Date(saved.createdAt) : new Date());
     } catch {
       setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessage.id));
-      setNewMessage(text);
+      if (opts.fromInput) setNewMessage(text);
     } finally {
       setSendingMessage(false);
     }
   };
+
+  const handleSend = () => sendText(newMessage, { fromInput: true });
+
+  const handleInsertPrompt = (text: string) => {
+    setNewMessage(text);
+    setPromptsOpen(false);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const isEmptyConversation = !loadingMessages && messages.length === 0 && Boolean(chatId);
 
   if (loadingPartner) {
     return (
@@ -301,64 +315,107 @@ export function Chat() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {loadingMessages ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-6 h-6 animate-spin text-violet-600" />
-          </div>
-        ) : null}
-        {messages.map((message, index) => {
-          const isOwn = message.senderId === (userId || 'user-1');
+      {isEmptyConversation ? (
+        <ConversationPrompts
+          variant="empty-state"
+          open
+          onClose={() => {}}
+          onSend={(text) => void sendText(text)}
+          onInsert={handleInsertPrompt}
+          partnerName={partner.name}
+        />
+      ) : (
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {loadingMessages ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-violet-600" />
+            </div>
+          ) : null}
+          {messages.map((message, index) => {
+            const isOwn = message.senderId === (userId || 'user-1');
 
-          return (
-            <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
-            >
-              <div
-                className={`max-w-[78%] rounded-2xl px-4 py-3 ${
-                  isOwn
-                    ? 'bg-blue-600 text-white rounded-br-md'
-                    : 'bg-neutral-100 text-neutral-900 rounded-bl-md'
-                }`}
+            return (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
               >
-                <p className="text-sm leading-relaxed">{message.text}</p>
-              </div>
-              <p className={`text-[11px] mt-1 px-1 ${isOwn ? 'text-neutral-400' : 'text-neutral-400'}`}>
-                {message.timestamp.toLocaleTimeString([], {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                })}
-              </p>
-            </motion.div>
-          );
-        })}
-        <div ref={messagesEndRef} />
-      </div>
+                <div
+                  className={`max-w-[78%] rounded-2xl px-4 py-3 ${
+                    isOwn
+                      ? 'bg-blue-600 text-white rounded-br-md'
+                      : 'bg-neutral-100 text-neutral-900 rounded-bl-md'
+                  }`}
+                >
+                  <p className="text-sm leading-relaxed">{message.text}</p>
+                </div>
+                <p className={`text-[11px] mt-1 px-1 ${isOwn ? 'text-neutral-400' : 'text-neutral-400'}`}>
+                  {message.timestamp.toLocaleTimeString([], {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}
+                </p>
+              </motion.div>
+            );
+          })}
+          <div ref={messagesEndRef} />
+        </div>
+      )}
+
+      {!isEmptyConversation && (
+        <ConversationPrompts
+          variant="panel"
+          open={promptsOpen}
+          onClose={() => setPromptsOpen(false)}
+          onSend={(text) => void sendText(text)}
+          onInsert={handleInsertPrompt}
+          partnerName={partner.name}
+        />
+      )}
 
       <div className="border-t border-neutral-200 p-4 bg-white">
-        <div className="relative flex items-center">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && void handleSend()}
-            placeholder={t('Type a message...', '메시지를 입력하세요...')}
-            className="w-full pl-4 pr-14 py-3.5 rounded-full border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            disabled={loadingMessages || sendingMessage || !chatId}
-          />
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => void handleSend()}
-            disabled={!newMessage.trim() || loadingMessages || sendingMessage || !chatId}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed transition-colors"
-            aria-label={t('Send', '보내기')}
+            onClick={() => setPromptsOpen((open) => !open)}
+            aria-label={
+              promptsOpen
+                ? t('Hide conversation prompts', '대화 프롬프트 숨기기')
+                : t('Show conversation prompts', '대화 프롬프트 보기')
+            }
+            aria-pressed={promptsOpen}
+            title={t('Conversation prompts', '대화 프롬프트')}
+            className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+              promptsOpen
+                ? 'bg-violet-100 text-violet-700'
+                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+            }`}
           >
-            <Send className="w-[18px] h-[18px]" />
+            <Sparkles className="w-[18px] h-[18px]" />
           </button>
+          <div className="relative flex-1">
+            <input
+              ref={inputRef}
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && void handleSend()}
+              placeholder={t('Type a message...', '메시지를 입력하세요...')}
+              className="w-full pl-4 pr-14 py-3.5 rounded-full border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              disabled={loadingMessages || sendingMessage || !chatId}
+            />
+            <button
+              type="button"
+              onClick={() => void handleSend()}
+              disabled={!newMessage.trim() || loadingMessages || sendingMessage || !chatId}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed transition-colors"
+              aria-label={t('Send', '보내기')}
+            >
+              <Send className="w-[18px] h-[18px]" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

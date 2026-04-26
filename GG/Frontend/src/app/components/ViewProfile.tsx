@@ -273,8 +273,6 @@ export function ViewProfile() {
                   </div>
                   <div className="mt-0.5 text-sm font-bold text-neutral-900">
                     {gameStats.perfectRounds}
-                    <span className="mx-1 text-neutral-400">/</span>
-                    {gameStats.gamesPlayed}
                   </div>
                 </div>
                 <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">

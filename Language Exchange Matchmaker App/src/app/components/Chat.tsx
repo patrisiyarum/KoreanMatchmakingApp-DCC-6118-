@@ -1,36 +1,43 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, Link } from 'react-router';
 import { motion } from 'motion/react';
-import { ArrowLeft, Send } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles } from 'lucide-react';
 import { mockMessages, potentialPartners, initialMatches } from '../data/mockData';
 import { Message } from '../types';
+import { ConversationPrompts } from './ConversationPrompts';
 
 export function Chat() {
   const { partnerId } = useParams();
   const [messages, setMessages] = useState<Message[]>(mockMessages[partnerId || ''] || []);
   const [newMessage, setNewMessage] = useState('');
+  const [promptsOpen, setPromptsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const partner = [...potentialPartners, ...initialMatches.map(m => m.user)].find(
     u => u.id === partnerId
   );
 
+  const isEmptyConversation = messages.length === 0;
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = () => {
-    if (!newMessage.trim()) return;
+  const sendText = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
 
     const message: Message = {
       id: `msg-${Date.now()}`,
       senderId: 'user-1',
-      text: newMessage,
+      text: trimmed,
       timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, message]);
     setNewMessage('');
+    setPromptsOpen(false);
 
     setTimeout(() => {
       const autoReply: Message = {
@@ -41,6 +48,14 @@ export function Chat() {
       };
       setMessages(prev => [...prev, autoReply]);
     }, 1500);
+  };
+
+  const handleSend = () => sendText(newMessage);
+
+  const handleInsertPrompt = (text: string) => {
+    setNewMessage(text);
+    setPromptsOpen(false);
+    setTimeout(() => inputRef.current?.focus(), 0);
   };
 
   if (!partner) {
@@ -69,42 +84,78 @@ export function Chat() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message, index) => {
-          const isOwn = message.senderId === 'user-1';
+      {isEmptyConversation ? (
+        <ConversationPrompts
+          variant="empty-state"
+          open
+          onClose={() => {}}
+          onSend={sendText}
+          onInsert={handleInsertPrompt}
+          partnerName={partner.name}
+        />
+      ) : (
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.map((message, index) => {
+            const isOwn = message.senderId === 'user-1';
 
-          return (
-            <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[75%] rounded-2xl px-4 py-3 ${
-                  isOwn
-                    ? 'bg-blue-600 text-white rounded-br-sm'
-                    : 'bg-neutral-100 text-neutral-900 rounded-bl-sm'
-                }`}
+            return (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
               >
-                <p className="text-sm">{message.text}</p>
-                <p className={`text-xs mt-1 ${isOwn ? 'text-blue-100' : 'text-neutral-500'}`}>
-                  {message.timestamp.toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </p>
-              </div>
-            </motion.div>
-          );
-        })}
-        <div ref={messagesEndRef} />
-      </div>
+                <div
+                  className={`max-w-[75%] rounded-2xl px-4 py-3 ${
+                    isOwn
+                      ? 'bg-blue-600 text-white rounded-br-sm'
+                      : 'bg-neutral-100 text-neutral-900 rounded-bl-sm'
+                  }`}
+                >
+                  <p className="text-sm">{message.text}</p>
+                  <p className={`text-xs mt-1 ${isOwn ? 'text-blue-100' : 'text-neutral-500'}`}>
+                    {message.timestamp.toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+              </motion.div>
+            );
+          })}
+          <div ref={messagesEndRef} />
+        </div>
+      )}
+
+      {!isEmptyConversation && (
+        <ConversationPrompts
+          variant="panel"
+          open={promptsOpen}
+          onClose={() => setPromptsOpen(false)}
+          onSend={sendText}
+          onInsert={handleInsertPrompt}
+          partnerName={partner.name}
+        />
+      )}
 
       <div className="border-t border-neutral-200 p-4 bg-white">
-        <div className="flex gap-3">
+        <div className="flex gap-2 items-center">
+          <button
+            onClick={() => setPromptsOpen(open => !open)}
+            aria-label={promptsOpen ? 'Hide conversation prompts' : 'Show conversation prompts'}
+            aria-pressed={promptsOpen}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors shrink-0 ${
+              promptsOpen
+                ? 'bg-blue-100 text-blue-700'
+                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+            }`}
+            title="Conversation prompts"
+          >
+            <Sparkles className="w-5 h-5" />
+          </button>
           <input
+            ref={inputRef}
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
@@ -115,7 +166,7 @@ export function Chat() {
           <button
             onClick={handleSend}
             disabled={!newMessage.trim()}
-            className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed transition-colors"
+            className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed transition-colors shrink-0"
           >
             <Send className="w-5 h-5" />
           </button>

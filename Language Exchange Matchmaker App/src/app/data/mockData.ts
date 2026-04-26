@@ -52,6 +52,26 @@ export const potentialPartners: User[] = [
     level: 'Intermediate',
     avatar: '🎮',
   },
+  {
+    id: 'user-6',
+    name: '도윤 (Doyun)',
+    nativeLanguage: 'Korean',
+    learningLanguage: 'English',
+    interests: ['Travel', 'Music', 'Cooking'],
+    bio: 'New here — haven\'t set up a profile pic yet!',
+    level: 'Beginner',
+    avatar: '',
+  },
+  {
+    id: 'user-7',
+    name: 'Sam',
+    nativeLanguage: 'English',
+    learningLanguage: 'Korean',
+    interests: ['K-pop', 'Movies', 'Travel'],
+    bio: 'Just joined — picture coming soon 😅',
+    level: 'Intermediate',
+    avatar: '',
+  },
 ];
 
 export const initialMatches: Match[] = [
@@ -59,6 +79,16 @@ export const initialMatches: Match[] = [
     user: potentialPartners[0],
     matchedAt: new Date('2026-04-08'),
     compatibility: 95,
+  },
+  {
+    user: potentialPartners[4], // Doyun — Korean speaker, no avatar
+    matchedAt: new Date('2026-04-22'),
+    compatibility: 84,
+  },
+  {
+    user: potentialPartners[5], // Sam — English speaker, no avatar
+    matchedAt: new Date('2026-04-25'),
+    compatibility: 79,
   },
 ];
 

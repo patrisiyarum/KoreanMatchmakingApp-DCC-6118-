@@ -252,7 +252,7 @@ export function AgoraCall() {
       <div className="max-w-4xl mx-auto p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-neutral-900">{t('Agora Call', 'Agora 통화')}</h2>
+            <h2 className="text-2xl font-bold text-neutral-900">{t('Video Call', '영상 통화')}</h2>
             <p className="text-sm text-neutral-600">
               {t('Meeting channel', '미팅 채널')}: <span className="font-mono">{channelName}</span>
             </p>

@@ -6,8 +6,8 @@ import { Message } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { getFriendsList, type FriendRow } from '@/api/friendsApi';
-import { publicAssetUrl } from '../utils/profileImage';
 import { createChat, getChatsForUser, getMessages, sendMessage } from '@/api/chatApi';
+import { UserAvatar } from './UserAvatar';
 
 type ChatPartner = {
   id: string;
@@ -272,15 +272,12 @@ export function Chat() {
         <button type="button" onClick={goBack} className="text-neutral-600 hover:text-neutral-900">
           <ArrowLeft className="w-6 h-6" />
         </button>
-        {publicAssetUrl(partner.profileImage) ? (
-          <img
-            src={publicAssetUrl(partner.profileImage)}
-            alt=""
-            className="w-10 h-10 rounded-full object-cover border border-neutral-200"
-          />
-        ) : (
-          <div className="text-3xl">{partner.avatar}</div>
-        )}
+        <UserAvatar
+          seed={partner.id}
+          name={partner.name}
+          profileImage={partner.profileImage}
+          size="md"
+        />
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-neutral-900 truncate">{partner.name}</h3>
           <p className="text-xs text-emerald-600 font-medium">{t('Online', '온라인')}</p>

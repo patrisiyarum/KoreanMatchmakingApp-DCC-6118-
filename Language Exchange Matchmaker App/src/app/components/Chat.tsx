@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Send } from 'lucide-react';
 import { mockMessages, potentialPartners, initialMatches } from '../data/mockData';
 import { Message } from '../types';
+import { UserAvatar } from './UserAvatar';
 
 export function Chat() {
   const { partnerId } = useParams();
@@ -62,7 +63,7 @@ export function Chat() {
         <Link to="/partners" className="text-neutral-600 hover:text-neutral-900">
           <ArrowLeft className="w-6 h-6" />
         </Link>
-        <div className="text-3xl">{partner.avatar}</div>
+        <UserAvatar user={partner} size="md" />
         <div className="flex-1">
           <h3 className="font-semibold text-neutral-900">{partner.name}</h3>
           <p className="text-xs text-neutral-500">Online</p>

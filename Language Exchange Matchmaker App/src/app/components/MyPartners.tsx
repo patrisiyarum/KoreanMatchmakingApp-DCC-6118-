@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { MessageSquare, Gamepad2, Calendar } from 'lucide-react';
 import { initialMatches } from '../data/mockData';
 import { Match } from '../types';
+import { UserAvatar } from './UserAvatar';
 
 export function MyPartners() {
   const [matches] = useState<Match[]>(initialMatches);
@@ -51,7 +52,7 @@ export function MyPartners() {
             className="bg-white rounded-2xl border border-neutral-200 p-6 hover:shadow-lg transition-shadow"
           >
             <div className="flex items-start gap-4 mb-4">
-              <div className="text-5xl">{match.user.avatar}</div>
+              <UserAvatar user={match.user} size="lg" />
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-neutral-900 mb-1">
                   {match.user.name}

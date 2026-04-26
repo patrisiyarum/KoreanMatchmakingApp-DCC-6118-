@@ -7,7 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { getFriendsList, type FriendRow } from '@/api/friendsApi';
 import { getUserAvailability, replaceUserAvailability } from '@/api/availabilityApi';
-import { createMeetingApi, getMeetingsForUserApi, type MeetingRow } from '@/api/meetingsApi';
+import { createMeetingApi, deleteMeetingApi, getMeetingsForUserApi, type MeetingRow } from '@/api/meetingsApi';
 import {
   GRID_DAYS,
   GRID_HOURS,
@@ -27,6 +27,9 @@ interface Meeting {
   time: string;
   duration: string;
   topic: string;
+  user1Id: number;
+  user2Id: number;
+  startTimeApi: string;
 }
 
 const daysOfWeekKo = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
@@ -91,6 +94,7 @@ export function Schedule() {
   const [highlightSlotKey, setHighlightSlotKey] = useState<string | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const clickScheduleTimeoutRef = useRef<number | null>(null);
+  const meetingCardClickTimeoutRef = useRef<number | null>(null);
 
   const loadMine = useCallback(async () => {
     if (!userId) return;
@@ -142,6 +146,9 @@ export function Schedule() {
           time: normalizedTime,
           duration: '60 min',
           topic: String(row.topic || t('Language exchange', '언어 교환')),
+          user1Id: Number(row.user1_id),
+          user2Id: Number(row.user2_id),
+          startTimeApi: String(row.start_time || ''),
         };
       });
     },
@@ -364,6 +371,9 @@ export function Schedule() {
             time: modalSelectedTime,
             duration: '60 min',
             topic: meetingTopic,
+            user1Id: u1,
+            user2Id: u2,
+            startTimeApi: gridTimeToApi(modalSelectedTime),
           },
         ];
       });
@@ -418,8 +428,30 @@ export function Schedule() {
       if (clickScheduleTimeoutRef.current) {
         window.clearTimeout(clickScheduleTimeoutRef.current);
       }
+      if (meetingCardClickTimeoutRef.current) {
+        window.clearTimeout(meetingCardClickTimeoutRef.current);
+      }
     };
   }, []);
+
+  const handleDeleteMeeting = useCallback(
+    async (meeting: Meeting) => {
+      try {
+        await deleteMeetingApi({
+          user1_id: meeting.user1Id,
+          user2_id: meeting.user2Id,
+          day_of_week: meeting.dayOfWeek,
+          start_time: meeting.startTimeApi,
+        });
+        setMeetings((prev) => prev.filter((m) => m.id !== meeting.id));
+        toast.success(t('Meeting deleted', '미팅이 삭제되었습니다'));
+        void loadMeetings();
+      } catch {
+        toast.error(t('Could not delete meeting', '미팅 삭제에 실패했습니다'));
+      }
+    },
+    [loadMeetings, t]
+  );
 
   useEffect(() => {
     if (!isDraggingModalSlot) return;
@@ -672,10 +704,14 @@ export function Schedule() {
                               onMouseEnter={() => paintAvailabilityCell(day.dayName, time)}
                               onMouseUp={() => setIsPaintingAvailability(false)}
                               onDoubleClick={() => {
-                                if (hasMeeting) return;
                                 if (clickScheduleTimeoutRef.current) {
                                   window.clearTimeout(clickScheduleTimeoutRef.current);
                                   clickScheduleTimeoutRef.current = null;
+                                }
+                                if (hasMeeting) {
+                                  const target = slotMeetings[0];
+                                  if (target) void handleDeleteMeeting(target);
+                                  return;
                                 }
                                 const key = `${day.dayName}-${time}`;
                                 if (!myKeys.has(key)) return;
@@ -688,7 +724,13 @@ export function Schedule() {
                               }}
                               onClick={() => {
                                 if (hasMeeting) {
-                                  openMeetingFromSlot(day.dayName, time);
+                                  if (clickScheduleTimeoutRef.current) {
+                                    window.clearTimeout(clickScheduleTimeoutRef.current);
+                                  }
+                                  clickScheduleTimeoutRef.current = window.setTimeout(() => {
+                                    openMeetingFromSlot(day.dayName, time);
+                                    clickScheduleTimeoutRef.current = null;
+                                  }, 220);
                                   return;
                                 }
                                 if (myKeys.has(`${day.dayName}-${time}`) && friends.length > 0) {
@@ -766,11 +808,29 @@ export function Schedule() {
                 }`}
                 role="button"
                 tabIndex={0}
-                onClick={() => jumpBackToAvailabilityFromMeeting(meeting)}
+                onClick={() => {
+                  if (meetingCardClickTimeoutRef.current) {
+                    window.clearTimeout(meetingCardClickTimeoutRef.current);
+                  }
+                  meetingCardClickTimeoutRef.current = window.setTimeout(() => {
+                    jumpBackToAvailabilityFromMeeting(meeting);
+                    meetingCardClickTimeoutRef.current = null;
+                  }, 220);
+                }}
+                onDoubleClick={() => {
+                  if (meetingCardClickTimeoutRef.current) {
+                    window.clearTimeout(meetingCardClickTimeoutRef.current);
+                    meetingCardClickTimeoutRef.current = null;
+                  }
+                  void handleDeleteMeeting(meeting);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     jumpBackToAvailabilityFromMeeting(meeting);
+                  } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                    e.preventDefault();
+                    void handleDeleteMeeting(meeting);
                   }
                 }}
               >

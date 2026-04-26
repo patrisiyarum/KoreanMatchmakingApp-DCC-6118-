@@ -12,7 +12,9 @@ export type UserBadgeRow = {
 
 export async function getUserBadges(userId: string): Promise<UserBadgeRow[]> {
   try {
-    const res = await http.get<{ badges?: UserBadgeRow[] }>(`/api/badges/user/${userId}`);
+    const res = await http.get<{ badges?: UserBadgeRow[] }>(
+      `/api/badges/user/${userId}?t=${Date.now()}`
+    );
     return Array.isArray(res?.badges) ? res.badges : [];
   } catch {
     return [];

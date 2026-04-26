@@ -41,7 +41,7 @@ import {
   submitChallengeScoreApi,
   type ChallengeRow,
 } from '@/api/challengesApi';
-import { fetchUserGameStats } from '@/api/profileApi';
+import { fetchUserGameStats, submitGameResult, type GameType, type SubmitGameResultResponse } from '@/api/profileApi';
 import { getUserBadges, type UserBadgeRow } from '@/api/badgesApi';
 
 interface QuizQuestion {
@@ -214,6 +214,9 @@ export function Games() {
     pronunciation: number;
     perfectRounds: number;
   } | null>(null);
+  const [xpEarned, setXpEarned] = useState<number | null>(null);
+  const [newBadges, setNewBadges] = useState<SubmitGameResultResponse['newBadges']>([]);
+  const [submittingResult, setSubmittingResult] = useState(false);
 
   const refreshTeam = useCallback(async () => {
     if (!userId) {
@@ -460,62 +463,141 @@ export function Games() {
     setGameMode('vocab');
     setView('solo');
   };
-
+  const GAME_TYPE_MAP: Record<'vocab' | 'grammar' | 'pronunciation', GameType> = {
+    vocab:         'term-matching',
+    grammar:       'grammar-quiz',
+    pronunciation: 'pronunciation-drill',
+  };
   const handleAnswer = (answer: string) => {
     setSelectedAnswer(answer);
     setShowFeedback(true);
     const isCorrect = answer === question.answer;
     const nextScore = isCorrect ? score + 1 : score;
-    if (isCorrect) {
-      setScore(prev => prev + 1);
+    if (isCorrect) setScore((prev) => prev + 1);
+ 
+  setTimeout(() => {
+    console.log('timeout fired', {
+      currentQuestion,
+      total: activeQuestions.length,
+      activeChallengeId,
+      activeTeamQuestGameType,
+      userId,
+    });
+
+    if (currentQuestion < activeQuestions.length - 1) {
+      setCurrentQuestion((prev) => prev + 1);
+      setSelectedAnswer(null);
+      setShowFeedback(false);
+      return;
     }
 
-    setTimeout(() => {
-      if (currentQuestion < activeQuestions.length - 1) {
-        setCurrentQuestion(prev => prev + 1);
-        setSelectedAnswer(null);
-        setShowFeedback(false);
-      } else {
-        if (activeChallengeId && userId) {
-          void (async () => {
-            const ok = await submitChallengeScoreApi(activeChallengeId, userId, nextScore);
-            if (ok) {
-              toast.success(t('Turn submitted. Now waiting for your partner.', '내 차례를 제출했습니다. 이제 상대 차례입니다.'));
-              void loadChallenges();
-              void loadPlayerGamePanel();
-              setView('challenge');
-              setGameMode('menu');
-            } else {
-              toast.error(t('Could not submit challenge score', '대결 점수를 제출하지 못했습니다'));
-              setGameMode('results');
-            }
-            setActiveChallengeId(null);
-          })();
-          return;
+    console.log('last question reached');
+
+    if (activeChallengeId && userId) {
+      console.log('challenge path');
+      // ...
+    }
+
+    if (activeTeamQuestGameType && userId) {
+      console.log('team quest path');
+      // ...
+    }
+
+    console.log('solo path - userId:', userId);
+    if (userId) {
+      console.log('calling submitGameResult');
+      // ...
+    }
+
+    console.log('fallback - no userId');
+    setGameMode('results');
+
+    if (currentQuestion < activeQuestions.length - 1) {
+      setCurrentQuestion((prev) => prev + 1);
+      setSelectedAnswer(null);
+      setShowFeedback(false);
+      return;
+    }
+ 
+    // ── Last question reached ─────────────────────────────────────────────
+ 
+    // Challenge flow: submit score to challenge endpoint
+    if (activeChallengeId && userId) {
+      void (async () => {
+        const ok = await submitChallengeScoreApi(activeChallengeId, userId, nextScore);
+        if (ok) {
+          toast.success(t('Turn submitted. Now waiting for your partner.', '내 차례를 제출했습니다. 이제 상대 차례입니다.'));
+          void loadChallenges();
+          void loadPlayerGamePanel();
+          setView('challenge');
+          setGameMode('menu');
+        } else {
+          toast.error(t('Could not submit challenge score', '대결 점수를 제출하지 못했습니다'));
+          setGameMode('results');
         }
-        if (activeTeamQuestGameType && userId) {
-          void (async () => {
-            const ok = await incrementTeamQuestProgress(userId, activeTeamQuestGameType);
-            if (ok) {
-              toast.success(t('Team quest progress updated!', '팀 퀘스트 진행도가 업데이트되었습니다!'));
-              void loadPlayerGamePanel();
-              if (apiTeam?.id && matchedOpponentTeam?.id) {
-                const board = await getTeamVsBoard(apiTeam.id, matchedOpponentTeam.id);
-                setTeamVsBoard(board);
-              }
-            } else {
-              toast.error(t('Could not update team quest progress', '팀 퀘스트 진행도를 업데이트하지 못했습니다'));
-            }
-            setActiveTeamQuestGameType(null);
-            setView('teams');
-            setGameMode('menu');
-          })();
-          return;
+        setActiveChallengeId(null);
+      })();
+      return;
+    }
+ 
+    // Team quest flow: increment quest progress
+    if (activeTeamQuestGameType && userId) {
+      void (async () => {
+        const ok = await incrementTeamQuestProgress(userId, activeTeamQuestGameType);
+        if (ok) {
+          toast.success(t('Team quest progress updated!', '팀 퀘스트 진행도가 업데이트되었습니다!'));
+          void loadPlayerGamePanel();
+          if (apiTeam?.id && matchedOpponentTeam?.id) {
+            const board = await getTeamVsBoard(apiTeam.id, matchedOpponentTeam.id);
+            setTeamVsBoard(board);
+          }
+        } else {
+          toast.error(t('Could not update team quest progress', '팀 퀘스트 진행도를 업데이트하지 못했습니다'));
         }
-        setGameMode('results');
-      }
-    }, 1500);
-  };
+        setActiveTeamQuestGameType(null);
+        setView('teams');
+        setGameMode('menu');
+      })();
+      return;
+    }
+ 
+    // Solo flow: submit to backend for XP + badge awards, then show results
+    if (userId) {
+      setSubmittingResult(true);
+      void (async () => {
+        try {
+          const result = await submitGameResult({
+            userId,
+            gameType: GAME_TYPE_MAP[soloGameType],
+            score: nextScore,
+            totalQuestions: activeQuestions.length,
+          });
+ 
+          if (result.errorCode === 0) {
+            setXpEarned(result.xpAwarded ?? null);
+            setNewBadges(result.newBadges ?? []);
+            // Refresh the sidebar stats so XP bar & badges update immediately
+            void loadPlayerGamePanel();
+          } else {
+            // Non-fatal: still show results even if submit failed
+            setXpEarned(null);
+            setNewBadges([]);
+          }
+        } catch {
+          setXpEarned(null);
+          setNewBadges([]);
+        } finally {
+          setSubmittingResult(false);
+          setGameMode('results');
+        }
+      })();
+      return;
+    }
+ 
+    // Fallback (no userId)
+    setGameMode('results');
+  }, 1500);
+};
 
   const resetGame = () => {
     setGameMode('menu');
@@ -524,6 +606,8 @@ export function Games() {
     setSelectedAnswer(null);
     setShowFeedback(false);
     setActiveTeamQuestGameType(null);
+    setXpEarned(null);
+    setNewBadges([]);
     setView('menu');
   };
 
@@ -1644,60 +1728,127 @@ export function Games() {
   }
 
   if (gameMode === 'results') {
-    const percentage = Math.round((score / activeQuestions.length) * 100);
-
-    return (
-      <div className="size-full flex items-center justify-center p-6 bg-gradient-to-b from-yellow-50 to-neutral-50">
+  const percentage = Math.round((score / activeQuestions.length) * 100);
+  const isPerfect = score === activeQuestions.length;
+ 
+  return (
+    <div className="size-full flex items-center justify-center p-6 bg-gradient-to-b from-yellow-50 to-neutral-50 overflow-y-auto">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md text-center"
+      >
+        {/* Trophy emoji */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md text-center"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.2, type: 'spring' }}
+          className="text-8xl mb-4"
         >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring' }}
-            className="text-8xl mb-6"
-          >
-            {percentage >= 80 ? '🏆' : percentage >= 60 ? '🎉' : '💪'}
-          </motion.div>
-
-          <h2 className="text-3xl font-bold text-neutral-900 mb-2">
-            {percentage >= 80 ? t('Excellent!', '훌륭해요!') :
-             percentage >= 60 ? t('Good Job!', '잘했어요!') :
-             t('Keep Practicing!', '계속 연습하세요!')}
-          </h2>
-
-          <div className="bg-white rounded-2xl border border-neutral-200 p-8 mb-6">
-            <div className="text-5xl font-bold text-purple-600 mb-2">
-              {score}/{activeQuestions.length}
-            </div>
-            <p className="text-neutral-600">
-              {percentage}% {t('correct', '정답')}
-            </p>
-          </div>
-
-          <div className="flex gap-4">
-            <button
-              onClick={resetGame}
-              className="flex-1 bg-neutral-200 text-neutral-900 py-4 rounded-lg font-medium hover:bg-neutral-300 flex items-center justify-center gap-2 transition-colors"
-            >
-              <RotateCcw className="w-5 h-5" />
-              {t('Back to Menu', '메뉴로')}
-            </button>
-            <button
-              onClick={() => {
-                startSoloGame(soloGameType);
-              }}
-              className="flex-1 bg-purple-600 text-white py-4 rounded-lg font-medium hover:bg-purple-700 transition-colors"
-            >
-              {t('Play Again', '다시 하기')}
-            </button>
-          </div>
+          {isPerfect ? '🏆' : percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '💪'}
         </motion.div>
-      </div>
-    );
-  }
+ 
+        <h2 className="text-3xl font-bold text-neutral-900 mb-4">
+          {isPerfect
+            ? t('Perfect Round!', '퍼펙트 라운드!')
+            : percentage >= 80
+            ? t('Excellent!', '훌륭해요!')
+            : percentage >= 60
+            ? t('Good Job!', '잘했어요!')
+            : t('Keep Practicing!', '계속 연습하세요!')}
+        </h2>
+ 
+        {/* Score card */}
+        <div className="bg-white rounded-2xl border border-neutral-200 p-6 mb-4 shadow-sm">
+          <div className="text-5xl font-bold text-purple-600 mb-1">
+            {score}/{activeQuestions.length}
+          </div>
+          <p className="text-neutral-500 text-sm">
+            {percentage}% {t('correct', '정답')}
+          </p>
+        </div>
+ 
+        {/* XP / submitting */}
+        {submittingResult ? (
+          <div className="bg-white rounded-2xl border border-neutral-200 p-4 mb-4 flex items-center justify-center gap-2 text-sm text-neutral-500">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            {t('Saving your result…', '결과 저장 중…')}
+          </div>
+        ) : xpEarned != null ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4"
+          >
+            <div className="flex items-center justify-center gap-2 text-amber-700 font-semibold text-lg">
+              <Trophy className="w-5 h-5 text-amber-500" />
+              +{xpEarned} XP {t('earned', '획득')}
+            </div>
+            {isPerfect && (
+              <p className="text-xs text-amber-600 mt-1">
+                {t('Perfect round bonus included!', '퍼펙트 라운드 보너스 포함!')}
+              </p>
+            )}
+          </motion.div>
+        ) : null}
+ 
+        {/* New badges */}
+        {(newBadges ?? []).length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4 text-left"
+          >
+            <p className="text-sm font-semibold text-blue-900 mb-3 text-center">
+              🎖️ {t('New Badge Unlocked!', '새 배지 획득!')}
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {(newBadges ?? []).map((badge) => (
+                <div
+                  key={badge.id}
+                  className="flex items-center gap-2 bg-white border border-blue-200 rounded-full px-3 py-1.5"
+                >
+                  <span className="text-lg leading-none">{badge.icon ?? '🏅'}</span>
+                  <div>
+                    <p className="text-xs font-semibold text-neutral-900">{badge.name}</p>
+                    {badge.description && (
+                      <p className="text-[10px] text-neutral-500">{badge.description}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+ 
+        {/* Action buttons */}
+        <div className="flex gap-4">
+          <button
+            type="button"
+            onClick={resetGame}
+            className="flex-1 bg-neutral-200 text-neutral-900 py-4 rounded-lg font-medium hover:bg-neutral-300 flex items-center justify-center gap-2 transition-colors"
+          >
+            <RotateCcw className="w-5 h-5" />
+            {t('Back to Menu', '메뉴로')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setXpEarned(null);
+              setNewBadges([]);
+              startSoloGame(soloGameType);
+            }}
+            className="flex-1 bg-purple-600 text-white py-4 rounded-lg font-medium hover:bg-purple-700 transition-colors"
+          >
+            {t('Play Again', '다시 하기')}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
   return (
     <div className="size-full flex items-center justify-center p-6 bg-gradient-to-b from-purple-50 to-neutral-50">

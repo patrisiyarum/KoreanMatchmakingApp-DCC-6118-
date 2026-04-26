@@ -71,7 +71,9 @@ export async function fetchUserProfilePayload(userId: string): Promise<ProfileRo
 
 export async function fetchUserGameStats(userId: string): Promise<UserGameStatsPayload | null> {
   try {
-    return await http.get<UserGameStatsPayload>(`/api/games/user-stats/${userId}`);
+    return await http.get<UserGameStatsPayload>(
+      `/api/games/user-stats/${userId}?t=${Date.now()}`
+    );
   } catch {
     return null;
   }
@@ -123,4 +125,40 @@ export async function removeProfileImage(userId: string) {
     }
   );
   return data;
+}
+
+export type GameType = 'term-matching' | 'grammar-quiz' | 'pronunciation-drill';
+ 
+export type SubmitGameResultPayload = {
+  userId: string;
+  gameType: GameType;
+  score: number;
+  totalQuestions: number;
+};
+ 
+export type SubmitGameResultResponse = {
+  errorCode: number;
+  message?: string;
+  xpAwarded?: number;
+  totalXp?: number;
+  level?: number;
+  xpToNext?: number;
+  newBadges?: Array<{
+    id: number;
+    name: string;
+    description?: string;
+    icon?: string | null;
+    tier?: string | null;
+  }>;
+};
+ 
+export async function submitGameResult(
+  payload: SubmitGameResultPayload
+): Promise<SubmitGameResultResponse> {
+  try {
+    const res = await http.post<SubmitGameResultResponse>('/api/games/submit', payload);
+    return res ?? { errorCode: 1, message: 'No response from server' };
+  } catch {
+    return { errorCode: 1, message: 'Failed to submit game result' };
+  }
 }

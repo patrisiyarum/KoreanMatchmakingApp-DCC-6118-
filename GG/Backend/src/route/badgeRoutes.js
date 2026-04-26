@@ -19,6 +19,7 @@ router.post('/sync', async (_req, res) => {
 });
 
 router.get('/user/:userId', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
   try {
     const badges = await getUserBadges(req.params.userId);
     return res.status(200).json({ badges });

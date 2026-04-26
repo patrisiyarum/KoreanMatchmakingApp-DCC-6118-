@@ -47,21 +47,23 @@ export function AppShell() {
     }
   }, [userId]);
 
-  const getScheduleSeenAt = useCallback((): string | null => {
-    if (!userId) return null;
+  const getSeenIdSet = useCallback((key: string): Set<string> => {
+    if (!userId) return new Set();
     try {
-      return window.localStorage.getItem(`scheduleSeenAt:${userId}`);
+      const raw = window.localStorage.getItem(`${key}:${userId}`);
+      const arr = raw ? (JSON.parse(raw) as string[]) : [];
+      return new Set(Array.isArray(arr) ? arr.map(String) : []);
     } catch {
-      return null;
+      return new Set();
     }
   }, [userId]);
 
-  const getGamesSeenAt = useCallback((): string | null => {
-    if (!userId) return null;
+  const writeSeenIdSet = useCallback((key: string, ids: Iterable<string>) => {
+    if (!userId) return;
     try {
-      return window.localStorage.getItem(`gamesSeenAt:${userId}`);
+      window.localStorage.setItem(`${key}:${userId}`, JSON.stringify([...new Set([...ids].map(String))]));
     } catch {
-      return null;
+      // ignore
     }
   }, [userId]);
 
@@ -83,6 +85,8 @@ export function AppShell() {
       ]);
 
       const seenMap = getSeenMap();
+      const seenMeetingIds = getSeenIdSet('seenMeetingIds');
+      const seenGamesIds = getSeenIdSet('seenGamesIds');
       const unreadByChat = await Promise.all(
         chats.map(async (chat) => {
           const rows = await getMessages(Number(chat.id));
@@ -102,19 +106,8 @@ export function AppShell() {
 
       const unreadChats = unreadByChat.reduce((sum, value) => sum + value, 0);
       const pendingIncomingRequests = reqs.incoming.filter((r) => r.status === 'pending').length;
-      const scheduleSeenAt = getScheduleSeenAt();
-      const unseenMeetings = meetings.filter((meeting) => {
-        if (!scheduleSeenAt) return true;
-        const createdAt = meeting.createdAt ? new Date(meeting.createdAt).getTime() : 0;
-        return createdAt > new Date(scheduleSeenAt).getTime();
-      }).length;
-      const gamesSeenAt = getGamesSeenAt();
-      const isUnseen = (createdAt?: string) => {
-        if (!gamesSeenAt) return true;
-        if (!createdAt) return false;
-        return new Date(createdAt).getTime() > new Date(gamesSeenAt).getTime();
-      };
-      const newTeamInvites = teamInvites.filter((i) => isUnseen(i?.createdAt as string | undefined)).length;
+      const unseenMeetings = meetings.filter((m) => !seenMeetingIds.has(String(m.id))).length;
+      const newTeamInvites = teamInvites.filter((i) => !seenGamesIds.has(`invite:${i.id}`)).length;
       const challengeTurnsCount = challengeRows.filter((c) => {
         const isChallenger = Number(c.challengerId) === Number(userId);
         const myTurn =
@@ -126,7 +119,7 @@ export function AppShell() {
                 : c.challengedScore == null
               : false;
         if (!myTurn) return false;
-        return isUnseen((c as { createdAt?: string }).createdAt);
+        return !seenGamesIds.has(`challenge:${c.id}`);
       }).length;
       const gameInvitesCount = newTeamInvites + challengeTurnsCount;
 
@@ -137,7 +130,7 @@ export function AppShell() {
     } catch {
       // Keep nav usable even when notification fetch fails.
     }
-  }, [getGamesSeenAt, getScheduleSeenAt, getSeenMap, userId]);
+  }, [getSeenIdSet, getSeenMap, userId]);
 
   useEffect(() => {
     void loadNotifications();
@@ -150,24 +143,47 @@ export function AppShell() {
   useEffect(() => {
     if (!userId) return;
     if (location.pathname !== '/schedule') return;
-    try {
-      window.localStorage.setItem(`scheduleSeenAt:${userId}`, new Date().toISOString());
-    } catch {
-      // Ignore localStorage failures.
-    }
-    setScheduleNotifCount(0);
-  }, [location.pathname, userId]);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const meetings = await getMeetingsForUserApi(userId);
+        if (cancelled) return;
+        writeSeenIdSet('seenMeetingIds', meetings.map((m) => String(m.id)));
+        setScheduleNotifCount(0);
+      } catch {
+        setScheduleNotifCount(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, userId, writeSeenIdSet]);
 
   useEffect(() => {
     if (!userId) return;
     if (!location.pathname.startsWith('/games')) return;
-    try {
-      window.localStorage.setItem(`gamesSeenAt:${userId}`, new Date().toISOString());
-    } catch {
-      // Ignore localStorage failures.
-    }
-    setGamesNotifCount(0);
-  }, [location.pathname, userId]);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [invites, challenges] = await Promise.all([
+          getPendingTeamInvites(userId),
+          getChallengesForUser(userId),
+        ]);
+        if (cancelled) return;
+        const ids = [
+          ...invites.map((i) => `invite:${i.id}`),
+          ...challenges.map((c) => `challenge:${c.id}`),
+        ];
+        writeSeenIdSet('seenGamesIds', ids);
+        setGamesNotifCount(0);
+      } catch {
+        setGamesNotifCount(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, userId, writeSeenIdSet]);
 
   useEffect(() => {
     if (!userId) return;

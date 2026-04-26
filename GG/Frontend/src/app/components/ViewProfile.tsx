@@ -253,16 +253,16 @@ export function ViewProfile() {
           </div>
 
           {/* ── Game Stats ── */}
-          <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
-            <div className="flex items-center justify-end mb-3">
-              <button
-                type="button"
-                onClick={() => navigate(userId ? `/games/profile/${userId}` : '/games/profile')}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-700 hover:text-indigo-800"
-              >
-                {t('View profile', '프로필 보기')}
-                <ArrowRight className="h-3 w-3" />
-              </button>
+          <button
+            type="button"
+            onClick={() => navigate(userId ? `/games/profile/${userId}?from=profile` : '/games/profile?from=profile')}
+            className="block w-full text-left rounded-xl border border-stone-200 bg-stone-50 p-3 hover:border-indigo-300 hover:bg-stone-100 transition-colors"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-bold text-neutral-900">
+                {t('Games profile', '게임 프로필')}
+              </p>
+              <ArrowRight className="h-4 w-4 text-indigo-700" />
             </div>
             {gameStats ? (
               <div className="grid grid-cols-4 gap-1.5">
@@ -302,7 +302,7 @@ export function ViewProfile() {
             ) : (
               <p className="text-xs text-neutral-600">{t('No game stats yet.', '아직 게임 통계가 없습니다.')}</p>
             )}
-          </div>
+          </button>
 
           {/* ── Interests ── */}
           {interests.length > 0 && (

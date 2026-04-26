@@ -139,26 +139,33 @@ export function AppShell() {
 
   useEffect(() => {
     if (!userId) return;
-    if (!(location.pathname === '/partners' || location.pathname.startsWith('/chat'))) return;
+    // Only mark a single chat as seen when the user actually opens it.
+    // Visiting the friends list shouldn't zero out unread badges for unopened chats.
+    if (!location.pathname.startsWith('/chat/')) return;
+    const partnerId = location.pathname.split('/chat/')[1]?.split('/')[0];
+    if (!partnerId) return;
     let cancelled = false;
     (async () => {
       try {
         const chats = await getChatsForUser(userId);
+        const chat = chats.find((c) => {
+          const sender = String(c.senderId);
+          const receiver = String(c.receiverId);
+          return (
+            (sender === String(userId) && receiver === partnerId) ||
+            (sender === partnerId && receiver === String(userId))
+          );
+        });
+        if (!chat) return;
+        const rows = await getMessages(Number(chat.id));
+        const latest = rows
+          .slice()
+          .sort(
+            (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+          )[0];
         const raw = window.localStorage.getItem(`chatSeenAt:${userId}`);
         const seenMap = raw ? (JSON.parse(raw) as Record<string, string>) : {};
-        await Promise.all(
-          chats.map(async (chat) => {
-            const rows = await getMessages(Number(chat.id));
-            const latest = rows
-              .slice()
-              .sort(
-                (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-              )[0];
-            if (latest) {
-              seenMap[String(chat.id)] = latest.createdAt || new Date().toISOString();
-            }
-          })
-        );
+        seenMap[String(chat.id)] = latest?.createdAt || new Date().toISOString();
         if (!cancelled) {
           window.localStorage.setItem(`chatSeenAt:${userId}`, JSON.stringify(seenMap));
           void loadNotifications();

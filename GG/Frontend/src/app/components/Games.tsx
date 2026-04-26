@@ -684,7 +684,7 @@ export function Games() {
                 </span>
               ) : <span />}
               <Link
-                to={userId ? `/games/profile/${userId}` : '/games/profile'}
+                to={userId ? `/games/profile/${userId}?from=games` : '/games/profile?from=games'}
                 className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-700 hover:text-indigo-800 whitespace-nowrap"
               >
                 {t('View profile', '프로필 보기')}
@@ -953,13 +953,29 @@ export function Games() {
                     <h3 className="font-semibold text-neutral-900 mb-1">
                       {t('VS', '대')} {opponentName}
                     </h3>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      challenge.status === 'in_progress' || challenge.status === 'accepted' ? 'bg-orange-100 text-orange-700' :
-                      challenge.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-neutral-100 text-neutral-700'
-                    }`}>
-                      {statusLabel || t('In progress', '진행 중')}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        challenge.status === 'in_progress' || challenge.status === 'accepted' ? 'bg-orange-100 text-orange-700' :
+                        challenge.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-neutral-100 text-neutral-700'
+                      }`}>
+                        {statusLabel || t('In progress', '진행 중')}
+                      </span>
+                      {(() => {
+                        const gt = String(challenge.gameType || 'vocab');
+                        const label =
+                          gt === 'grammar' || gt === 'grammar-quiz'
+                            ? `🎯 ${t('Grammar', '문법')}`
+                            : gt === 'pronunciation' || gt === 'pronunciation-drill'
+                              ? `🎤 ${t('Pronunciation', '발음')}`
+                              : `📖 ${t('Term Match', '단어')}`;
+                        return (
+                          <span className="text-xs px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 font-medium">
+                            {label}
+                          </span>
+                        );
+                      })()}
+                    </div>
                   </div>
                   <Swords className="w-6 h-6 text-orange-600" />
                 </div>

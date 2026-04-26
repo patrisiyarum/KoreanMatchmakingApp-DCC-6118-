@@ -17,6 +17,7 @@ import { useAIAssistant } from '../context/AIAssistantContext';
 import { useAuth } from '../context/AuthContext';
 import { AIAssistant } from './AIAssistant';
 import { Translator } from './Translator';
+import { IncomingCallNotifier } from './IncomingCallNotifier';
 import { getFriendRequests } from '@/api/friendsApi';
 import { getChatsForUser, getMessages } from '@/api/chatApi';
 import { getReceivedPostcards } from '@/api/postcardApi';
@@ -174,7 +175,7 @@ export function AppShell() {
   const navItems = [
     { path: '/home', icon: Home, label: t('Home', '홈'), notifCount: 0 },
     { path: '/discover', icon: Search, label: t('Discover', '발견'), notifCount: 0 },
-    { path: '/partners', icon: MessageSquare, label: t('Partners', '파트너'), notifCount: partnersNotifCount },
+    { path: '/partners', icon: MessageSquare, label: t('Friends', '친구'), notifCount: partnersNotifCount },
     { path: '/schedule', icon: Calendar, label: t('Calls & meetings', '통화 · 미팅'), notifCount: scheduleNotifCount },
     { path: '/games', icon: Gamepad2, label: t('Games', '게임'), notifCount: gamesNotifCount },
   ];
@@ -284,6 +285,7 @@ export function AppShell() {
 
       <AIAssistant />
       <Translator />
+      <IncomingCallNotifier />
       {showLogoutModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, X, Sparkles, Loader2 } from 'lucide-react';
+import { Heart, X, Sparkles, Loader2, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { User } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -309,6 +309,21 @@ export function Discover() {
       </AnimatePresence>
 
       <div className="flex items-center gap-6 mt-8">
+        <motion.button
+          type="button"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => {
+            if (currentIndex > 0) setCurrentIndex((i) => i - 1);
+          }}
+          disabled={currentIndex === 0 || sendingRequest}
+          aria-label={t('Undo last swipe', '되돌리기')}
+          title={t('Undo last swipe', '되돌리기')}
+          className="w-12 h-12 rounded-full bg-white border-2 border-neutral-300 flex items-center justify-center shadow-md hover:border-amber-400 transition-colors disabled:opacity-40"
+        >
+          <RotateCcw className="w-5 h-5 text-amber-600" />
+        </motion.button>
+
         <motion.button
           type="button"
           whileHover={{ scale: 1.1 }}

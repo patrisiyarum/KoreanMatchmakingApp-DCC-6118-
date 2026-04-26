@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router';
+import { useParams, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { ArrowLeft, Video, Send, Loader2 } from 'lucide-react';
 import { Message } from '../types';
@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { getFriendsList, type FriendRow } from '@/api/friendsApi';
 import { publicAssetUrl } from '../utils/profileImage';
 import { createChat, getChatsForUser, getMessages, sendMessage } from '@/api/chatApi';
+import { createCallInvite } from '@/api/callInviteApi';
 
 type ChatPartner = {
   id: string;
@@ -284,14 +285,23 @@ export function Chat() {
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-neutral-900 truncate">{partner.name}</h3>
         </div>
-        <Link
-          to={directCallId ? `/call/${directCallId}` : '/schedule'}
+        <button
+          type="button"
+          onClick={async () => {
+            if (!directCallId || !userId || !partnerId) {
+              navigate('/schedule');
+              return;
+            }
+            // Fire-and-forget: ring the partner. Caller continues to the call regardless.
+            void createCallInvite(userId, String(partnerId), directCallId);
+            navigate(`/call/${directCallId}`);
+          }}
           className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700"
           aria-label={t('Start video call', '영상 통화 시작')}
           title={t('Start video call', '영상 통화 시작')}
         >
           <Video className="w-4 h-4" />
-        </Link>
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

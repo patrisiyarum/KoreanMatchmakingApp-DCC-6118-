@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import AgoraRTC, { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack, IRemoteUser } from 'agora-rtc-sdk-ng';
 import { Loader2, Mic, MicOff, PhoneOff, RefreshCw, Video, VideoOff } from 'lucide-react';
@@ -108,16 +108,8 @@ export function AgoraCall() {
         }
         micTrackRef.current = micTrack;
         camTrackRef.current = camTrack;
-        if (localVideoRef.current) {
-          try {
-            camTrack.play(localVideoRef.current, { fit: 'cover', mirror: true });
-            setLocalPreviewReady(true);
-            setCameraIssue(null);
-          } catch {
-            setLocalPreviewReady(false);
-            setCameraIssue(t('Camera preview failed to render', '카메라 미리보기를 표시하지 못했습니다'));
-          }
-        }
+        // Defer the actual `.play()` to a layout effect — the local video
+        // container is gated behind `loading`, so its ref is null here.
         for (let i = 0; i < 20 && client.connectionState !== 'CONNECTED'; i += 1) {
           await new Promise((resolve) => window.setTimeout(resolve, 100));
         }
@@ -160,6 +152,21 @@ export function AgoraCall() {
       })();
     };
   }, [channelName, meetingId, selectedCameraId, t, uidNum, userId]);
+
+  useLayoutEffect(() => {
+    if (loading) return;
+    const track = camTrackRef.current;
+    const container = localVideoRef.current;
+    if (!track || !container) return;
+    try {
+      track.play(container, { fit: 'cover', mirror: true });
+      setLocalPreviewReady(true);
+      setCameraIssue(null);
+    } catch {
+      setLocalPreviewReady(false);
+      setCameraIssue(t('Camera preview failed to render', '카메라 미리보기를 표시하지 못했습니다'));
+    }
+  }, [loading, t]);
 
   const toggleMute = async () => {
     if (!micTrackRef.current) return;

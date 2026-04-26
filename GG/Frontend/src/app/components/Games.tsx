@@ -14,6 +14,9 @@ import {
   Loader2,
   FileText,
   Mic,
+  Sparkles,
+  Flame,
+  Target,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
@@ -660,52 +663,63 @@ export function Games() {
             </p>
           </div>
 
-          <div className="mb-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-            <div className="flex items-start justify-between gap-3">
+          <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 p-5 shadow-lg shadow-indigo-500/20">
+            <div className="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-16 -left-10 h-44 w-44 rounded-full bg-fuchsia-300/20 blur-3xl" />
+
+            <div className="relative flex items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-neutral-900">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/90 backdrop-blur">
+                  <Sparkles className="h-3 w-3" />
                   {t('Your games profile', '내 게임 프로필')}
-                </p>
-                <p className="text-xs text-neutral-600 mt-0.5">
-                  {t('Level, XP, badges, and activity.', '레벨, XP, 배지, 활동입니다.')}
+                </div>
+                <p className="mt-2 text-xs text-white/75">
+                  {t('Level up, earn badges, dominate the leaderboards.', '레벨을 올리고 배지를 획득하세요.')}
                 </p>
               </div>
               <Link
                 to={userId ? `/games/profile/${userId}` : '/games/profile'}
-                className="text-xs font-semibold text-blue-700 hover:text-blue-800 whitespace-nowrap"
+                className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1.5 text-[11px] font-semibold text-white backdrop-blur hover:bg-white/30 whitespace-nowrap"
               >
-                {t('View games profile', '게임 프로필 보기')}
+                {t('View profile', '프로필 보기')}
+                <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
 
             {playerStatsLoading ? (
-              <div className="flex justify-center py-4">
-                <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+              <div className="relative flex justify-center py-6">
+                <Loader2 className="h-5 w-5 animate-spin text-white" />
               </div>
             ) : !userId ? (
-              <p className="text-xs text-neutral-600 mt-3">
+              <p className="relative mt-4 text-xs text-white/85">
                 {t('Sign in to see your stats.', '통계를 보려면 로그인하세요.')}
               </p>
             ) : (
-              <div className="mt-3 space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-xs text-neutral-700">
-                    <span className="font-semibold text-neutral-900">
-                      {t('Level', '레벨')} {playerLevel ?? '—'}
-                    </span>
-                    <span className="text-neutral-400 mx-2">•</span>
-                    <span className="font-mono">
-                      {t('XP', 'XP')} {playerXp ?? '—'}
-                      {playerXpToNext != null ? ` / ${playerXpToNext}` : ''}
-                    </span>
+              <div className="relative mt-4 space-y-4">
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-white/70">
+                      {t('Level', '레벨')}
+                    </p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-black text-white drop-shadow">
+                        {playerLevel ?? '—'}
+                      </span>
+                      <div className="rounded-md bg-white/15 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur">
+                        {playerXp ?? 0}
+                        {playerXpToNext != null ? ` / ${playerXpToNext}` : ''} XP
+                      </div>
+                    </div>
                   </div>
-                  <Trophy className="w-4 h-4 text-amber-500 shrink-0" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 to-amber-500 shadow-lg shadow-amber-500/40">
+                    <Trophy className="h-6 w-6 text-white drop-shadow" />
+                  </div>
                 </div>
 
                 {playerXp != null && playerXpToNext != null && playerXpToNext > 0 ? (
-                  <div className="h-2 rounded-full bg-neutral-200 overflow-hidden">
+                  <div className="h-2.5 overflow-hidden rounded-full bg-white/20 backdrop-blur">
                     <div
-                      className="h-full rounded-full bg-blue-600"
+                      className="h-full rounded-full bg-gradient-to-r from-amber-300 via-orange-300 to-pink-300 shadow-[0_0_12px_rgba(252,211,77,0.7)] transition-all"
                       style={{
                         width: `${Math.min(100, Math.round((playerXp / playerXpToNext) * 100))}%`,
                       }}
@@ -715,14 +729,14 @@ export function Games() {
 
                 {playerBadges.length > 0 ? (
                   <div>
-                    <p className="text-[11px] font-semibold text-neutral-800 mb-2">
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-white/80">
                       {t('Badges', '배지')}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {playerBadges.slice(0, 8).map((b) => (
                         <span
                           key={`${b.id}-${b.earnedAt || ''}`}
-                          className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-[11px] text-neutral-800"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-indigo-700 shadow-sm"
                           title={b.description || b.name}
                         >
                           <span className="text-sm leading-none">{b.icon || '🏅'}</span>
@@ -732,28 +746,47 @@ export function Games() {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-xs text-neutral-600">
+                  <p className="text-xs text-white/85">
                     {t('No badges yet — play games to earn them.', '아직 배지가 없습니다. 게임을 플레이해 획득하세요.')}
                   </p>
                 )}
 
                 {playerActivity ? (
-                  <div className="grid grid-cols-2 gap-2 text-[11px] text-neutral-700">
-                    <div>
-                      {t('Games', '게임')}: <span className="font-semibold">{playerActivity.gamesPlayed}</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-xl bg-white/15 p-2.5 backdrop-blur">
+                      <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/75">
+                        <Gamepad2 className="h-3 w-3" />
+                        {t('Games', '게임')}
+                      </div>
+                      <div className="mt-0.5 text-lg font-bold text-white">{playerActivity.gamesPlayed}</div>
                     </div>
-                    <div>
-                      {t('Perfect', '퍼펙트')}: <span className="font-semibold">{playerActivity.perfectRounds}</span>
+                    <div className="rounded-xl bg-white/15 p-2.5 backdrop-blur">
+                      <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/75">
+                        <Flame className="h-3 w-3" />
+                        {t('Perfect', '퍼펙트')}
+                      </div>
+                      <div className="mt-0.5 text-lg font-bold text-white">{playerActivity.perfectRounds}</div>
                     </div>
-                    <div>
-                      {t('Terms', '단어')}: <span className="font-semibold">{playerActivity.termMatching}</span>
+                    <div className="rounded-xl bg-white/15 p-2.5 backdrop-blur">
+                      <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/75">
+                        <BookOpen className="h-3 w-3" />
+                        {t('Terms', '단어')}
+                      </div>
+                      <div className="mt-0.5 text-lg font-bold text-white">{playerActivity.termMatching}</div>
                     </div>
-                    <div>
-                      {t('Grammar', '문법')}: <span className="font-semibold">{playerActivity.grammarQuiz}</span>
+                    <div className="rounded-xl bg-white/15 p-2.5 backdrop-blur">
+                      <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/75">
+                        <Target className="h-3 w-3" />
+                        {t('Grammar', '문법')}
+                      </div>
+                      <div className="mt-0.5 text-lg font-bold text-white">{playerActivity.grammarQuiz}</div>
                     </div>
-                    <div className="col-span-2">
-                      {t('Pronunciation', '발음')}:{' '}
-                      <span className="font-semibold">{playerActivity.pronunciation}</span>
+                    <div className="col-span-2 rounded-xl bg-white/15 p-2.5 backdrop-blur">
+                      <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/75">
+                        <Mic className="h-3 w-3" />
+                        {t('Pronunciation', '발음')}
+                      </div>
+                      <div className="mt-0.5 text-lg font-bold text-white">{playerActivity.pronunciation}</div>
                     </div>
                   </div>
                 ) : null}

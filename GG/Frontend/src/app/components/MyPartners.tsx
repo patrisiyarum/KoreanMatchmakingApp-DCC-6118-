@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { motion } from 'motion/react';
-import { MessageSquare, Gamepad2, Calendar, Loader2, Trophy, Stamp } from 'lucide-react';
+import { MessageSquare, Swords, Calendar, Loader2, Trophy, Stamp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -355,8 +355,8 @@ export function MyPartners() {
                 to="/games"
                 className="bg-violet-600 text-white py-3 rounded-xl font-medium hover:bg-violet-700 flex items-center justify-center gap-2 transition-colors"
               >
-                <Gamepad2 className="w-4 h-4" />
-                <span>{t('Game', '게임')}</span>
+                <Swords className="w-4 h-4" />
+                <span>{t('Challenge', '도전')}</span>
               </Link>
               <Link
                 to={`/games/profile/${friend.id}`}

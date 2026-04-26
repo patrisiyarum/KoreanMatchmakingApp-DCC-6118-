@@ -16,7 +16,7 @@ export function AgoraCall() {
   const [joined, setJoined] = useState(false);
   const [muted, setMuted] = useState(false);
   const [cameraOff, setCameraOff] = useState(false);
-  const [remoteCount, setRemoteCount] = useState(0);
+  const [remoteUsers, setRemoteUsers] = useState<IRemoteUser[]>([]);
   const [localPreviewReady, setLocalPreviewReady] = useState(false);
   const [cameraIssue, setCameraIssue] = useState<string | null>(null);
   const [cameraDevices, setCameraDevices] = useState<Array<{ deviceId: string; label: string }>>([]);
@@ -26,7 +26,7 @@ export function AgoraCall() {
   const micTrackRef = useRef<IMicrophoneAudioTrack | null>(null);
   const camTrackRef = useRef<ICameraVideoTrack | null>(null);
   const localVideoRef = useRef<HTMLDivElement | null>(null);
-  const remoteContainerRef = useRef<HTMLDivElement | null>(null);
+  const remoteUserListRef = useRef<IRemoteUser[]>([]);
 
   const channelName = useMemo(() => `meeting-${meetingId || 'unknown'}`, [meetingId]);
   const uidNum = useMemo(() => Number(userId || 0) || 0, [userId]);
@@ -61,36 +61,28 @@ export function AgoraCall() {
         const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
         clientRef.current = client;
 
+        const syncRemoteUsers = () => {
+          // Snapshot the live list so React re-renders and the per-user
+          // <div ref={...}> fires its callback to play the new video track.
+          const next = [...client.remoteUsers];
+          remoteUserListRef.current = next;
+          setRemoteUsers(next);
+        };
+
         client.on('user-published', async (remoteUser: IRemoteUser, mediaType) => {
           await client.subscribe(remoteUser, mediaType);
-          if (mediaType === 'video') {
-            let el = document.getElementById(`remote-${String(remoteUser.uid)}`);
-            if (!el) {
-              el = document.createElement('div');
-              el.id = `remote-${String(remoteUser.uid)}`;
-              el.className = 'h-56 w-full rounded-xl bg-black overflow-hidden';
-              remoteContainerRef.current?.appendChild(el);
-            }
-            remoteUser.videoTrack?.play(el);
-          }
           if (mediaType === 'audio') {
             remoteUser.audioTrack?.play();
           }
-          setRemoteCount(client.remoteUsers.length);
+          syncRemoteUsers();
         });
 
-        client.on('user-unpublished', (remoteUser, mediaType) => {
-          if (mediaType === 'video') {
-            const el = document.getElementById(`remote-${String(remoteUser.uid)}`);
-            if (el) el.remove();
-          }
-          setRemoteCount(client.remoteUsers.length);
+        client.on('user-unpublished', () => {
+          syncRemoteUsers();
         });
 
-        client.on('user-left', (remoteUser) => {
-          const el = document.getElementById(`remote-${String(remoteUser.uid)}`);
-          if (el) el.remove();
-          setRemoteCount(client.remoteUsers.length);
+        client.on('user-left', () => {
+          syncRemoteUsers();
         });
 
         await client.join(tokenRes.appId, tokenRes.channelName, tokenRes.token || null, tokenRes.uid);
@@ -288,10 +280,26 @@ export function AgoraCall() {
               </div>
               <div className="rounded-2xl border border-neutral-200 bg-white p-3">
                 <p className="text-xs text-neutral-600 mb-2">
-                  {t('Remote participants', '상대 참여자')} ({remoteCount})
+                  {t('Remote participants', '상대 참여자')} ({remoteUsers.length})
                 </p>
-                <div ref={remoteContainerRef} className="space-y-2" />
-                {!remoteCount ? (
+                <div className="space-y-2">
+                  {remoteUsers.map((u) => (
+                    <div
+                      key={String(u.uid)}
+                      className="h-56 w-full rounded-xl bg-black overflow-hidden"
+                      ref={(el) => {
+                        if (el && u.videoTrack) {
+                          try {
+                            u.videoTrack.play(el);
+                          } catch {
+                            // ignore — track may have been closed before mount
+                          }
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+                {remoteUsers.length === 0 ? (
                   <div className="h-56 w-full rounded-xl bg-neutral-100 flex items-center justify-center text-sm text-neutral-500">
                     {t('Waiting for others to join…', '상대가 참여하기를 기다리는 중…')}
                   </div>

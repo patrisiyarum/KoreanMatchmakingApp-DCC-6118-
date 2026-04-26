@@ -1357,6 +1357,114 @@ export function Games() {
                     </div>
                   </div>
 
+                  {matchedOpponentTeam ? (
+                    <div className="mb-4 rounded-2xl border border-indigo-200 bg-gradient-to-b from-indigo-50 to-white p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                          <p className="text-[11px] uppercase tracking-wide text-indigo-600 font-semibold">
+                            {t('Team Quest Race', '팀 퀘스트 레이스')}
+                          </p>
+                          <h3 className="mt-1 text-base font-bold text-neutral-900">
+                            {apiTeam.name} <span className="text-indigo-600">VS</span> {matchedOpponentTeam.name}
+                          </h3>
+                        </div>
+                        <span className="text-[10px] rounded-full bg-indigo-100 text-indigo-700 px-2 py-1 font-semibold whitespace-nowrap">
+                          {t('Active', '진행중')}
+                        </span>
+                      </div>
+                      <p className="text-xs text-neutral-600 mb-3">
+                        {t(
+                          'Complete quests before the other team. If both finish, earliest completion wins.',
+                          '상대 팀보다 먼저 퀘스트를 완료하세요. 둘 다 완료하면 더 빨리 끝낸 팀이 승리합니다.'
+                        )}
+                      </p>
+                      <div className="space-y-3">
+                        {teamVsLoading ? (
+                          <div className="flex justify-center py-6">
+                            <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+                          </div>
+                        ) : null}
+                        {(teamVsBoard?.quests ?? []).map((quest) => (
+                          <div key={`inline-quest-${quest.questId}`} className="rounded-xl border border-neutral-200 p-3 bg-white">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-semibold text-neutral-900">{quest.title}</p>
+                                <p className="text-xs text-neutral-600">{quest.description}</p>
+                              </div>
+                              <span
+                                className={`text-[10px] px-2 py-1 rounded-full font-semibold whitespace-nowrap ${
+                                  quest.leader === 'team'
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : quest.leader === 'opponent'
+                                      ? 'bg-rose-100 text-rose-700'
+                                      : 'bg-neutral-200 text-neutral-700'
+                                }`}
+                              >
+                                {quest.leader === 'team'
+                                  ? t('Your team leads', '내 팀 우세')
+                                  : quest.leader === 'opponent'
+                                    ? t('Opponent leads', '상대 팀 우세')
+                                    : t('Tied', '동점')}
+                              </span>
+                            </div>
+                            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <p className="text-neutral-600 truncate">{apiTeam.name}</p>
+                                <p className="font-semibold text-neutral-900">
+                                  {quest.team.progress}/{quest.goal}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-neutral-600 truncate">{matchedOpponentTeam.name}</p>
+                                <p className="font-semibold text-neutral-900">
+                                  {quest.opponent.progress}/{quest.goal}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const modeMap: Record<string, 'vocab' | 'grammar' | 'pronunciation'> = {
+                                  'term-matching': 'vocab',
+                                  'grammar-quiz': 'grammar',
+                                  'pronunciation-drill': 'pronunciation',
+                                };
+                                const targetMode = modeMap[String(quest.gameType || '')] || 'vocab';
+                                setActiveChallengeId(null);
+                                setActiveTeamQuestGameType(String(quest.gameType || 'term-matching'));
+                                startSoloGame(targetMode);
+                              }}
+                              className="mt-3 w-full rounded-lg bg-indigo-600 text-white py-2 text-xs font-semibold hover:bg-indigo-700"
+                            >
+                              {t('Play this quest', '이 퀘스트 플레이')}
+                            </button>
+                          </div>
+                        ))}
+                        {!teamVsLoading && (teamVsBoard?.quests ?? []).length === 0 ? (
+                          <p className="text-center text-xs text-neutral-500 py-4">
+                            {t('No active quests yet.', '아직 진행 중인 퀘스트가 없습니다.')}
+                          </p>
+                        ) : null}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!userId) return;
+                          await endTeamMatch(userId);
+                          setMatchedOpponentTeam(null);
+                          setWaitingForMatch(false);
+                          setTeamVsBoard(null);
+                          setShowMatchFoundModal(false);
+                          setShowQuestRaceModal(false);
+                          toast.message(t('Match ended', '매치가 종료되었습니다'));
+                        }}
+                        className="mt-4 w-full rounded-lg border border-neutral-300 bg-white text-neutral-700 py-2 text-xs font-semibold hover:bg-neutral-50"
+                      >
+                        {t('End match', '매치 종료')}
+                      </button>
+                    </div>
+                  ) : null}
+
                   <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 mb-4 space-y-3">
                     <div>
                       <h4 className="text-sm font-semibold text-neutral-900 mb-0.5">
@@ -1508,113 +1616,7 @@ export function Games() {
                         ? t('Waiting for opponent…', '상대 팀 대기 중…')
                         : t('Find Match', '매치 찾기')}
                     </button>
-                  ) : (
-                    <div className="rounded-2xl border border-indigo-200 bg-gradient-to-b from-indigo-50 to-white p-4 shadow-sm">
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div>
-                          <p className="text-[11px] uppercase tracking-wide text-indigo-600 font-semibold">
-                            {t('Team Quest Race', '팀 퀘스트 레이스')}
-                          </p>
-                          <h3 className="mt-1 text-base font-bold text-neutral-900">
-                            {apiTeam.name} <span className="text-indigo-600">VS</span> {matchedOpponentTeam.name}
-                          </h3>
-                        </div>
-                        <span className="text-[10px] rounded-full bg-indigo-100 text-indigo-700 px-2 py-1 font-semibold whitespace-nowrap">
-                          {t('Active', '진행중')}
-                        </span>
-                      </div>
-                      <p className="text-xs text-neutral-600 mb-3">
-                        {t(
-                          'Complete quests before the other team. If both finish, earliest completion wins.',
-                          '상대 팀보다 먼저 퀘스트를 완료하세요. 둘 다 완료하면 더 빨리 끝낸 팀이 승리합니다.'
-                        )}
-                      </p>
-                      <div className="space-y-3">
-                        {teamVsLoading ? (
-                          <div className="flex justify-center py-6">
-                            <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
-                          </div>
-                        ) : null}
-                        {(teamVsBoard?.quests ?? []).map((quest) => (
-                          <div key={`inline-quest-${quest.questId}`} className="rounded-xl border border-neutral-200 p-3 bg-white">
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="text-sm font-semibold text-neutral-900">{quest.title}</p>
-                                <p className="text-xs text-neutral-600">{quest.description}</p>
-                              </div>
-                              <span
-                                className={`text-[10px] px-2 py-1 rounded-full font-semibold whitespace-nowrap ${
-                                  quest.leader === 'team'
-                                    ? 'bg-emerald-100 text-emerald-700'
-                                    : quest.leader === 'opponent'
-                                      ? 'bg-rose-100 text-rose-700'
-                                      : 'bg-neutral-200 text-neutral-700'
-                                }`}
-                              >
-                                {quest.leader === 'team'
-                                  ? t('Your team leads', '내 팀 우세')
-                                  : quest.leader === 'opponent'
-                                    ? t('Opponent leads', '상대 팀 우세')
-                                    : t('Tied', '동점')}
-                              </span>
-                            </div>
-                            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                              <div>
-                                <p className="text-neutral-600 truncate">{apiTeam.name}</p>
-                                <p className="font-semibold text-neutral-900">
-                                  {quest.team.progress}/{quest.goal}
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-neutral-600 truncate">{matchedOpponentTeam.name}</p>
-                                <p className="font-semibold text-neutral-900">
-                                  {quest.opponent.progress}/{quest.goal}
-                                </p>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const modeMap: Record<string, 'vocab' | 'grammar' | 'pronunciation'> = {
-                                  'term-matching': 'vocab',
-                                  'grammar-quiz': 'grammar',
-                                  'pronunciation-drill': 'pronunciation',
-                                };
-                                const targetMode = modeMap[String(quest.gameType || '')] || 'vocab';
-                                setActiveChallengeId(null);
-                                setActiveTeamQuestGameType(String(quest.gameType || 'term-matching'));
-                                startSoloGame(targetMode);
-                              }}
-                              className="mt-3 w-full rounded-lg bg-indigo-600 text-white py-2 text-xs font-semibold hover:bg-indigo-700"
-                            >
-                              {t('Play this quest', '이 퀘스트 플레이')}
-                            </button>
-                          </div>
-                        ))}
-                        {!teamVsLoading && (teamVsBoard?.quests ?? []).length === 0 ? (
-                          <p className="text-center text-xs text-neutral-500 py-4">
-                            {t('No active quests yet.', '아직 진행 중인 퀘스트가 없습니다.')}
-                          </p>
-                        ) : null}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (!userId) return;
-                          await endTeamMatch(userId);
-                          setMatchedOpponentTeam(null);
-                          setWaitingForMatch(false);
-                          setTeamVsBoard(null);
-                          setShowMatchFoundModal(false);
-                          setShowQuestRaceModal(false);
-                          toast.message(t('Match ended', '매치가 종료되었습니다'));
-                        }}
-                        className="mt-4 w-full rounded-lg border border-neutral-300 bg-white text-neutral-700 py-2 text-xs font-semibold hover:bg-neutral-50"
-                      >
-                        {t('End match', '매치 종료')}
-                      </button>
-                    </div>
-                  )}
+                  ) : null}
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-neutral-300 bg-white/80 p-8 text-center text-neutral-600 text-sm">

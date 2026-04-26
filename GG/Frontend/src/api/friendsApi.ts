@@ -6,6 +6,7 @@ export type FriendRow = {
   lastName?: string;
   email?: string;
   profileImage?: string | null;
+  nativeLanguage?: string | null;
 };
 
 export type FriendRequestIncomingRow = {

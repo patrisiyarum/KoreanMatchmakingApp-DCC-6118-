@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { Camera, ChevronRight, Loader2, UserRound } from 'lucide-react';
+import { Camera, ChevronRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { fetchUserInterestNames, replaceUserInterestsApi, resolveInterestIds } from '@/api/matchmakingProfileApi';
 import { fetchUserAccount, fetchUserProfilePayload, uploadProfileImage, createProfile } from '@/api/profileApi';
-import { publicAssetUrl } from '../utils/profileImage';
 import { PROFILE_INTEREST_OPTIONS } from '../constants/profileInterests';
+import { UserAvatar } from './UserAvatar';
 
 // ─── Option lists ─────────────────────────────────────────────────────────────
 
@@ -257,7 +257,6 @@ export function CreateProfile() {
   };
 
   const canContinue = Boolean(profile.name.trim()) && profile.interests.length > 0;
-  const photoSrc = publicAssetUrl(profileImage);
 
   // ── Loading / unauthenticated states ──────────────────────────────────────
 
@@ -315,13 +314,14 @@ export function CreateProfile() {
               className="relative"
               aria-label={t('Upload profile photo', '프로필 사진 업로드')}
             >
-              <span className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-neutral-200 bg-neutral-100 shadow-sm">
-                {photoSrc ? (
-                  <img src={photoSrc} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <UserRound className="h-12 w-12 text-neutral-500" />
-                )}
-              </span>
+              <UserAvatar
+                seed={userId ?? `${profile.name}-new`}
+                name={profile.name || 'You'}
+                profileImage={profileImage}
+                nativeLanguage={profile.nativeLanguage}
+                size="2xl"
+                className="border-2 border-neutral-200 shadow-sm"
+              />
               <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-white shadow-sm">
                 <Camera className="h-3.5 w-3.5" />
               </span>

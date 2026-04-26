@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { fetchDiscoverUsers } from '@/api/discoverApi';
 import { fetchUserInterestNames } from '@/api/matchmakingProfileApi';
 import { sendFriendRequest } from '@/api/friendsApi';
-import { publicAssetUrl } from '../utils/profileImage';
+import { UserAvatar } from './UserAvatar';
 
 export function Discover() {
   const { t, language } = useLanguage();
@@ -180,8 +180,6 @@ export function Discover() {
     );
   }
 
-  const photoSrc = publicAssetUrl(currentPartner.profileImage);
-
   const sharedInterests = currentPartner.interests.filter((interest) => myInterests.has(interest));
 
   return (
@@ -209,17 +207,14 @@ export function Discover() {
           <div className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-lg">
             <div className="bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 p-10 sm:p-12 text-center">
               <div className="mb-4 flex justify-center">
-                {photoSrc ? (
-                  <img
-                    src={photoSrc}
-                    alt=""
-                    className="w-24 h-24 rounded-full object-cover border-4 border-white/40 shadow-md"
-                  />
-                ) : (
-                  <div className="text-6xl" aria-hidden>
-                    {currentPartner.avatar}
-                  </div>
-                )}
+                <UserAvatar
+                  seed={currentPartner.id}
+                  name={currentPartner.name}
+                  profileImage={currentPartner.profileImage}
+                  nativeLanguage={currentPartner.nativeLanguage}
+                  size="2xl"
+                  className="border-4 border-white/40 shadow-md"
+                />
               </div>
               <h3 className="text-2xl font-bold text-white mb-1">{currentPartner.name}</h3>
               <p className="text-white/85 text-sm font-medium mb-1">

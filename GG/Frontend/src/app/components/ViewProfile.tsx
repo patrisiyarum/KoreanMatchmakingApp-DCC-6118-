@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { ArrowRight, BookOpen, Gamepad2, Loader2, Mic, Target } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { publicAssetUrl } from '../utils/profileImage';
+import { UserAvatar } from './UserAvatar';
 import {
   fetchUserAccount,
   fetchUserProfilePayload,
@@ -39,7 +39,6 @@ export function ViewProfile() {
 
   const [dataLoaded, setDataLoaded] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [profileImgError, setProfileImgError] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Account
@@ -132,11 +131,7 @@ export function ViewProfile() {
     loadAll();
   }, [userId]);
 
-  const getInitial = () => (firstName ? firstName.charAt(0).toUpperCase() : '?');
-
   const handleLogout = () => navigate('/login');
-
-  const photoSrc = publicAssetUrl(profileImage);
 
   // ── Loading state ──────────────────────────────────────────────────────────
 
@@ -157,18 +152,14 @@ export function ViewProfile() {
 
           {/* ── Avatar + Name ── */}
           <div className="flex flex-col items-center text-center gap-2">
-            <span className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-neutral-200 bg-neutral-100 shadow-sm">
-              {photoSrc && !profileImgError ? (
-                <img
-                  src={photoSrc}
-                  alt="Profile"
-                  className="h-full w-full object-cover"
-                  onError={() => setProfileImgError(true)}
-                />
-              ) : (
-                <span className="text-3xl font-semibold text-neutral-500">{getInitial()}</span>
-              )}
-            </span>
+            <UserAvatar
+              seed={userId ?? `${firstName}-${lastName}`}
+              name={`${firstName} ${lastName}`.trim() || 'You'}
+              profileImage={profileImage}
+              nativeLanguage={nativeLanguage}
+              size="2xl"
+              className="border-2 border-neutral-200 shadow-sm"
+            />
             <div>
               <h1 className="text-lg font-semibold text-neutral-900">
                 {firstName} {lastName}

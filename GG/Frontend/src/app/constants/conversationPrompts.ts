@@ -1,106 +1,23 @@
-import { User, Match, Message, ConversationPromptCategory } from '../types';
+export interface ConversationPrompt {
+  id: string;
+  english: string;
+  korean: string;
+  emoji: string;
+}
 
-export const currentUser: User = {
-  id: 'user-1',
-  name: 'You',
-  nativeLanguage: 'English',
-  learningLanguage: 'Korean',
-  interests: ['K-pop', 'Gaming', 'Cooking'],
-  bio: 'Looking for a fun language partner!',
-  level: 'Intermediate',
-  avatar: '🙋',
-};
+export interface ConversationPromptCategory {
+  id: string;
+  labelEn: string;
+  labelKo: string;
+  emoji: string;
+  prompts: ConversationPrompt[];
+}
 
-export const potentialPartners: User[] = [
-  {
-    id: 'user-2',
-    name: '지우 (Jiwoo)',
-    nativeLanguage: 'Korean',
-    learningLanguage: 'English',
-    interests: ['K-pop', 'Movies', 'Cooking'],
-    bio: '안녕하세요! I love learning through conversation 😊',
-    level: 'Intermediate',
-    avatar: '👩',
-  },
-  {
-    id: 'user-3',
-    name: '민준 (Minjun)',
-    nativeLanguage: 'Korean',
-    learningLanguage: 'English',
-    interests: ['Gaming', 'Sports', 'Technology'],
-    bio: 'Let\'s practice together! 같이 공부해요!',
-    level: 'Beginner',
-    avatar: '👨',
-  },
-  {
-    id: 'user-4',
-    name: '수진 (Sujin)',
-    nativeLanguage: 'Korean',
-    learningLanguage: 'English',
-    interests: ['Art', 'Cooking', 'Music'],
-    bio: 'I want to improve my English conversation skills!',
-    level: 'Advanced',
-    avatar: '👩‍🎨',
-  },
-  {
-    id: 'user-5',
-    name: '현우 (Hyunwoo)',
-    nativeLanguage: 'Korean',
-    learningLanguage: 'English',
-    interests: ['Gaming', 'K-pop', 'Anime'],
-    bio: 'Looking for a study buddy to practice daily!',
-    level: 'Intermediate',
-    avatar: '🎮',
-  },
-  {
-    id: 'user-6',
-    name: '도윤 (Doyun)',
-    nativeLanguage: 'Korean',
-    learningLanguage: 'English',
-    interests: ['Travel', 'Music', 'Cooking'],
-    bio: 'New here — haven\'t set up a profile pic yet!',
-    level: 'Beginner',
-    avatar: '',
-  },
-  {
-    id: 'user-7',
-    name: 'Sam',
-    nativeLanguage: 'English',
-    learningLanguage: 'Korean',
-    interests: ['K-pop', 'Movies', 'Travel'],
-    bio: 'Just joined — picture coming soon 😅',
-    level: 'Intermediate',
-    avatar: '',
-  },
-];
-
-export const initialMatches: Match[] = [
-  {
-    user: potentialPartners[0],
-    matchedAt: new Date('2026-04-08'),
-    compatibility: 95,
-  },
-  {
-    user: potentialPartners[1], // Minjun
-    matchedAt: new Date('2026-04-25'),
-    compatibility: 88,
-  },
-  {
-    user: potentialPartners[4], // Doyun — Korean speaker, no avatar
-    matchedAt: new Date('2026-04-22'),
-    compatibility: 84,
-  },
-  {
-    user: potentialPartners[5], // Sam — English speaker, no avatar
-    matchedAt: new Date('2026-04-25'),
-    compatibility: 79,
-  },
-];
-
-export const conversationPromptCategories: ConversationPromptCategory[] = [
+export const CONVERSATION_PROMPT_CATEGORIES: ConversationPromptCategory[] = [
   {
     id: 'icebreakers',
-    label: 'Icebreakers',
+    labelEn: 'Icebreakers',
+    labelKo: '대화 시작',
     emoji: '👋',
     prompts: [
       {
@@ -131,7 +48,8 @@ export const conversationPromptCategories: ConversationPromptCategory[] = [
   },
   {
     id: 'hobbies',
-    label: 'Hobbies',
+    labelEn: 'Hobbies',
+    labelKo: '취미',
     emoji: '🎨',
     prompts: [
       {
@@ -162,7 +80,8 @@ export const conversationPromptCategories: ConversationPromptCategory[] = [
   },
   {
     id: 'food',
-    label: 'Food',
+    labelEn: 'Food',
+    labelKo: '음식',
     emoji: '🍜',
     prompts: [
       {
@@ -185,7 +104,7 @@ export const conversationPromptCategories: ConversationPromptCategory[] = [
       },
       {
         id: 'food-4',
-        english: "What did you have for lunch today?",
+        english: 'What did you have for lunch today?',
         korean: '오늘 점심으로 뭐 먹었어요?',
         emoji: '🍱',
       },
@@ -193,7 +112,8 @@ export const conversationPromptCategories: ConversationPromptCategory[] = [
   },
   {
     id: 'culture',
-    label: 'Culture',
+    labelEn: 'Culture',
+    labelKo: '문화',
     emoji: '🌸',
     prompts: [
       {
@@ -204,7 +124,7 @@ export const conversationPromptCategories: ConversationPromptCategory[] = [
       },
       {
         id: 'cul-2',
-        english: 'Whats one tradition from your country you love?',
+        english: "What's one tradition from your country you love?",
         korean: '당신 나라의 사랑하는 전통이 뭐예요?',
         emoji: '🎎',
       },
@@ -216,7 +136,7 @@ export const conversationPromptCategories: ConversationPromptCategory[] = [
       },
       {
         id: 'cul-4',
-        english: 'Whats a phrase you wish you knew earlier?',
+        english: "What's a phrase you wish you knew earlier?",
         korean: '더 일찍 알았으면 좋았을 표현이 있어요?',
         emoji: '💡',
       },
@@ -224,7 +144,8 @@ export const conversationPromptCategories: ConversationPromptCategory[] = [
   },
   {
     id: 'practice',
-    label: 'Practice',
+    labelEn: 'Practice',
+    labelKo: '연습',
     emoji: '🗣️',
     prompts: [
       {
@@ -254,26 +175,3 @@ export const conversationPromptCategories: ConversationPromptCategory[] = [
     ],
   },
 ];
-
-export const mockMessages: Record<string, Message[]> = {
-  'user-2': [
-    {
-      id: 'msg-1',
-      senderId: 'user-2',
-      text: '안녕하세요! Nice to meet you!',
-      timestamp: new Date('2026-04-08T10:00:00'),
-    },
-    {
-      id: 'msg-2',
-      senderId: 'user-1',
-      text: 'Hi! 만나서 반가워요!',
-      timestamp: new Date('2026-04-08T10:05:00'),
-    },
-    {
-      id: 'msg-3',
-      senderId: 'user-2',
-      text: 'Should we practice together today? 오늘 같이 연습할까요?',
-      timestamp: new Date('2026-04-08T10:10:00'),
-    },
-  ],
-};

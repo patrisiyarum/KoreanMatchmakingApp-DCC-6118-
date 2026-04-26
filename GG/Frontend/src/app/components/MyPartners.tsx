@@ -14,9 +14,9 @@ import {
   type FriendRequestOutgoingRow,
   type FriendRow,
 } from '@/api/friendsApi';
-import { publicAssetUrl } from '../utils/profileImage';
 import { getChatsForUser, getMessages } from '@/api/chatApi';
 import { getReceivedPostcards } from '@/api/postcardApi';
+import { UserAvatar } from './UserAvatar';
 
 export function MyPartners() {
   const { t } = useLanguage();
@@ -167,12 +167,6 @@ export function MyPartners() {
   const displayName = (first?: string, last?: string, fallback = 'Partner') =>
     `${first || ''} ${last || ''}`.trim() || fallback;
 
-  const fallbackAvatarEmoji = (seed: number | string) => {
-    const pool = ['🐶', '🐱', '🦊', '🐻', '🐼', '🐯', '🐰', '🐨', '🦁', '🐸'];
-    const n = Number(seed) || 0;
-    return pool[Math.abs(n) % pool.length];
-  };
-
   const handleAccept = async (requestId: number) => {
     if (!userId) return;
     setActingRequestId(requestId);
@@ -318,17 +312,13 @@ export function MyPartners() {
             </Link>
 
             <div className="flex items-start gap-4 mb-4">
-              {publicAssetUrl(friend.profileImage) ? (
-                <img
-                  src={publicAssetUrl(friend.profileImage) ?? undefined}
-                  alt=""
-                  className="w-14 h-14 rounded-full object-cover border border-neutral-200"
-                />
-              ) : (
-                <div className="w-14 h-14 rounded-full bg-neutral-100 text-2xl flex items-center justify-center">
-                  {fallbackAvatarEmoji(friend.id)}
-                </div>
-              )}
+              <UserAvatar
+                seed={friend.id}
+                name={displayName(friend.firstName, friend.lastName)}
+                profileImage={friend.profileImage}
+                nativeLanguage={friend.nativeLanguage}
+                size="lg"
+              />
               <div className="flex-1">
                 <Link
                   to={`/games/profile/${friend.id}`}

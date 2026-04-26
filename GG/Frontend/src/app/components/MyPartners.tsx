@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { MessageSquare, Swords, Calendar, Loader2, Trophy, Stamp } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,6 +17,7 @@ import {
 import { publicAssetUrl } from '../utils/profileImage';
 import { getChatsForUser, getMessages } from '@/api/chatApi';
 import { getReceivedPostcards } from '@/api/postcardApi';
+import { createChallengeApi } from '@/api/challengesApi';
 
 export function MyPartners() {
   const { t } = useLanguage();
@@ -30,6 +31,24 @@ export function MyPartners() {
   const [chatIdByPartner, setChatIdByPartner] = useState<Record<string, number>>({});
   const [latestMessageAtByPartner, setLatestMessageAtByPartner] = useState<Record<string, number>>({});
   const [unreadPostcardPartnerIds, setUnreadPostcardPartnerIds] = useState<Set<string>>(new Set());
+  const [challengingFriendId, setChallengingFriendId] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  const handleChallenge = async (friendId: string) => {
+    if (!userId || challengingFriendId) return;
+    setChallengingFriendId(friendId);
+    try {
+      const challenge = await createChallengeApi(userId, friendId);
+      if (!challenge) {
+        toast.error(t('Could not create challenge', '도전 생성에 실패했습니다'));
+        return;
+      }
+      toast.success(t('Challenge sent!', '도전을 보냈습니다!'));
+      navigate('/games?view=teams');
+    } finally {
+      setChallengingFriendId(null);
+    }
+  };
 
   const load = useCallback(async () => {
     if (!userId) {
@@ -351,13 +370,19 @@ export function MyPartners() {
                   </span>
                 ) : null}
               </Link>
-              <Link
-                to="/games"
-                className="bg-violet-600 text-white py-3 rounded-xl font-medium hover:bg-violet-700 flex items-center justify-center gap-2 transition-colors"
+              <button
+                type="button"
+                onClick={() => void handleChallenge(String(friend.id))}
+                disabled={challengingFriendId === String(friend.id)}
+                className="bg-violet-600 text-white py-3 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-60 flex items-center justify-center gap-2 transition-colors"
               >
-                <Swords className="w-4 h-4" />
+                {challengingFriendId === String(friend.id) ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Swords className="w-4 h-4" />
+                )}
                 <span>{t('Challenge', '도전')}</span>
-              </Link>
+              </button>
               <Link
                 to={`/games/profile/${friend.id}`}
                 className="bg-green-600 text-white py-3 rounded-xl font-medium hover:bg-green-700 flex items-center justify-center gap-2 transition-colors"

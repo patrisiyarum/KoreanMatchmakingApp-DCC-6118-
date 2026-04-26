@@ -56,6 +56,15 @@ export function AppShell() {
     }
   }, [userId]);
 
+  const getGamesSeenAt = useCallback((): string | null => {
+    if (!userId) return null;
+    try {
+      return window.localStorage.getItem(`gamesSeenAt:${userId}`);
+    } catch {
+      return null;
+    }
+  }, [userId]);
+
   const loadNotifications = useCallback(async () => {
     if (!userId) {
       setPartnersNotifCount(0);
@@ -99,15 +108,27 @@ export function AppShell() {
         const createdAt = meeting.createdAt ? new Date(meeting.createdAt).getTime() : 0;
         return createdAt > new Date(scheduleSeenAt).getTime();
       }).length;
+      const gamesSeenAt = getGamesSeenAt();
+      const isUnseen = (createdAt?: string) => {
+        if (!gamesSeenAt) return true;
+        if (!createdAt) return false;
+        return new Date(createdAt).getTime() > new Date(gamesSeenAt).getTime();
+      };
+      const newTeamInvites = teamInvites.filter((i) => isUnseen(i?.createdAt as string | undefined)).length;
       const challengeTurnsCount = challengeRows.filter((c) => {
         const isChallenger = Number(c.challengerId) === Number(userId);
-        if (c.status === 'pending') return !isChallenger;
-        if (c.status === 'accepted' || c.status === 'in_progress') {
-          return isChallenger ? c.challengerScore == null : c.challengedScore == null;
-        }
-        return false;
+        const myTurn =
+          c.status === 'pending'
+            ? !isChallenger
+            : c.status === 'accepted' || c.status === 'in_progress'
+              ? isChallenger
+                ? c.challengerScore == null
+                : c.challengedScore == null
+              : false;
+        if (!myTurn) return false;
+        return isUnseen((c as { createdAt?: string }).createdAt);
       }).length;
-      const gameInvitesCount = teamInvites.length + challengeTurnsCount;
+      const gameInvitesCount = newTeamInvites + challengeTurnsCount;
 
       const unreadPostcards = receivedPostcards.filter((p) => !p.readAt).length;
       setPartnersNotifCount(unreadChats + pendingIncomingRequests + unreadPostcards);
@@ -116,7 +137,7 @@ export function AppShell() {
     } catch {
       // Keep nav usable even when notification fetch fails.
     }
-  }, [getScheduleSeenAt, getSeenMap, userId]);
+  }, [getGamesSeenAt, getScheduleSeenAt, getSeenMap, userId]);
 
   useEffect(() => {
     void loadNotifications();
@@ -135,6 +156,17 @@ export function AppShell() {
       // Ignore localStorage failures.
     }
     setScheduleNotifCount(0);
+  }, [location.pathname, userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    if (!location.pathname.startsWith('/games')) return;
+    try {
+      window.localStorage.setItem(`gamesSeenAt:${userId}`, new Date().toISOString());
+    } catch {
+      // Ignore localStorage failures.
+    }
+    setGamesNotifCount(0);
   }, [location.pathname, userId]);
 
   useEffect(() => {
@@ -183,8 +215,8 @@ export function AppShell() {
     { path: '/home', icon: Home, label: t('Home', '홈'), notifCount: 0 },
     { path: '/discover', icon: Search, label: t('Discover', '발견'), notifCount: 0 },
     { path: '/partners', icon: MessageSquare, label: t('Friends', '친구'), notifCount: partnersNotifCount },
-    { path: '/schedule', icon: Calendar, label: t('Calls & meetings', '통화 · 미팅'), notifCount: scheduleNotifCount },
-    { path: '/games', icon: Gamepad2, label: t('Games', '게임'), notifCount: gamesNotifCount },
+    { path: '/schedule', icon: Calendar, label: t('Calls & meetings', '통화 · 미팅'), notifCount: location.pathname === '/schedule' ? 0 : scheduleNotifCount },
+    { path: '/games', icon: Gamepad2, label: t('Games', '게임'), notifCount: location.pathname.startsWith('/games') ? 0 : gamesNotifCount },
   ];
 
   return (

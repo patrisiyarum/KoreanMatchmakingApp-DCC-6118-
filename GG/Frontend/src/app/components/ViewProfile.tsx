@@ -269,12 +269,12 @@ export function ViewProfile() {
                 <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">
                   <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
                     <Gamepad2 className="h-3 w-3" />
-                    {t('Games / Perfect', '게임 / 퍼펙트')}
+                    {t('Perfect Games', '퍼펙트 게임')}
                   </div>
                   <div className="mt-0.5 text-sm font-bold text-neutral-900">
-                    {gameStats.gamesPlayed}
-                    <span className="mx-1 text-neutral-400">/</span>
                     {gameStats.perfectRounds}
+                    <span className="mx-1 text-neutral-400">/</span>
+                    {gameStats.gamesPlayed}
                   </div>
                 </div>
                 <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">

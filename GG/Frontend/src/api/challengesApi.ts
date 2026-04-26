@@ -58,6 +58,15 @@ export async function acceptChallengeApi(challengeId: string, userId: string): P
   }
 }
 
+export async function deleteChallengeApi(challengeId: string, userId: string): Promise<boolean> {
+  try {
+    await http.delete(`/api/challenges/${challengeId}`, { data: { userId: Number(userId) } });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function declineChallengeApi(challengeId: string, userId: string): Promise<boolean> {
   try {
     await http.put(`/api/challenges/${challengeId}/decline`, { userId: Number(userId) });

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Trophy,
@@ -15,6 +15,7 @@ import {
   FileText,
   Mic,
   Target,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
@@ -40,6 +41,7 @@ import {
   acceptChallengeApi,
   createChallengeApi,
   declineChallengeApi,
+  deleteChallengeApi,
   getChallengesForUser,
   submitChallengeScoreApi,
   type ChallengeRow,
@@ -164,6 +166,7 @@ function makeRoundQuestions(type: 'vocab' | 'grammar' | 'pronunciation') {
 
 export function Games() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const { userId } = useAuth();
   const [view, setView] = useState<'menu' | 'solo' | 'challenge' | 'teams'>('menu');
@@ -760,12 +763,12 @@ export function Games() {
                     <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">
                       <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
                         <Gamepad2 className="h-3 w-3" />
-                        {t('Games / Perfect', '게임 / 퍼펙트')}
+                        {t('Perfect Games', '퍼펙트 게임')}
                       </div>
                       <div className="mt-0.5 text-sm font-bold text-neutral-900">
-                        {playerActivity.gamesPlayed}
-                        <span className="mx-1 text-neutral-400">/</span>
                         {playerActivity.perfectRounds}
+                        <span className="mx-1 text-neutral-400">/</span>
+                        {playerActivity.gamesPlayed}
                       </div>
                     </div>
                     <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">
@@ -888,14 +891,18 @@ export function Games() {
   }
 
   if (view === 'challenge') {
+    const fromFriends = searchParams.get('from') === 'friends';
     return (
       <div className="size-full overflow-y-auto bg-gradient-to-b from-orange-50 to-neutral-50">
         <div className="max-w-2xl mx-auto p-6">
           <button
-            onClick={() => setView('menu')}
+            onClick={() => {
+              if (fromFriends) navigate('/partners');
+              else setView('menu');
+            }}
             className="mb-6 text-neutral-600 hover:text-neutral-900 flex items-center gap-2"
           >
-            ← {t('Back', '뒤로')}
+            ← {fromFriends ? t('Back to friends', '친구 목록') : t('Back', '뒤로')}
           </button>
 
           <div className="mb-6">
@@ -977,7 +984,28 @@ export function Games() {
                       })()}
                     </div>
                   </div>
-                  <Swords className="w-6 h-6 text-orange-600" />
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!userId) return;
+                        if (!window.confirm(t('Delete this challenge?', '이 도전을 삭제하시겠습니까?'))) return;
+                        const ok = await deleteChallengeApi(String(challenge.id), userId);
+                        if (ok) {
+                          toast.success(t('Challenge deleted', '도전을 삭제했습니다'));
+                          void loadChallenges();
+                        } else {
+                          toast.error(t('Could not delete', '삭제하지 못했습니다'));
+                        }
+                      }}
+                      aria-label={t('Delete challenge', '도전 삭제')}
+                      title={t('Delete challenge', '도전 삭제')}
+                      className="text-neutral-400 hover:text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <Swords className="w-6 h-6 text-orange-600" />
+                  </div>
                 </div>
 
                 {challenge.status !== 'completed' && challenge.status !== 'declined' && challenge.status !== 'expired' && (

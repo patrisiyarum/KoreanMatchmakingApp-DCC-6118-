@@ -656,34 +656,6 @@ export function EditProfile() {
             </div>
           </div>
 
-          {/* ── Game Stats ── */}
-          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-neutral-900">
-                {t('Game stats', '게임 통계')}
-              </p>
-              <Link
-                to={userId ? `/games/profile/${userId}` : '/games/profile'}
-                className="text-xs font-semibold text-blue-700 hover:text-blue-800"
-              >
-                {t('Games profile', '게임 프로필')}
-              </Link>
-            </div>
-            {gameStats ? (
-              <div className="grid grid-cols-2 gap-2 text-xs text-neutral-700">
-                <div>{t('Games played', '플레이한 게임')}: <span className="font-semibold">{gameStats.gamesPlayed}</span></div>
-                <div>{t('Perfect rounds', '퍼펙트 라운드')}: <span className="font-semibold">{gameStats.perfectRounds}</span></div>
-                <div>{t('Term matching', '단어 매칭')}: <span className="font-semibold">{gameStats.termMatching}</span></div>
-                <div>{t('Grammar quiz', '문법 퀴즈')}: <span className="font-semibold">{gameStats.grammarQuiz}</span></div>
-                <div>{t('Pronunciation', '발음')}: <span className="font-semibold">{gameStats.pronunciation}</span></div>
-              </div>
-            ) : (
-              <p className="text-xs text-neutral-600">
-                {t('No game stats yet.', '아직 게임 통계가 없습니다.')}
-              </p>
-            )}
-          </div>
-
           {/* ── Interests ── */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-3">

@@ -33,7 +33,7 @@ export function MyPartners() {
   const navigate = useNavigate();
 
   const handleChallenge = (friendId: string) => {
-    navigate(`/games?view=challenge&challenged=${friendId}`);
+    navigate(`/games?view=challenge&challenged=${friendId}&from=friends`);
   };
 
   const load = useCallback(async () => {

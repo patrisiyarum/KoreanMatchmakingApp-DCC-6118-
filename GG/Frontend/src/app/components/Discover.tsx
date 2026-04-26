@@ -135,10 +135,10 @@ export function Discover() {
           </p>
           <div className="pt-1">
             <Link
-              to="/profile"
+              to="/edit-profile"
               className="inline-flex items-center justify-center rounded-xl bg-violet-600 text-white px-6 py-3 text-sm font-semibold hover:bg-violet-700 shadow-md"
             >
-              {t('Create profile', '프로필 만들기')}
+              {t('Complete profile', '프로필 완성하기')}
             </Link>
           </div>
         </div>

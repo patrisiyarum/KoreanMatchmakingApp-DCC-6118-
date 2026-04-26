@@ -105,6 +105,7 @@ const initAPIRoute = (app) => {
     router.post('/addTrueFriend', APIController.addTrueFriend);
     router.delete('/removeTrueFriend', APIController.removeTrueFriend);
     router.get('/friends/:userId', APIController.getTrueFriendsList);
+    router.get('/friends-leaderboard/:userId', APIController.getFriendsLeaderboard);
     router.get('/friendRequests/:userId', APIController.getFriendRequests);
     router.put('/friendRequests/:requestId/accept', APIController.acceptFriendRequest);
     router.put('/friendRequests/:requestId/reject', APIController.rejectFriendRequest);

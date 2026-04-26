@@ -32,6 +32,32 @@ export type FriendRequestOutgoingRow = {
   recipientProfileImage?: string | null;
 };
 
+export type LeaderboardEntry = {
+  userId: number;
+  firstName: string;
+  lastName: string;
+  profileImage: string | null;
+  xp: number;
+  level: number;
+  rank: number;
+  isMe: boolean;
+};
+
+export type LeaderboardResponse = {
+  total: number;
+  myRank: number | null;
+  myXp: number;
+  entries: LeaderboardEntry[];
+};
+
+export async function getFriendsLeaderboard(userId: string): Promise<LeaderboardResponse | null> {
+  try {
+    return await http.get<LeaderboardResponse>(`/api/v1/friends-leaderboard/${userId}`);
+  } catch {
+    return null;
+  }
+}
+
 export async function getFriendsList(userId: string): Promise<FriendRow[]> {
   try {
     const res = await http.get<{ friendsList?: FriendRow[] }>(`/api/v1/friends/${userId}`);

@@ -15,7 +15,6 @@ import {
   FileText,
   Mic,
   Sparkles,
-  Flame,
   Target,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -37,7 +36,7 @@ import {
   type TeamRow,
 } from '@/api/teamsApi';
 import { getTeamVsBoard, incrementTeamQuestProgress, type TeamVsBoard } from '@/api/questsApi';
-import { getFriendsList, type FriendRow } from '@/api/friendsApi';
+import { getFriendsList, getFriendsLeaderboard, type FriendRow, type LeaderboardResponse } from '@/api/friendsApi';
 import {
   acceptChallengeApi,
   createChallengeApi,
@@ -208,6 +207,7 @@ export function Games() {
   const [teamVsLoading, setTeamVsLoading] = useState(false);
   const [activeTeamQuestGameType, setActiveTeamQuestGameType] = useState<string | null>(null);
   const [playerStatsLoading, setPlayerStatsLoading] = useState(false);
+  const [friendsLeaderboard, setFriendsLeaderboard] = useState<LeaderboardResponse | null>(null);
   const [playerXp, setPlayerXp] = useState<number | null>(null);
   const [playerLevel, setPlayerLevel] = useState<number | null>(null);
   const [playerXpToNext, setPlayerXpToNext] = useState<number | null>(null);
@@ -253,11 +253,16 @@ export function Games() {
     }
     setPlayerStatsLoading(true);
     try {
-      const [stats, badges] = await Promise.all([fetchUserGameStats(userId), getUserBadges(userId)]);
+      const [stats, badges, leaderboard] = await Promise.all([
+        fetchUserGameStats(userId),
+        getUserBadges(userId),
+        getFriendsLeaderboard(userId),
+      ]);
       setPlayerXp(typeof stats?.xp === 'number' ? stats.xp : null);
       setPlayerLevel(typeof stats?.level === 'number' ? stats.level : null);
       setPlayerXpToNext(typeof stats?.xpToNext === 'number' ? stats.xpToNext : null);
       setPlayerBadges(badges);
+      setFriendsLeaderboard(leaderboard);
       setPlayerActivity(
         stats?.gameActivity
           ? {
@@ -275,6 +280,7 @@ export function Games() {
       setPlayerXpToNext(null);
       setPlayerBadges([]);
       setPlayerActivity(null);
+      setFriendsLeaderboard(null);
     } finally {
       setPlayerStatsLoading(false);
     }
@@ -663,23 +669,27 @@ export function Games() {
             </p>
           </div>
 
-          <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 p-5 shadow-lg shadow-indigo-500/20">
-            <div className="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-16 -left-10 h-44 w-44 rounded-full bg-fuchsia-300/20 blur-3xl" />
-
-            <div className="relative flex items-start justify-between gap-3">
-              <div>
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/90 backdrop-blur">
+          <div className="mb-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-indigo-700 ring-1 ring-stone-200">
                   <Sparkles className="h-3 w-3" />
-                  {t('Your games profile', '내 게임 프로필')}
+                  {t('Games profile', '게임 프로필')}
                 </div>
-                <p className="mt-2 text-xs text-white/75">
-                  {t('Level up, earn badges, dominate the leaderboards.', '레벨을 올리고 배지를 획득하세요.')}
-                </p>
+                {userId && playerLevel != null ? (
+                  <span className="text-[11px] font-semibold text-neutral-700">
+                    {t('Lv', 'Lv')} {playerLevel}
+                    {playerXp != null && playerXpToNext != null ? (
+                      <span className="ml-1 font-normal text-neutral-500">
+                        · {playerXp}/{playerXpToNext} XP
+                      </span>
+                    ) : null}
+                  </span>
+                ) : null}
               </div>
               <Link
                 to={userId ? `/games/profile/${userId}` : '/games/profile'}
-                className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1.5 text-[11px] font-semibold text-white backdrop-blur hover:bg-white/30 whitespace-nowrap"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-700 hover:text-indigo-800 whitespace-nowrap"
               >
                 {t('View profile', '프로필 보기')}
                 <ArrowRight className="h-3 w-3" />
@@ -687,39 +697,19 @@ export function Games() {
             </div>
 
             {playerStatsLoading ? (
-              <div className="relative flex justify-center py-6">
-                <Loader2 className="h-5 w-5 animate-spin text-white" />
+              <div className="flex justify-center py-3">
+                <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
               </div>
             ) : !userId ? (
-              <p className="relative mt-4 text-xs text-white/85">
+              <p className="mt-2 text-xs text-neutral-600">
                 {t('Sign in to see your stats.', '통계를 보려면 로그인하세요.')}
               </p>
             ) : (
-              <div className="relative mt-4 space-y-4">
-                <div className="flex items-end justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-white/70">
-                      {t('Level', '레벨')}
-                    </p>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-black text-white drop-shadow">
-                        {playerLevel ?? '—'}
-                      </span>
-                      <div className="rounded-md bg-white/15 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur">
-                        {playerXp ?? 0}
-                        {playerXpToNext != null ? ` / ${playerXpToNext}` : ''} XP
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 to-amber-500 shadow-lg shadow-amber-500/40">
-                    <Trophy className="h-6 w-6 text-white drop-shadow" />
-                  </div>
-                </div>
-
+              <div className="mt-3 space-y-3">
                 {playerXp != null && playerXpToNext != null && playerXpToNext > 0 ? (
-                  <div className="h-2.5 overflow-hidden rounded-full bg-white/20 backdrop-blur">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-stone-200">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-amber-300 via-orange-300 to-pink-300 shadow-[0_0_12px_rgba(252,211,77,0.7)] transition-all"
+                      className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 transition-all"
                       style={{
                         width: `${Math.min(100, Math.round((playerXp / playerXpToNext) * 100))}%`,
                       }}
@@ -728,65 +718,80 @@ export function Games() {
                 ) : null}
 
                 {playerBadges.length > 0 ? (
-                  <div>
-                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-white/80">
-                      {t('Badges', '배지')}
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {playerBadges.slice(0, 8).map((b) => (
-                        <span
-                          key={`${b.id}-${b.earnedAt || ''}`}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-indigo-700 shadow-sm"
-                          title={b.description || b.name}
-                        >
-                          <span className="text-sm leading-none">{b.icon || '🏅'}</span>
-                          <span className="max-w-[7rem] truncate">{b.name}</span>
-                        </span>
-                      ))}
-                    </div>
+                  <div className="flex flex-wrap gap-1">
+                    {playerBadges.slice(0, 8).map((b) => (
+                      <span
+                        key={`${b.id}-${b.earnedAt || ''}`}
+                        className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-neutral-700 ring-1 ring-stone-200"
+                        title={b.description || b.name}
+                      >
+                        <span className="text-xs leading-none">{b.icon || '🏅'}</span>
+                        <span className="max-w-[6rem] truncate">{b.name}</span>
+                      </span>
+                    ))}
                   </div>
-                ) : (
-                  <p className="text-xs text-white/85">
-                    {t('No badges yet — play games to earn them.', '아직 배지가 없습니다. 게임을 플레이해 획득하세요.')}
-                  </p>
-                )}
+                ) : null}
+
+                {friendsLeaderboard && friendsLeaderboard.total > 1 && friendsLeaderboard.myRank ? (
+                  (() => {
+                    const myRank = friendsLeaderboard.myRank;
+                    const total = friendsLeaderboard.total;
+                    const ahead = friendsLeaderboard.entries.find((e) => e.rank === myRank - 1);
+                    const aheadName = ahead ? `${ahead.firstName || 'A friend'}` : null;
+                    const aheadGap = ahead ? Math.max(0, ahead.xp - friendsLeaderboard.myXp) : 0;
+                    return (
+                      <div className="flex items-center justify-between rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                        <div className="flex items-center gap-2">
+                          <Trophy className="h-3.5 w-3.5 text-amber-500" />
+                          <span className="text-[11px] font-semibold text-neutral-800">
+                            #{myRank} {t('of', '/')} {total} {t('friends', '친구')}
+                          </span>
+                        </div>
+                        {aheadName && aheadGap > 0 ? (
+                          <span className="text-[10px] text-neutral-600">
+                            {aheadGap} XP {t('to catch', '차이로')} {aheadName}
+                          </span>
+                        ) : myRank === 1 ? (
+                          <span className="text-[10px] font-semibold text-emerald-600">{t('Top of the leaderboard 👑', '리더보드 1위 👑')}</span>
+                        ) : null}
+                      </div>
+                    );
+                  })()
+                ) : null}
 
                 {playerActivity ? (
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-xl bg-white/15 p-2.5 backdrop-blur">
-                      <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/75">
+                  <div className="grid grid-cols-4 gap-1.5">
+                    <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                      <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
                         <Gamepad2 className="h-3 w-3" />
-                        {t('Games', '게임')}
+                        {t('Games / Perfect', '게임 / 퍼펙트')}
                       </div>
-                      <div className="mt-0.5 text-lg font-bold text-white">{playerActivity.gamesPlayed}</div>
-                    </div>
-                    <div className="rounded-xl bg-white/15 p-2.5 backdrop-blur">
-                      <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/75">
-                        <Flame className="h-3 w-3" />
-                        {t('Perfect', '퍼펙트')}
+                      <div className="mt-0.5 text-sm font-bold text-neutral-900">
+                        {playerActivity.gamesPlayed}
+                        <span className="mx-1 text-neutral-400">/</span>
+                        {playerActivity.perfectRounds}
                       </div>
-                      <div className="mt-0.5 text-lg font-bold text-white">{playerActivity.perfectRounds}</div>
                     </div>
-                    <div className="rounded-xl bg-white/15 p-2.5 backdrop-blur">
-                      <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/75">
+                    <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                      <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
                         <BookOpen className="h-3 w-3" />
                         {t('Terms', '단어')}
                       </div>
-                      <div className="mt-0.5 text-lg font-bold text-white">{playerActivity.termMatching}</div>
+                      <div className="mt-0.5 text-sm font-bold text-neutral-900">{playerActivity.termMatching}</div>
                     </div>
-                    <div className="rounded-xl bg-white/15 p-2.5 backdrop-blur">
-                      <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/75">
+                    <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                      <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
                         <Target className="h-3 w-3" />
                         {t('Grammar', '문법')}
                       </div>
-                      <div className="mt-0.5 text-lg font-bold text-white">{playerActivity.grammarQuiz}</div>
+                      <div className="mt-0.5 text-sm font-bold text-neutral-900">{playerActivity.grammarQuiz}</div>
                     </div>
-                    <div className="col-span-2 rounded-xl bg-white/15 p-2.5 backdrop-blur">
-                      <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-white/75">
+                    <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                      <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
                         <Mic className="h-3 w-3" />
-                        {t('Pronunciation', '발음')}
+                        {t('Pron.', '발음')}
                       </div>
-                      <div className="mt-0.5 text-lg font-bold text-white">{playerActivity.pronunciation}</div>
+                      <div className="mt-0.5 text-sm font-bold text-neutral-900">{playerActivity.pronunciation}</div>
                     </div>
                   </div>
                 ) : null}

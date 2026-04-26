@@ -638,7 +638,7 @@ export function Games() {
  
     // Fallback (no userId)
     setGameMode('results');
-  }, 1500);
+  }, 600);
 };
 
   const resetGame = () => {

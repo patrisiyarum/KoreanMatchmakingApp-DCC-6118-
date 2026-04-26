@@ -233,7 +233,9 @@ export function AgoraCall() {
     } catch {
       toast.error(t('Could not end call cleanly', '통화를 정상 종료하지 못했습니다'));
     } finally {
-      navigate('/partners');
+      // direct-X-Y means a 1:1 call from chat; anything else came from a scheduled meeting.
+      const fromDirectChat = String(meetingId || '').startsWith('direct-');
+      navigate(fromDirectChat ? '/partners' : '/schedule');
     }
   };
 

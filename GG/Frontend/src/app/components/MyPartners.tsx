@@ -316,6 +316,7 @@ export function MyPartners() {
                 seed={friend.id}
                 name={displayName(friend.firstName, friend.lastName)}
                 profileImage={friend.profileImage}
+                nativeLanguage={friend.nativeLanguage}
                 size="lg"
               />
               <div className="flex-1">

@@ -16,6 +16,7 @@ type ChatPartner = {
   name: string;
   avatar: string;
   profileImage?: string | null;
+  nativeLanguage?: string | null;
 };
 
 export function Chat() {
@@ -291,6 +292,7 @@ export function Chat() {
           seed={partner.id}
           name={partner.name}
           profileImage={partner.profileImage}
+          nativeLanguage={partner.nativeLanguage}
           size="md"
         />
         <div className="flex-1 min-w-0">
@@ -429,5 +431,6 @@ function friendRowToPartner(row: FriendRow): ChatPartner {
     name: fullName,
     avatar: '👤',
     profileImage: row.profileImage ?? null,
+    nativeLanguage: row.nativeLanguage ?? null,
   };
 }

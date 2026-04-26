@@ -890,14 +890,16 @@ let getTrueFriendsList = async (req, res) => {
 
     const [rows] = await pool.query(
       `
-      SELECT u.id, u.firstName, u.lastName, u.email, u.profileImage
+      SELECT u.id, u.firstName, u.lastName, u.email, u.profileImage, p.native_language AS nativeLanguage
       FROM FriendsModel f
       JOIN useraccount u ON u.id = f.user2_ID
+      LEFT JOIN UserProfile p ON p.id = u.id
       WHERE f.user1_ID = ? AND f.status = 'accepted'
       UNION
-      SELECT u.id, u.firstName, u.lastName, u.email, u.profileImage
+      SELECT u.id, u.firstName, u.lastName, u.email, u.profileImage, p.native_language AS nativeLanguage
       FROM FriendsModel f
       JOIN useraccount u ON u.id = f.user1_ID
+      LEFT JOIN UserProfile p ON p.id = u.id
       WHERE f.user2_ID = ? AND f.status = 'accepted'
       `,
       [userId, userId]

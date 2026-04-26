@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import { Gamepad2, Loader2, Shield, Swords, Trophy, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -10,7 +10,6 @@ import { fetchMyTeam } from '@/api/teamsApi';
 
 export function GamesProfile() {
   const { t } = useLanguage();
-  const navigate = useNavigate();
   const { userId: authUserId } = useAuth();
   const { userId: routeUserId } = useParams();
   const targetUserId = routeUserId || authUserId || '';
@@ -34,10 +33,6 @@ export function GamesProfile() {
   });
   const [teamName, setTeamName] = useState<string | null>(null);
   const [teamMembers, setTeamMembers] = useState<number>(0);
-  const goBack = () => {
-    navigate(-1);
-  };
-
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -202,15 +197,6 @@ export function GamesProfile() {
           </div>
         ) : null}
 
-        <div className="pt-1">
-          <button
-            type="button"
-            onClick={goBack}
-            className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-          >
-            {t('Back', '뒤로')}
-          </button>
-        </div>
       </div>
     </div>
   );

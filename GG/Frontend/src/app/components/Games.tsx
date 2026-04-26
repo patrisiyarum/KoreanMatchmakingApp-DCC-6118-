@@ -183,6 +183,7 @@ export function Games() {
   const [challengePartners, setChallengePartners] = useState<ChallengePartner[]>([]);
   const [challengePartnersLoading, setChallengePartnersLoading] = useState(false);
   const [selectedChallengePartnerId, setSelectedChallengePartnerId] = useState<string | null>(null);
+  const [selectedChallengeGameType, setSelectedChallengeGameType] = useState<'vocab' | 'grammar' | 'pronunciation'>('vocab');
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [apiTeam, setApiTeam] = useState<TeamRow | null>(null);
@@ -404,6 +405,11 @@ export function Games() {
     const requestedView = searchParams.get('view');
     if (requestedView === 'challenge') {
       setView('challenge');
+      const preChallenged = searchParams.get('challenged');
+      if (preChallenged) {
+        setSelectedChallengePartnerId(preChallenged);
+        setShowChallengeModal(true);
+      }
       return;
     }
     if (requestedView === 'teams') {
@@ -421,7 +427,6 @@ export function Games() {
       name: opponentName || `Team ${opponentTeamId}`,
       members: [],
     });
-    setShowMatchFoundModal(true);
   }, [searchParams]);
 
   const loadChallenges = useCallback(async () => {
@@ -1038,7 +1043,7 @@ export function Games() {
                   const selected = challengePartners.find((p) => p.id === selectedChallengePartnerId);
                   if (!selected) return;
                   void (async () => {
-                    const created = await createChallengeApi(userId, selected.id);
+                    const created = await createChallengeApi(userId, selected.id, selectedChallengeGameType);
                     if (created) {
                       setShowChallengeModal(false);
                       toast.success(t('Challenge sent! Waiting for their turn.', '대결을 보냈습니다! 상대 차례를 기다리세요.'));
@@ -1084,6 +1089,32 @@ export function Games() {
                     ))
                   )}
                 </div>
+                <div className="mb-5">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-2">
+                    {t('Game type', '게임 종류')}
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { value: 'vocab' as const, label: t('Term Match', '단어'), icon: '📖' },
+                      { value: 'grammar' as const, label: t('Grammar', '문법'), icon: '🎯' },
+                      { value: 'pronunciation' as const, label: t('Pron.', '발음'), icon: '🎤' },
+                    ]).map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setSelectedChallengeGameType(opt.value)}
+                        className={`rounded-lg border px-2 py-2 text-xs font-semibold transition-colors ${
+                          selectedChallengeGameType === opt.value
+                            ? 'border-orange-500 bg-orange-50 text-orange-700'
+                            : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
+                        }`}
+                      >
+                        <span className="mr-1">{opt.icon}</span>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowChallengeModal(false)}
@@ -1104,7 +1135,7 @@ export function Games() {
                       }
                       if (!userId) return;
                       void (async () => {
-                        const created = await createChallengeApi(userId, selected.id);
+                        const created = await createChallengeApi(userId, selected.id, selectedChallengeGameType);
                         if (created) {
                           setShowChallengeModal(false);
                           toast.success(t('Challenge sent! Waiting for their turn.', '대결을 보냈습니다! 상대 차례를 기다리세요.'));
@@ -1584,7 +1615,6 @@ export function Games() {
                           if (res?.matched && res.opponent) {
                             setMatchedOpponentTeam(res.opponent);
                             setWaitingForMatch(false);
-                            setShowMatchFoundModal(true);
                             setShowQuestRaceModal(false);
                             toast.success(
                               t('Matched against team', '상대 팀 매칭됨') + `: ${res.opponent.name || 'Opponent'}`

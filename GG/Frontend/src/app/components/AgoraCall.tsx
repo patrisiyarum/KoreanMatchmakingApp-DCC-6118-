@@ -232,6 +232,8 @@ export function AgoraCall() {
       toast.success(t('Call ended', '통화 종료'));
     } catch {
       toast.error(t('Could not end call cleanly', '통화를 정상 종료하지 못했습니다'));
+    } finally {
+      navigate('/partners');
     }
   };
 

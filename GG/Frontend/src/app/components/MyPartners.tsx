@@ -17,7 +17,6 @@ import {
 import { publicAssetUrl } from '../utils/profileImage';
 import { getChatsForUser, getMessages } from '@/api/chatApi';
 import { getReceivedPostcards } from '@/api/postcardApi';
-import { createChallengeApi } from '@/api/challengesApi';
 
 export function MyPartners() {
   const { t } = useLanguage();
@@ -31,23 +30,10 @@ export function MyPartners() {
   const [chatIdByPartner, setChatIdByPartner] = useState<Record<string, number>>({});
   const [latestMessageAtByPartner, setLatestMessageAtByPartner] = useState<Record<string, number>>({});
   const [unreadPostcardPartnerIds, setUnreadPostcardPartnerIds] = useState<Set<string>>(new Set());
-  const [challengingFriendId, setChallengingFriendId] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const handleChallenge = async (friendId: string) => {
-    if (!userId || challengingFriendId) return;
-    setChallengingFriendId(friendId);
-    try {
-      const challenge = await createChallengeApi(userId, friendId);
-      if (!challenge) {
-        toast.error(t('Could not create challenge', '도전 생성에 실패했습니다'));
-        return;
-      }
-      toast.success(t('Challenge sent!', '도전을 보냈습니다!'));
-      navigate('/games?view=challenge');
-    } finally {
-      setChallengingFriendId(null);
-    }
+  const handleChallenge = (friendId: string) => {
+    navigate(`/games?view=challenge&challenged=${friendId}`);
   };
 
   const load = useCallback(async () => {
@@ -372,15 +358,10 @@ export function MyPartners() {
               </Link>
               <button
                 type="button"
-                onClick={() => void handleChallenge(String(friend.id))}
-                disabled={challengingFriendId === String(friend.id)}
-                className="bg-violet-600 text-white py-3 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-60 flex items-center justify-center gap-2 transition-colors"
+                onClick={() => handleChallenge(String(friend.id))}
+                className="bg-violet-600 text-white py-3 rounded-xl font-medium hover:bg-violet-700 flex items-center justify-center gap-2 transition-colors"
               >
-                {challengingFriendId === String(friend.id) ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Swords className="w-4 h-4" />
-                )}
+                <Swords className="w-4 h-4" />
                 <span>{t('Challenge', '도전')}</span>
               </button>
               <Link

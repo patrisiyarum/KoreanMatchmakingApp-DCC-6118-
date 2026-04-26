@@ -266,7 +266,7 @@ export function ViewProfile() {
             </div>
             {gameStats ? (
               <div className="grid grid-cols-4 gap-1.5">
-                <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                <div className="flex flex-col justify-between rounded-lg bg-white p-2 ring-1 ring-stone-200">
                   <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
                     <Gamepad2 className="h-3 w-3" />
                     {t('Perfect Games', '퍼펙트 게임')}
@@ -275,21 +275,21 @@ export function ViewProfile() {
                     {gameStats.perfectRounds}
                   </div>
                 </div>
-                <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                <div className="flex flex-col justify-between rounded-lg bg-white p-2 ring-1 ring-stone-200">
                   <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
                     <BookOpen className="h-3 w-3" />
                     {t('Terms', '단어')}
                   </div>
                   <div className="mt-0.5 text-sm font-bold text-neutral-900">{gameStats.termMatching}</div>
                 </div>
-                <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                <div className="flex flex-col justify-between rounded-lg bg-white p-2 ring-1 ring-stone-200">
                   <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
                     <Target className="h-3 w-3" />
                     {t('Grammar', '문법')}
                   </div>
                   <div className="mt-0.5 text-sm font-bold text-neutral-900">{gameStats.grammarQuiz}</div>
                 </div>
-                <div className="rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                <div className="flex flex-col justify-between rounded-lg bg-white p-2 ring-1 ring-stone-200">
                   <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
                     <Mic className="h-3 w-3" />
                     {t('Pron.', '발음')}

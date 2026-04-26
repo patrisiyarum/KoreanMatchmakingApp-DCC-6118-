@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { ArrowLeft, Phone, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Video, Send, Loader2 } from 'lucide-react';
 import { Message } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -283,15 +283,14 @@ export function Chat() {
         )}
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-neutral-900 truncate">{partner.name}</h3>
-          <p className="text-xs text-emerald-600 font-medium">{t('Online', '온라인')}</p>
         </div>
         <Link
           to={directCallId ? `/call/${directCallId}` : '/schedule'}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
-          aria-label={t('Start call now', '지금 통화 시작')}
-          title={t('Start call now', '지금 통화 시작')}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700"
+          aria-label={t('Start video call', '영상 통화 시작')}
+          title={t('Start video call', '영상 통화 시작')}
         >
-          <Phone className="w-4 h-4" />
+          <Video className="w-4 h-4" />
         </Link>
       </div>
 

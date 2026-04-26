@@ -251,12 +251,7 @@ export function AgoraCall() {
     <div className="size-full overflow-y-auto bg-neutral-50">
       <div className="max-w-4xl mx-auto p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-neutral-900">{t('Video Call', '영상 통화')}</h2>
-            <p className="text-sm text-neutral-600">
-              {t('Meeting channel', '미팅 채널')}: <span className="font-mono">{channelName}</span>
-            </p>
-          </div>
+          <h2 className="text-2xl font-bold text-neutral-900">{t('Video Call', '영상 통화')}</h2>
           <button type="button" onClick={goBack} className="text-sm font-medium text-blue-700 hover:text-blue-800">
             {t('Back to calls', '통화 목록으로')}
           </button>

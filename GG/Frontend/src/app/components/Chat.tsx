@@ -215,9 +215,16 @@ export function Chat() {
   useEffect(() => {
     let cancelled = false;
     const targetLang = language === 'ko' ? 'Korean' : 'English';
+    // Hangul block — if any character is Korean, treat the whole message as Korean.
+    const hasHangul = (s: string) => /[\u1100-\u11FF\u3130-\u318F\uAC00-\uD7AF]/.test(s);
     const todo = messages.filter((m) => {
       const cacheKey = `${m.id}:${language}`;
-      return Boolean(m.text?.trim()) && !translations[cacheKey] && !m.id.startsWith('temp-');
+      if (!m.text?.trim() || translations[cacheKey] || m.id.startsWith('temp-')) return false;
+      const messageIsKorean = hasHangul(m.text);
+      const targetIsKorean = language === 'ko';
+      // Already in the right language — no translate call needed.
+      if (messageIsKorean === targetIsKorean) return false;
+      return true;
     });
     if (todo.length === 0) return;
     void (async () => {
@@ -383,11 +390,6 @@ export function Chat() {
                   }`}
                 >
                   <p className="text-sm leading-relaxed">{displayText}</p>
-                  {translatedText && translatedText !== message.text ? (
-                    <p className={`text-[10px] mt-1 italic ${isOwn ? 'text-blue-200' : 'text-neutral-500'}`}>
-                      {message.text}
-                    </p>
-                  ) : null}
                 </div>
                 <p className={`text-[11px] mt-1 px-1 ${isOwn ? 'text-neutral-400' : 'text-neutral-400'}`}>
                   {message.timestamp.toLocaleTimeString([], {

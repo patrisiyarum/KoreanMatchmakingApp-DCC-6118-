@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { getFriendsList, type FriendRow } from '@/api/friendsApi';
 import { createChat, getChatsForUser, getMessages, sendMessage } from '@/api/chatApi';
 import { createCallInvite } from '@/api/callInviteApi';
+import { translateText } from '@/api/translateApi';
 import { UserAvatar } from './UserAvatar';
 import { ConversationPrompts } from './ConversationPrompts';
 
@@ -22,7 +23,7 @@ type ChatPartner = {
 export function Chat() {
   const { partnerId } = useParams();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { userId } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -32,6 +33,7 @@ export function Chat() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [chatId, setChatId] = useState<number | null>(null);
   const [promptsOpen, setPromptsOpen] = useState(false);
+  const [translations, setTranslations] = useState<Record<string, string>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const directCallId = useMemo(() => {
@@ -210,6 +212,33 @@ export function Chat() {
     };
   }, [chatId]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const targetLang = language === 'ko' ? 'Korean' : 'English';
+    const todo = messages.filter((m) => {
+      const cacheKey = `${m.id}:${language}`;
+      return Boolean(m.text?.trim()) && !translations[cacheKey] && !m.id.startsWith('temp-');
+    });
+    if (todo.length === 0) return;
+    void (async () => {
+      const results = await Promise.all(
+        todo.map(async (m) => {
+          const translated = await translateText(m.text, 'auto', targetLang);
+          return { key: `${m.id}:${language}`, value: translated || m.text };
+        })
+      );
+      if (cancelled) return;
+      setTranslations((prev) => {
+        const next = { ...prev };
+        for (const { key, value } of results) next[key] = value;
+        return next;
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [messages, language, translations]);
+
   const sendText = async (raw: string, opts: { fromInput?: boolean } = {}) => {
     const text = raw.trim();
     if (!text || !userId || !chatId || sendingMessage) return;
@@ -335,6 +364,8 @@ export function Chat() {
           ) : null}
           {messages.map((message, index) => {
             const isOwn = message.senderId === (userId || 'user-1');
+            const translatedText = translations[`${message.id}:${language}`];
+            const displayText = translatedText || message.text;
 
             return (
               <motion.div
@@ -351,7 +382,12 @@ export function Chat() {
                       : 'bg-neutral-100 text-neutral-900 rounded-bl-md'
                   }`}
                 >
-                  <p className="text-sm leading-relaxed">{message.text}</p>
+                  <p className="text-sm leading-relaxed">{displayText}</p>
+                  {translatedText && translatedText !== message.text ? (
+                    <p className={`text-[10px] mt-1 italic ${isOwn ? 'text-blue-200' : 'text-neutral-500'}`}>
+                      {message.text}
+                    </p>
+                  ) : null}
                 </div>
                 <p className={`text-[11px] mt-1 px-1 ${isOwn ? 'text-neutral-400' : 'text-neutral-400'}`}>
                   {message.timestamp.toLocaleTimeString([], {

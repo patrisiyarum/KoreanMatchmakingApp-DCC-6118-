@@ -1006,6 +1006,38 @@ export function Games() {
                   </div>
                 </div>
 
+                {challenge.status === 'completed' ? (() => {
+                  const meWon = challenge.winnerId != null && Number(challenge.winnerId) === Number(userId);
+                  const tied = challenge.winnerId == null;
+                  const winnerName = tied
+                    ? null
+                    : Number(challenge.winnerId) === Number(challenge.challengerId)
+                      ? `${challenge.challenger?.firstName || ''} ${challenge.challenger?.lastName || ''}`.trim() || `User ${challenge.challengerId}`
+                      : `${challenge.challenged?.firstName || ''} ${challenge.challenged?.lastName || ''}`.trim() || `User ${challenge.challengedId}`;
+                  return (
+                    <div>
+                      <div className={`rounded-xl px-4 py-3 mb-3 text-center font-semibold ${
+                        tied ? 'bg-neutral-100 text-neutral-800'
+                          : meWon ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-rose-100 text-rose-800'
+                      }`}>
+                        {tied
+                          ? t('Tied!', '무승부!')
+                          : meWon
+                            ? `🏆 ${t('You won!', '승리!')}`
+                            : `😢 ${winnerName} ${t('won', '승')}`}
+                      </div>
+                      <div className="flex items-center justify-between text-sm text-neutral-600 mb-1">
+                        <span>{t('Your Score', '내 점수')}</span>
+                        <span className="font-bold text-blue-600">{myScore ?? 0}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm text-neutral-600">
+                        <span>{t('Opponent Score', '상대 점수')}</span>
+                        <span className="font-bold text-orange-600">{opponentScore ?? 0}</span>
+                      </div>
+                    </div>
+                  );
+                })() : null}
                 {challenge.status !== 'completed' && challenge.status !== 'declined' && challenge.status !== 'expired' && (
                   <div>
                     <div className="flex items-center justify-between mb-2">

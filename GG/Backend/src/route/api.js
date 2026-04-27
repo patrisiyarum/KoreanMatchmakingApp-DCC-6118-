@@ -12,6 +12,7 @@ import messageController from "../controller/messageController.js";
 import dashboardService from "../Service/dashboardService.js";
 import * as assistantController from "../controller/assistantController.js";
 import * as aiAssistantController from "../controller/aiAssistantController.js";
+import { translate } from "../controller/translateController.js";
 import recordingController from "../controller/recordingController.js"; // Add this
 import { getMeetingsForUser } from "../controller/meetingController.js";
 import fs from "fs";
@@ -201,6 +202,7 @@ const initAPIRoute = (app) => {
     router.post('/ai-assistant/parse/:chatId', assistantController.parseConversation);
 
     // AI routes (chat, history, parse — unified under /ai-assistant)
+    router.post('/translate', translate);
     router.post('/ai-assistant/chat', memoryUpload.single('audioFile'), aiAssistantController.chatWithAssistant);
     router.post('/ai-assistant/save', aiAssistantController.saveConversation);
     router.post('/ai-assistant/load', aiAssistantController.loadConversationFromDB);

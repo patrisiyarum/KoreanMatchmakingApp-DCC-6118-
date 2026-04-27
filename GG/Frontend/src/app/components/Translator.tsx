@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ArrowRightLeft, Volume2 } from 'lucide-react';
+import { X, ArrowRightLeft, Volume2, Loader2 } from 'lucide-react';
 import { useTranslator } from '../context/TranslatorContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -11,10 +11,27 @@ export function Translator() {
   const [outputText, setOutputText] = useState('');
   const [fromLang, setFromLang] = useState('en');
   const [toLang, setToLang] = useState('ko');
+  const [translating, setTranslating] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleTranslate = () => {
-    const translated = translateText(inputText, fromLang, toLang);
-    setOutputText(translated);
+  const handleTranslate = async () => {
+    if (!inputText.trim() || translating) return;
+    setTranslating(true);
+    setErrorMsg(null);
+    setOutputText('');
+    try {
+      const translated = await translateText(inputText, fromLang, toLang);
+      setOutputText(translated);
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { error?: string } }; message?: string };
+      setErrorMsg(
+        err.response?.data?.error ||
+          err.message ||
+          t('Translation failed', '번역에 실패했습니다')
+      );
+    } finally {
+      setTranslating(false);
+    }
   };
 
   const swapLanguages = () => {
@@ -22,6 +39,7 @@ export function Translator() {
     setToLang(fromLang);
     setInputText(outputText);
     setOutputText(inputText);
+    setErrorMsg(null);
   };
 
   return (
@@ -114,7 +132,16 @@ export function Translator() {
                     </button>
                   </div>
                   <div className="w-full h-36 sm:h-40 px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50 overflow-y-auto text-sm">
-                    {outputText || (
+                    {translating ? (
+                      <span className="inline-flex items-center gap-2 text-neutral-500">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        {t('Translating…', '번역 중…')}
+                      </span>
+                    ) : errorMsg ? (
+                      <span className="text-red-600">{errorMsg}</span>
+                    ) : outputText ? (
+                      outputText
+                    ) : (
                       <span className="text-neutral-400">
                         {t('Translation will appear here', '번역이 여기에 표시됩니다')}
                       </span>
@@ -125,19 +152,13 @@ export function Translator() {
 
               <button
                 type="button"
-                onClick={handleTranslate}
-                disabled={!inputText.trim()}
-                className="w-full bg-neutral-400 text-white py-3.5 rounded-xl font-medium hover:bg-neutral-500 disabled:bg-neutral-300 disabled:text-white/80 disabled:cursor-not-allowed transition-colors"
+                onClick={() => void handleTranslate()}
+                disabled={!inputText.trim() || translating}
+                className="w-full bg-neutral-400 text-white py-3.5 rounded-xl font-medium hover:bg-neutral-500 disabled:bg-neutral-300 disabled:text-white/80 disabled:cursor-not-allowed transition-colors inline-flex items-center justify-center gap-2"
               >
-                {t('Translate', '번역하기')}
+                {translating && <Loader2 className="w-4 h-4 animate-spin" />}
+                {translating ? t('Translating…', '번역 중…') : t('Translate', '번역하기')}
               </button>
-
-              <p className="text-xs text-neutral-500 text-center pt-1">
-                {t(
-                  'Quick translations: Type common phrases to see instant translations',
-                  '빠른 번역: 일반적인 문구를 입력하면 즉시 번역을 볼 수 있습니다'
-                )}
-              </p>
             </div>
           </motion.div>
         </motion.div>

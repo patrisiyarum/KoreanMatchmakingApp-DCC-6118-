@@ -1,9 +1,10 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
+import { translateText as translateTextApi } from '@/api/translateApi';
 
 interface TranslatorContextType {
   isTranslatorOpen: boolean;
   setIsTranslatorOpen: (open: boolean) => void;
-  translateText: (text: string, from: string, to: string) => string;
+  translateText: (text: string, from: string, to: string) => Promise<string>;
 }
 
 const TranslatorContext = createContext<TranslatorContextType | undefined>(undefined);
@@ -11,19 +12,10 @@ const TranslatorContext = createContext<TranslatorContextType | undefined>(undef
 export function TranslatorProvider({ children }: { children: ReactNode }) {
   const [isTranslatorOpen, setIsTranslatorOpen] = useState(false);
 
-  // Mock translation function - in production, this would call a translation API
-  const translateText = (text: string, from: string, to: string) => {
-    const mockTranslations: Record<string, string> = {
-      'Hello': '안녕하세요',
-      'Thank you': '감사합니다',
-      'How are you?': '어떻게 지내세요?',
-      'I love learning Korean': '저는 한국어 배우는 것을 좋아해요',
-      '안녕하세요': 'Hello',
-      '감사합니다': 'Thank you',
-      '어떻게 지내세요?': 'How are you?',
-    };
-
-    return mockTranslations[text] || `[Translated: ${text}]`;
+  const translateText = async (text: string, from: string, to: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return '';
+    return translateTextApi(trimmed, from, to);
   };
 
   return (

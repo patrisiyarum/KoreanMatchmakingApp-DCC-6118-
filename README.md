@@ -1,6 +1,25 @@
 # DCC 6118 | Language Exchange Matchmaker
 
 # Release Notes
+## Version 5.0.0
+### Features
+* Plesk deployment: Website is fully deployed on GaTech Plesk.
+* Complete UI overhaul: Intention is to make the website more inutitive and appealing to navigate on desktop and mobile.
+* Gamification features: 3 langauge learning games introduced along with profile progression, 1-on-1 challenge mode, and team battle mode.
+* Enhanced profile customization: Can now specify details about prefered learning style, add a profile image, select from a list of interests, commitment level and more!
+* Discover system: Altered matchmaking UI to provide potential partners one at a time. Users can choose to send a friend request or skip based on the other user's profile.
+* New communication features: Along with video calling friends, users can now send traditional text messages as well as personalized postcards.
+* AI Chat changes: Now uses Google Gemini and features starting prompts.
+* Website translation tool: Clicking this button translates most text on the site from English to Korean and vice-versa.
+### Bug Fixes
+* Fixed translator not properly translating inputted text
+* Added popup to logout button to prevent accidental logouts
+* Profile level and badges now properly update when playing games
+* Fixed profile image not displaying on certain pages
+### Outstanding Issues
+* UI does not display properly on Discover page on certain screen resolutions
+* Not all text is properly translated using translation tool (ex. AI Chatbot)
+* Unresolved issue with students in Korea being unable to access the website
 ## Version 4.0.0
 ### Features
 * Users can set their zodiac sign, interests, availabile times, and default time zones upon profile creation. Users can also edit their profile under Set Profile page, where previously selected attributes are preloaded.
@@ -68,11 +87,11 @@
 * Google Chrome to host the application.
 
 Requirements:
-* Git
-* Node.js / Node Package Manager (npm)
-* MySQL (easiest to just install the "full" version)
-* cmake (potential don't need this nor fluent)
-* fluent-ffmpeg
+* Git (https://git-scm.com/install/)
+* Node.js / Node Package Manager (npm) (https://nodejs.org/en)
+* MySQL (easiest to just install the "full" version) (https://dev.mysql.com/downloads/installer/)
+*** Visit "Tutorial Resources" section for additional resources on setting up required software.
+
 
 ## DEPENDENCIES 
 Open the project directory in your terminal under the GG folder.
@@ -92,7 +111,7 @@ For Frontend dependecies (terminal commands):
 
 To migrate the database:
 
-    cd Backend/src 
+    cd Backend
     npx sequelize-cli db:migrate
 *Note that you will need to remove your database's password and create a schema named languageexchangematchmaker in order to get the database working (or update 'null' values with your DB password under relevant files in Backend/src/config/ folder)* 
 
@@ -114,7 +133,9 @@ Backend
 Frontend
 
     cd Frontend
-    npm start
+    - `npm run dev` — Vite dev server (default `http://localhost:5173`). API calls use `src/api/apiBase.ts` and target `http://localhost:8080` in development when `public/config.js` has `API_BASE_URL: ''`.
+    - `npm run build` — output in `build/` (used for static deploy / Plesk).
+    - `npm run build:zip` — `build/` + `build.zip`.
 
 # Troubleshooting: 
 If the database does not properly migrate into MySQL, this is most commonly because your MySQL root/local instance still has a password or there is no languageexchangematchmaker schema.

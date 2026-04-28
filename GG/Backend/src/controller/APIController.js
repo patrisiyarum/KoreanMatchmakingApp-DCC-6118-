@@ -890,14 +890,16 @@ let getTrueFriendsList = async (req, res) => {
 
     const [rows] = await pool.query(
       `
-      SELECT u.id, u.firstName, u.lastName, u.email, u.profileImage
+      SELECT u.id, u.firstName, u.lastName, u.email, u.profileImage, p.native_language AS nativeLanguage
       FROM FriendsModel f
       JOIN useraccount u ON u.id = f.user2_ID
+      LEFT JOIN UserProfile p ON p.id = u.id
       WHERE f.user1_ID = ? AND f.status = 'accepted'
       UNION
-      SELECT u.id, u.firstName, u.lastName, u.email, u.profileImage
+      SELECT u.id, u.firstName, u.lastName, u.email, u.profileImage, p.native_language AS nativeLanguage
       FROM FriendsModel f
       JOIN useraccount u ON u.id = f.user1_ID
+      LEFT JOIN UserProfile p ON p.id = u.id
       WHERE f.user2_ID = ? AND f.status = 'accepted'
       `,
       [userId, userId]
@@ -910,6 +912,48 @@ let getTrueFriendsList = async (req, res) => {
     return res.status(200).json({ friendsList: friends });
   } catch (err) {
     console.error('Error retrieving friends:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+let getFriendsLeaderboard = async (req, res) => {
+  try {
+    const userId = Number(req.params.userId);
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    const [rows] = await pool.query(
+      `
+      SELECT u.id, u.firstName, u.lastName, u.profileImage,
+             COALESCE(u.xp, 0) AS xp, COALESCE(u.level, 1) AS level
+      FROM useraccount u
+      WHERE u.id = ?
+         OR u.id IN (SELECT user2_ID FROM FriendsModel WHERE user1_ID = ? AND status = 'accepted')
+         OR u.id IN (SELECT user1_ID FROM FriendsModel WHERE user2_ID = ? AND status = 'accepted')
+      ORDER BY xp DESC, u.id ASC
+      `,
+      [userId, userId, userId]
+    );
+
+    const entries = rows.map((r, idx) => ({
+      userId: Number(r.id),
+      firstName: r.firstName || '',
+      lastName: r.lastName || '',
+      profileImage: r.profileImage ?? null,
+      xp: Number(r.xp || 0),
+      level: Number(r.level || 1),
+      rank: idx + 1,
+      isMe: Number(r.id) === userId,
+    }));
+    const me = entries.find((e) => e.isMe) || null;
+
+    return res.status(200).json({
+      total: entries.length,
+      myRank: me ? me.rank : null,
+      myXp: me ? me.xp : 0,
+      entries,
+    });
+  } catch (err) {
+    console.error('Error fetching friends leaderboard:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -1333,7 +1377,7 @@ let moveMeeting = async (req, res) => {
 const APIController = {
     addFriend, getAllUsers, createNewUser, updateUser, deleteUser, getUserNames, getDiscoverUsers, getUserPreferences, getUserProfile, getProfileCustomizationOptions, updateRating,
     addComment, getUserProficiencyAndRating, addToFriendsList, getFriendsList, removeFriend, addTrueFriend, removeTrueFriend,
-    getTrueFriendsList, getUserAvailability, createMeeting, deleteMeeting, moveMeeting, createZoomMeetingLink, createAgoraRtcToken,
+    getTrueFriendsList, getFriendsLeaderboard, getUserAvailability, createMeeting, deleteMeeting, moveMeeting, createZoomMeetingLink, createAgoraRtcToken,
     getFriendRequests, acceptFriendRequest, rejectFriendRequest
 };
 export default APIController;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import AgoraRTC, { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack, IRemoteUser } from 'agora-rtc-sdk-ng';
 import { Loader2, Mic, MicOff, PhoneOff, RefreshCw, Video, VideoOff } from 'lucide-react';
@@ -16,7 +16,7 @@ export function AgoraCall() {
   const [joined, setJoined] = useState(false);
   const [muted, setMuted] = useState(false);
   const [cameraOff, setCameraOff] = useState(false);
-  const [remoteCount, setRemoteCount] = useState(0);
+  const [remoteUsers, setRemoteUsers] = useState<IRemoteUser[]>([]);
   const [localPreviewReady, setLocalPreviewReady] = useState(false);
   const [cameraIssue, setCameraIssue] = useState<string | null>(null);
   const [cameraDevices, setCameraDevices] = useState<Array<{ deviceId: string; label: string }>>([]);
@@ -26,7 +26,7 @@ export function AgoraCall() {
   const micTrackRef = useRef<IMicrophoneAudioTrack | null>(null);
   const camTrackRef = useRef<ICameraVideoTrack | null>(null);
   const localVideoRef = useRef<HTMLDivElement | null>(null);
-  const remoteContainerRef = useRef<HTMLDivElement | null>(null);
+  const remoteUserListRef = useRef<IRemoteUser[]>([]);
 
   const channelName = useMemo(() => `meeting-${meetingId || 'unknown'}`, [meetingId]);
   const uidNum = useMemo(() => Number(userId || 0) || 0, [userId]);
@@ -61,36 +61,28 @@ export function AgoraCall() {
         const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
         clientRef.current = client;
 
+        const syncRemoteUsers = () => {
+          // Snapshot the live list so React re-renders and the per-user
+          // <div ref={...}> fires its callback to play the new video track.
+          const next = [...client.remoteUsers];
+          remoteUserListRef.current = next;
+          setRemoteUsers(next);
+        };
+
         client.on('user-published', async (remoteUser: IRemoteUser, mediaType) => {
           await client.subscribe(remoteUser, mediaType);
-          if (mediaType === 'video') {
-            let el = document.getElementById(`remote-${String(remoteUser.uid)}`);
-            if (!el) {
-              el = document.createElement('div');
-              el.id = `remote-${String(remoteUser.uid)}`;
-              el.className = 'h-56 w-full rounded-xl bg-black overflow-hidden';
-              remoteContainerRef.current?.appendChild(el);
-            }
-            remoteUser.videoTrack?.play(el);
-          }
           if (mediaType === 'audio') {
             remoteUser.audioTrack?.play();
           }
-          setRemoteCount(client.remoteUsers.length);
+          syncRemoteUsers();
         });
 
-        client.on('user-unpublished', (remoteUser, mediaType) => {
-          if (mediaType === 'video') {
-            const el = document.getElementById(`remote-${String(remoteUser.uid)}`);
-            if (el) el.remove();
-          }
-          setRemoteCount(client.remoteUsers.length);
+        client.on('user-unpublished', () => {
+          syncRemoteUsers();
         });
 
-        client.on('user-left', (remoteUser) => {
-          const el = document.getElementById(`remote-${String(remoteUser.uid)}`);
-          if (el) el.remove();
-          setRemoteCount(client.remoteUsers.length);
+        client.on('user-left', () => {
+          syncRemoteUsers();
         });
 
         await client.join(tokenRes.appId, tokenRes.channelName, tokenRes.token || null, tokenRes.uid);
@@ -108,16 +100,8 @@ export function AgoraCall() {
         }
         micTrackRef.current = micTrack;
         camTrackRef.current = camTrack;
-        if (localVideoRef.current) {
-          try {
-            camTrack.play(localVideoRef.current, { fit: 'cover', mirror: true });
-            setLocalPreviewReady(true);
-            setCameraIssue(null);
-          } catch {
-            setLocalPreviewReady(false);
-            setCameraIssue(t('Camera preview failed to render', '카메라 미리보기를 표시하지 못했습니다'));
-          }
-        }
+        // Defer the actual `.play()` to a layout effect — the local video
+        // container is gated behind `loading`, so its ref is null here.
         for (let i = 0; i < 20 && client.connectionState !== 'CONNECTED'; i += 1) {
           await new Promise((resolve) => window.setTimeout(resolve, 100));
         }
@@ -160,6 +144,21 @@ export function AgoraCall() {
       })();
     };
   }, [channelName, meetingId, selectedCameraId, t, uidNum, userId]);
+
+  useLayoutEffect(() => {
+    if (loading) return;
+    const track = camTrackRef.current;
+    const container = localVideoRef.current;
+    if (!track || !container) return;
+    try {
+      track.play(container, { fit: 'cover', mirror: true });
+      setLocalPreviewReady(true);
+      setCameraIssue(null);
+    } catch {
+      setLocalPreviewReady(false);
+      setCameraIssue(t('Camera preview failed to render', '카메라 미리보기를 표시하지 못했습니다'));
+    }
+  }, [loading, t]);
 
   const toggleMute = async () => {
     if (!micTrackRef.current) return;
@@ -233,6 +232,10 @@ export function AgoraCall() {
       toast.success(t('Call ended', '통화 종료'));
     } catch {
       toast.error(t('Could not end call cleanly', '통화를 정상 종료하지 못했습니다'));
+    } finally {
+      // direct-X-Y means a 1:1 call from chat; anything else came from a scheduled meeting.
+      const fromDirectChat = String(meetingId || '').startsWith('direct-');
+      navigate(fromDirectChat ? '/partners' : '/schedule');
     }
   };
 
@@ -244,12 +247,7 @@ export function AgoraCall() {
     <div className="size-full overflow-y-auto bg-neutral-50">
       <div className="max-w-4xl mx-auto p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-neutral-900">{t('Agora Call', 'Agora 통화')}</h2>
-            <p className="text-sm text-neutral-600">
-              {t('Meeting channel', '미팅 채널')}: <span className="font-mono">{channelName}</span>
-            </p>
-          </div>
+          <h2 className="text-2xl font-bold text-neutral-900">{t('Video Call', '영상 통화')}</h2>
           <button type="button" onClick={goBack} className="text-sm font-medium text-blue-700 hover:text-blue-800">
             {t('Back to calls', '통화 목록으로')}
           </button>
@@ -286,10 +284,26 @@ export function AgoraCall() {
               </div>
               <div className="rounded-2xl border border-neutral-200 bg-white p-3">
                 <p className="text-xs text-neutral-600 mb-2">
-                  {t('Remote participants', '상대 참여자')} ({remoteCount})
+                  {t('Remote participants', '상대 참여자')} ({remoteUsers.length})
                 </p>
-                <div ref={remoteContainerRef} className="space-y-2" />
-                {!remoteCount ? (
+                <div className="space-y-2">
+                  {remoteUsers.map((u) => (
+                    <div
+                      key={String(u.uid)}
+                      className="h-56 w-full rounded-xl bg-black overflow-hidden"
+                      ref={(el) => {
+                        if (el && u.videoTrack) {
+                          try {
+                            u.videoTrack.play(el);
+                          } catch {
+                            // ignore — track may have been closed before mount
+                          }
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+                {remoteUsers.length === 0 ? (
                   <div className="h-56 w-full rounded-xl bg-neutral-100 flex items-center justify-center text-sm text-neutral-500">
                     {t('Waiting for others to join…', '상대가 참여하기를 기다리는 중…')}
                   </div>

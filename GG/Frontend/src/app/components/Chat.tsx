@@ -1,25 +1,29 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router';
+import { useParams, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { ArrowLeft, Phone, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Video, Send, Loader2, Sparkles } from 'lucide-react';
 import { Message } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { getFriendsList, type FriendRow } from '@/api/friendsApi';
-import { publicAssetUrl } from '../utils/profileImage';
 import { createChat, getChatsForUser, getMessages, sendMessage } from '@/api/chatApi';
+import { createCallInvite } from '@/api/callInviteApi';
+import { translateText } from '@/api/translateApi';
+import { UserAvatar } from './UserAvatar';
+import { ConversationPrompts } from './ConversationPrompts';
 
 type ChatPartner = {
   id: string;
   name: string;
   avatar: string;
   profileImage?: string | null;
+  nativeLanguage?: string | null;
 };
 
 export function Chat() {
   const { partnerId } = useParams();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { userId } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -28,7 +32,10 @@ export function Chat() {
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [chatId, setChatId] = useState<number | null>(null);
+  const [promptsOpen, setPromptsOpen] = useState(false);
+  const [translations, setTranslations] = useState<Record<string, string>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const directCallId = useMemo(() => {
     const me = Number(userId || 0);
     const them = Number(partnerId || 0);
@@ -205,8 +212,42 @@ export function Chat() {
     };
   }, [chatId]);
 
-  const handleSend = async () => {
-    const text = newMessage.trim();
+  useEffect(() => {
+    let cancelled = false;
+    const targetLang = language === 'ko' ? 'Korean' : 'English';
+    // Hangul block — if any character is Korean, treat the whole message as Korean.
+    const hasHangul = (s: string) => /[\u1100-\u11FF\u3130-\u318F\uAC00-\uD7AF]/.test(s);
+    const todo = messages.filter((m) => {
+      const cacheKey = `${m.id}:${language}`;
+      if (!m.text?.trim() || translations[cacheKey] || m.id.startsWith('temp-')) return false;
+      const messageIsKorean = hasHangul(m.text);
+      const targetIsKorean = language === 'ko';
+      // Already in the right language — no translate call needed.
+      if (messageIsKorean === targetIsKorean) return false;
+      return true;
+    });
+    if (todo.length === 0) return;
+    void (async () => {
+      const results = await Promise.all(
+        todo.map(async (m) => {
+          const translated = await translateText(m.text, 'auto', targetLang);
+          return { key: `${m.id}:${language}`, value: translated || m.text };
+        })
+      );
+      if (cancelled) return;
+      setTranslations((prev) => {
+        const next = { ...prev };
+        for (const { key, value } of results) next[key] = value;
+        return next;
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [messages, language, translations]);
+
+  const sendText = async (raw: string, opts: { fromInput?: boolean } = {}) => {
+    const text = raw.trim();
     if (!text || !userId || !chatId || sendingMessage) return;
 
     const optimisticMessage: Message = {
@@ -217,7 +258,8 @@ export function Chat() {
     };
 
     setMessages((prev) => [...prev, optimisticMessage]);
-    setNewMessage('');
+    if (opts.fromInput) setNewMessage('');
+    setPromptsOpen(false);
     setSendingMessage(true);
 
     try {
@@ -239,11 +281,21 @@ export function Chat() {
       markChatSeen(chatId, saved.createdAt ? new Date(saved.createdAt) : new Date());
     } catch {
       setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessage.id));
-      setNewMessage(text);
+      if (opts.fromInput) setNewMessage(text);
     } finally {
       setSendingMessage(false);
     }
   };
+
+  const handleSend = () => sendText(newMessage, { fromInput: true });
+
+  const handleInsertPrompt = (text: string) => {
+    setNewMessage(text);
+    setPromptsOpen(false);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const isEmptyConversation = !loadingMessages && messages.length === 0 && Boolean(chatId);
 
   if (loadingPartner) {
     return (
@@ -272,87 +324,138 @@ export function Chat() {
         <button type="button" onClick={goBack} className="text-neutral-600 hover:text-neutral-900">
           <ArrowLeft className="w-6 h-6" />
         </button>
-        {publicAssetUrl(partner.profileImage) ? (
-          <img
-            src={publicAssetUrl(partner.profileImage)}
-            alt=""
-            className="w-10 h-10 rounded-full object-cover border border-neutral-200"
-          />
-        ) : (
-          <div className="text-3xl">{partner.avatar}</div>
-        )}
+        <UserAvatar
+          seed={partner.id}
+          name={partner.name}
+          profileImage={partner.profileImage}
+          nativeLanguage={partner.nativeLanguage}
+          size="md"
+        />
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-neutral-900 truncate">{partner.name}</h3>
-          <p className="text-xs text-emerald-600 font-medium">{t('Online', '온라인')}</p>
         </div>
-        <Link
-          to={directCallId ? `/call/${directCallId}` : '/schedule'}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
-          aria-label={t('Start call now', '지금 통화 시작')}
-          title={t('Start call now', '지금 통화 시작')}
+        <button
+          type="button"
+          onClick={async () => {
+            if (!directCallId || !userId || !partnerId) {
+              navigate('/schedule');
+              return;
+            }
+            // Fire-and-forget: ring the partner. Caller continues to the call regardless.
+            void createCallInvite(userId, String(partnerId), directCallId);
+            navigate(`/call/${directCallId}`);
+          }}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700"
+          aria-label={t('Start video call', '영상 통화 시작')}
+          title={t('Start video call', '영상 통화 시작')}
         >
-          <Phone className="w-4 h-4" />
-        </Link>
+          <Video className="w-4 h-4" />
+        </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {loadingMessages ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-6 h-6 animate-spin text-violet-600" />
-          </div>
-        ) : null}
-        {messages.map((message, index) => {
-          const isOwn = message.senderId === (userId || 'user-1');
+      {isEmptyConversation ? (
+        <ConversationPrompts
+          variant="empty-state"
+          open
+          onClose={() => {}}
+          onSend={(text) => void sendText(text)}
+          onInsert={handleInsertPrompt}
+          partnerName={partner.name}
+        />
+      ) : (
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {loadingMessages ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-violet-600" />
+            </div>
+          ) : null}
+          {messages.map((message, index) => {
+            const isOwn = message.senderId === (userId || 'user-1');
+            const translatedText = translations[`${message.id}:${language}`];
+            const displayText = translatedText || message.text;
 
-          return (
-            <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
-            >
-              <div
-                className={`max-w-[78%] rounded-2xl px-4 py-3 ${
-                  isOwn
-                    ? 'bg-blue-600 text-white rounded-br-md'
-                    : 'bg-neutral-100 text-neutral-900 rounded-bl-md'
-                }`}
+            return (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
               >
-                <p className="text-sm leading-relaxed">{message.text}</p>
-              </div>
-              <p className={`text-[11px] mt-1 px-1 ${isOwn ? 'text-neutral-400' : 'text-neutral-400'}`}>
-                {message.timestamp.toLocaleTimeString([], {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                })}
-              </p>
-            </motion.div>
-          );
-        })}
-        <div ref={messagesEndRef} />
-      </div>
+                <div
+                  className={`max-w-[78%] rounded-2xl px-4 py-3 ${
+                    isOwn
+                      ? 'bg-blue-600 text-white rounded-br-md'
+                      : 'bg-neutral-100 text-neutral-900 rounded-bl-md'
+                  }`}
+                >
+                  <p className="text-sm leading-relaxed">{displayText}</p>
+                </div>
+                <p className={`text-[11px] mt-1 px-1 ${isOwn ? 'text-neutral-400' : 'text-neutral-400'}`}>
+                  {message.timestamp.toLocaleTimeString([], {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}
+                </p>
+              </motion.div>
+            );
+          })}
+          <div ref={messagesEndRef} />
+        </div>
+      )}
+
+      {!isEmptyConversation && (
+        <ConversationPrompts
+          variant="panel"
+          open={promptsOpen}
+          onClose={() => setPromptsOpen(false)}
+          onSend={(text) => void sendText(text)}
+          onInsert={handleInsertPrompt}
+          partnerName={partner.name}
+        />
+      )}
 
       <div className="border-t border-neutral-200 p-4 bg-white">
-        <div className="relative flex items-center">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && void handleSend()}
-            placeholder={t('Type a message...', '메시지를 입력하세요...')}
-            className="w-full pl-4 pr-14 py-3.5 rounded-full border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            disabled={loadingMessages || sendingMessage || !chatId}
-          />
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => void handleSend()}
-            disabled={!newMessage.trim() || loadingMessages || sendingMessage || !chatId}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed transition-colors"
-            aria-label={t('Send', '보내기')}
+            onClick={() => setPromptsOpen((open) => !open)}
+            aria-label={
+              promptsOpen
+                ? t('Hide conversation prompts', '대화 프롬프트 숨기기')
+                : t('Show conversation prompts', '대화 프롬프트 보기')
+            }
+            aria-pressed={promptsOpen}
+            title={t('Conversation prompts', '대화 프롬프트')}
+            className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+              promptsOpen
+                ? 'bg-violet-100 text-violet-700'
+                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+            }`}
           >
-            <Send className="w-[18px] h-[18px]" />
+            <Sparkles className="w-[18px] h-[18px]" />
           </button>
+          <div className="relative flex-1">
+            <input
+              ref={inputRef}
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && void handleSend()}
+              placeholder={t('Type a message...', '메시지를 입력하세요...')}
+              className="w-full pl-4 pr-14 py-3.5 rounded-full border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              disabled={loadingMessages || sendingMessage || !chatId}
+            />
+            <button
+              type="button"
+              onClick={() => void handleSend()}
+              disabled={!newMessage.trim() || loadingMessages || sendingMessage || !chatId}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed transition-colors"
+              aria-label={t('Send', '보내기')}
+            >
+              <Send className="w-[18px] h-[18px]" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -366,5 +469,6 @@ function friendRowToPartner(row: FriendRow): ChatPartner {
     name: fullName,
     avatar: '👤',
     profileImage: row.profileImage ?? null,
+    nativeLanguage: row.nativeLanguage ?? null,
   };
 }

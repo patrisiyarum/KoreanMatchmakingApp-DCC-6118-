@@ -7,6 +7,9 @@ export type ChallengeRow = {
   status: 'pending' | 'accepted' | 'declined' | 'in_progress' | 'completed' | 'expired';
   challengerScore?: number | null;
   challengedScore?: number | null;
+  winnerId?: number | null;
+  gameType?: string | null;
+  completedAt?: string | null;
   challenger?: { id: number; firstName?: string; lastName?: string };
   challenged?: { id: number; firstName?: string; lastName?: string };
 };
@@ -52,6 +55,15 @@ export async function createChallengeApi(
 export async function acceptChallengeApi(challengeId: string, userId: string): Promise<boolean> {
   try {
     await http.put(`/api/challenges/${challengeId}/accept`, { userId: Number(userId) });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteChallengeApi(challengeId: string, userId: string): Promise<boolean> {
+  try {
+    await http.delete(`/api/challenges/${challengeId}`, { data: { userId: Number(userId) } });
     return true;
   } catch {
     return false;

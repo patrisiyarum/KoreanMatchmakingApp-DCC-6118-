@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { Camera, ChevronRight, Loader2, UserRound } from 'lucide-react';
+import { Camera, ChevronRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { fetchUserInterestNames, replaceUserInterestsApi, resolveInterestIds } from '@/api/matchmakingProfileApi';
 import { fetchUserAccount, fetchUserProfilePayload, uploadProfileImage, createProfile } from '@/api/profileApi';
-import { publicAssetUrl } from '../utils/profileImage';
 import { PROFILE_INTEREST_OPTIONS } from '../constants/profileInterests';
+import { UserAvatar } from './UserAvatar';
 
 // ─── Option lists ─────────────────────────────────────────────────────────────
 
@@ -139,14 +139,14 @@ export function CreateProfile() {
     learningLanguage: 'Korean',
     level: 'Beginner',
     age: '' as number | '',
-    gender: 'Other',
-    profession: 'Education',
-    mbti: 'INTJ',
-    zodiac: 'Aries',
-    defaultTimeZone: 'UTC',
+    gender: '',
+    profession: '',
+    mbti: '',
+    zodiac: '',
+    defaultTimeZone: '',
     visibility: 'Show',
-    learningGoal: 'Conversational fluency',
-    communicationStyle: 'Mixed',
+    learningGoal: '',
+    communicationStyle: '',
     commitmentLevel: 3,
     interests: [] as string[],
     bio: '',
@@ -206,6 +206,14 @@ export function CreateProfile() {
 
   const handleContinue = async () => {
     if (!(profile.name.trim() && profile.interests.length > 0) || !userId) return;
+    const missing: string[] = [];
+    if (profile.age === '' || Number(profile.age) <= 0) missing.push(t('age', '나이'));
+    if (!profile.gender) missing.push(t('gender', '성별'));
+    if (!profile.profession) missing.push(t('profession', '직업'));
+    if (missing.length) {
+      toast.error(t('Please fill in: ', '다음 항목을 입력해 주세요: ') + missing.join(', '));
+      return;
+    }
     const parts = profile.name.trim().split(/\s+/);
     const firstName = parts[0] || 'User';
     const lastName = parts.slice(1).join(' ') || '';
@@ -249,7 +257,6 @@ export function CreateProfile() {
   };
 
   const canContinue = Boolean(profile.name.trim()) && profile.interests.length > 0;
-  const photoSrc = publicAssetUrl(profileImage);
 
   // ── Loading / unauthenticated states ──────────────────────────────────────
 
@@ -307,13 +314,14 @@ export function CreateProfile() {
               className="relative"
               aria-label={t('Upload profile photo', '프로필 사진 업로드')}
             >
-              <span className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-neutral-200 bg-neutral-100 shadow-sm">
-                {photoSrc ? (
-                  <img src={photoSrc} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <UserRound className="h-12 w-12 text-neutral-500" />
-                )}
-              </span>
+              <UserAvatar
+                seed={userId ?? `${profile.name}-new`}
+                name={profile.name || 'You'}
+                profileImage={profileImage}
+                nativeLanguage={profile.nativeLanguage}
+                size="2xl"
+                className="border-2 border-neutral-200 shadow-sm"
+              />
               <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-white shadow-sm">
                 <Camera className="h-3.5 w-3.5" />
               </span>
@@ -411,6 +419,7 @@ export function CreateProfile() {
                 onChange={(e) => set('gender', e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
+                <option value="" disabled>{t('Select gender', '성별 선택')}</option>
                 {GenderOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
@@ -425,6 +434,7 @@ export function CreateProfile() {
                 onChange={(e) => set('profession', e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
+                <option value="" disabled>{t('Select profession', '직업 선택')}</option>
                 {ProfessionOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
@@ -441,6 +451,7 @@ export function CreateProfile() {
                 onChange={(e) => set('mbti', e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
+                <option value="" disabled>{t('Select MBTI', 'MBTI 선택')}</option>
                 {MBTIOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
@@ -455,6 +466,7 @@ export function CreateProfile() {
                 onChange={(e) => set('zodiac', e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
+                <option value="" disabled>{t('Select zodiac', '별자리 선택')}</option>
                 {ZodiacOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
@@ -472,6 +484,7 @@ export function CreateProfile() {
               onChange={(e) => set('defaultTimeZone', e.target.value)}
               className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
+              <option value="" disabled>{t('Select time zone', '시간대 선택')}</option>
               {TimeZoneOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
@@ -504,6 +517,7 @@ export function CreateProfile() {
               onChange={(e) => set('learningGoal', e.target.value)}
               className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
+              <option value="" disabled>{t('Select learning goal', '학습 목표 선택')}</option>
               {LearningGoalOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
@@ -520,6 +534,7 @@ export function CreateProfile() {
               onChange={(e) => set('communicationStyle', e.target.value)}
               className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
+              <option value="" disabled>{t('Select communication style', '소통 방식 선택')}</option>
               {CommunicationStyleOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}

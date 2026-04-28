@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { MessageSquare, Gamepad2, Calendar, Loader2, Trophy, Stamp } from 'lucide-react';
+import { MessageSquare, Swords, Calendar, Loader2, Trophy, Stamp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -14,9 +14,9 @@ import {
   type FriendRequestOutgoingRow,
   type FriendRow,
 } from '@/api/friendsApi';
-import { publicAssetUrl } from '../utils/profileImage';
 import { getChatsForUser, getMessages } from '@/api/chatApi';
 import { getReceivedPostcards } from '@/api/postcardApi';
+import { UserAvatar } from './UserAvatar';
 
 export function MyPartners() {
   const { t } = useLanguage();
@@ -30,6 +30,11 @@ export function MyPartners() {
   const [chatIdByPartner, setChatIdByPartner] = useState<Record<string, number>>({});
   const [latestMessageAtByPartner, setLatestMessageAtByPartner] = useState<Record<string, number>>({});
   const [unreadPostcardPartnerIds, setUnreadPostcardPartnerIds] = useState<Set<string>>(new Set());
+  const navigate = useNavigate();
+
+  const handleChallenge = (friendId: string) => {
+    navigate(`/games?view=challenge&challenged=${friendId}&from=friends`);
+  };
 
   const load = useCallback(async () => {
     if (!userId) {
@@ -161,12 +166,6 @@ export function MyPartners() {
 
   const displayName = (first?: string, last?: string, fallback = 'Partner') =>
     `${first || ''} ${last || ''}`.trim() || fallback;
-
-  const fallbackAvatarEmoji = (seed: number | string) => {
-    const pool = ['🐶', '🐱', '🦊', '🐻', '🐼', '🐯', '🐰', '🐨', '🦁', '🐸'];
-    const n = Number(seed) || 0;
-    return pool[Math.abs(n) % pool.length];
-  };
 
   const handleAccept = async (requestId: number) => {
     if (!userId) return;
@@ -313,21 +312,20 @@ export function MyPartners() {
             </Link>
 
             <div className="flex items-start gap-4 mb-4">
-              {publicAssetUrl(friend.profileImage) ? (
-                <img
-                  src={publicAssetUrl(friend.profileImage) ?? undefined}
-                  alt=""
-                  className="w-14 h-14 rounded-full object-cover border border-neutral-200"
-                />
-              ) : (
-                <div className="w-14 h-14 rounded-full bg-neutral-100 text-2xl flex items-center justify-center">
-                  {fallbackAvatarEmoji(friend.id)}
-                </div>
-              )}
+              <UserAvatar
+                seed={friend.id}
+                name={displayName(friend.firstName, friend.lastName)}
+                profileImage={friend.profileImage}
+                nativeLanguage={friend.nativeLanguage}
+                size="lg"
+              />
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-neutral-900 mb-1">
+                <Link
+                  to={`/games/profile/${friend.id}`}
+                  className="text-lg font-semibold text-neutral-900 mb-1 hover:underline inline-block"
+                >
                   {displayName(friend.firstName, friend.lastName)}
-                </h3>
+                </Link>
                 <div className="flex items-center gap-2 text-xs text-neutral-500">
                   <Calendar className="w-3 h-3" />
                   <span>
@@ -351,13 +349,14 @@ export function MyPartners() {
                   </span>
                 ) : null}
               </Link>
-              <Link
-                to="/games"
+              <button
+                type="button"
+                onClick={() => handleChallenge(String(friend.id))}
                 className="bg-violet-600 text-white py-3 rounded-xl font-medium hover:bg-violet-700 flex items-center justify-center gap-2 transition-colors"
               >
-                <Gamepad2 className="w-4 h-4" />
-                <span>{t('Game', '게임')}</span>
-              </Link>
+                <Swords className="w-4 h-4" />
+                <span>{t('Challenge', '도전')}</span>
+              </button>
               <Link
                 to={`/games/profile/${friend.id}`}
                 className="bg-green-600 text-white py-3 rounded-xl font-medium hover:bg-green-700 flex items-center justify-center gap-2 transition-colors"

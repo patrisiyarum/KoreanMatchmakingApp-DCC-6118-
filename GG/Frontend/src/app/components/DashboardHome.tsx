@@ -22,7 +22,7 @@ export function DashboardHome() {
     },
     {
       to: '/partners',
-      title: t('My partners', '내 파트너'),
+      title: t('My friends', '내 친구'),
       sub: t('Chat and play games', '채팅 · 게임'),
       icon: Users,
     },

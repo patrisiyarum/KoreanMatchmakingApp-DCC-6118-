@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 import { Gamepad2, Loader2, Shield, Swords, Trophy, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -10,9 +10,16 @@ import { fetchMyTeam } from '@/api/teamsApi';
 
 export function GamesProfile() {
   const { t } = useLanguage();
-  const navigate = useNavigate();
   const { userId: authUserId } = useAuth();
   const { userId: routeUserId } = useParams();
+  const [searchParams] = useSearchParams();
+  const from = searchParams.get('from');
+  const back =
+    from === 'games'
+      ? { to: '/games', label: t('← Back to games', '← 게임으로') }
+      : from === 'profile'
+        ? { to: '/view-profile', label: t('← Back to profile', '← 프로필로') }
+        : { to: '/partners', label: t('← Back to friends', '← 친구 목록') };
   const targetUserId = routeUserId || authUserId || '';
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState<string>('');
@@ -34,10 +41,6 @@ export function GamesProfile() {
   });
   const [teamName, setTeamName] = useState<string | null>(null);
   const [teamMembers, setTeamMembers] = useState<number>(0);
-  const goBack = () => {
-    navigate(-1);
-  };
-
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -108,6 +111,9 @@ export function GamesProfile() {
   return (
     <div className="size-full overflow-y-auto bg-neutral-50">
       <div className="max-w-2xl mx-auto p-6 space-y-4">
+        <Link to={back.to} className="inline-flex items-center gap-1 text-sm font-semibold text-neutral-600 hover:text-neutral-900">
+          {back.label}
+        </Link>
         <div className="rounded-2xl bg-white border border-neutral-200 p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -202,15 +208,6 @@ export function GamesProfile() {
           </div>
         ) : null}
 
-        <div className="pt-1">
-          <button
-            type="button"
-            onClick={goBack}
-            className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-          >
-            {t('Back', '뒤로')}
-          </button>
-        </div>
       </div>
     </div>
   );

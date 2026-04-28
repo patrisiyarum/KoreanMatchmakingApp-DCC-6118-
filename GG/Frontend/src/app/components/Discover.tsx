@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, X, Sparkles, Loader2 } from 'lucide-react';
+import { Heart, X, Sparkles, Loader2, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { User } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { fetchDiscoverUsers } from '@/api/discoverApi';
 import { fetchUserInterestNames } from '@/api/matchmakingProfileApi';
 import { sendFriendRequest } from '@/api/friendsApi';
-import { publicAssetUrl } from '../utils/profileImage';
+import { UserAvatar } from './UserAvatar';
 
 export function Discover() {
   const { t, language } = useLanguage();
@@ -135,10 +135,10 @@ export function Discover() {
           </p>
           <div className="pt-1">
             <Link
-              to="/profile"
+              to="/edit-profile"
               className="inline-flex items-center justify-center rounded-xl bg-violet-600 text-white px-6 py-3 text-sm font-semibold hover:bg-violet-700 shadow-md"
             >
-              {t('Create profile', '프로필 만들기')}
+              {t('Complete profile', '프로필 완성하기')}
             </Link>
           </div>
         </div>
@@ -180,8 +180,6 @@ export function Discover() {
     );
   }
 
-  const photoSrc = publicAssetUrl(currentPartner.profileImage);
-
   const sharedInterests = currentPartner.interests.filter((interest) => myInterests.has(interest));
 
   return (
@@ -209,17 +207,14 @@ export function Discover() {
           <div className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-lg">
             <div className="bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 p-10 sm:p-12 text-center">
               <div className="mb-4 flex justify-center">
-                {photoSrc ? (
-                  <img
-                    src={photoSrc}
-                    alt=""
-                    className="w-24 h-24 rounded-full object-cover border-4 border-white/40 shadow-md"
-                  />
-                ) : (
-                  <div className="text-6xl" aria-hidden>
-                    {currentPartner.avatar}
-                  </div>
-                )}
+                <UserAvatar
+                  seed={currentPartner.id}
+                  name={currentPartner.name}
+                  profileImage={currentPartner.profileImage}
+                  nativeLanguage={currentPartner.nativeLanguage}
+                  size="2xl"
+                  className="border-4 border-white/40 shadow-md"
+                />
               </div>
               <h3 className="text-2xl font-bold text-white mb-1">{currentPartner.name}</h3>
               <p className="text-white/85 text-sm font-medium mb-1">
@@ -309,6 +304,21 @@ export function Discover() {
       </AnimatePresence>
 
       <div className="flex items-center gap-6 mt-8">
+        <motion.button
+          type="button"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => {
+            if (currentIndex > 0) setCurrentIndex((i) => i - 1);
+          }}
+          disabled={currentIndex === 0 || sendingRequest}
+          aria-label={t('Undo last swipe', '되돌리기')}
+          title={t('Undo last swipe', '되돌리기')}
+          className="w-12 h-12 rounded-full bg-white border-2 border-neutral-300 flex items-center justify-center shadow-md hover:border-amber-400 transition-colors disabled:opacity-40"
+        >
+          <RotateCcw className="w-5 h-5 text-amber-600" />
+        </motion.button>
+
         <motion.button
           type="button"
           whileHover={{ scale: 1.1 }}

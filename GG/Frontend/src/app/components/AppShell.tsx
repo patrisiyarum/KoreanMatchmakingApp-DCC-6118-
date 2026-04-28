@@ -17,6 +17,7 @@ import { useAIAssistant } from '../context/AIAssistantContext';
 import { useAuth } from '../context/AuthContext';
 import { AIAssistant } from './AIAssistant';
 import { Translator } from './Translator';
+import { IncomingCallNotifier } from './IncomingCallNotifier';
 import { getFriendRequests } from '@/api/friendsApi';
 import { getChatsForUser, getMessages } from '@/api/chatApi';
 import { getReceivedPostcards } from '@/api/postcardApi';
@@ -46,12 +47,23 @@ export function AppShell() {
     }
   }, [userId]);
 
-  const getScheduleSeenAt = useCallback((): string | null => {
-    if (!userId) return null;
+  const getSeenIdSet = useCallback((key: string): Set<string> => {
+    if (!userId) return new Set();
     try {
-      return window.localStorage.getItem(`scheduleSeenAt:${userId}`);
+      const raw = window.localStorage.getItem(`${key}:${userId}`);
+      const arr = raw ? (JSON.parse(raw) as string[]) : [];
+      return new Set(Array.isArray(arr) ? arr.map(String) : []);
     } catch {
-      return null;
+      return new Set();
+    }
+  }, [userId]);
+
+  const writeSeenIdSet = useCallback((key: string, ids: Iterable<string>) => {
+    if (!userId) return;
+    try {
+      window.localStorage.setItem(`${key}:${userId}`, JSON.stringify([...new Set([...ids].map(String))]));
+    } catch {
+      // ignore
     }
   }, [userId]);
 
@@ -73,6 +85,8 @@ export function AppShell() {
       ]);
 
       const seenMap = getSeenMap();
+      const seenMeetingIds = getSeenIdSet('seenMeetingIds');
+      const seenGamesIds = getSeenIdSet('seenGamesIds');
       const unreadByChat = await Promise.all(
         chats.map(async (chat) => {
           const rows = await getMessages(Number(chat.id));
@@ -92,21 +106,22 @@ export function AppShell() {
 
       const unreadChats = unreadByChat.reduce((sum, value) => sum + value, 0);
       const pendingIncomingRequests = reqs.incoming.filter((r) => r.status === 'pending').length;
-      const scheduleSeenAt = getScheduleSeenAt();
-      const unseenMeetings = meetings.filter((meeting) => {
-        if (!scheduleSeenAt) return true;
-        const createdAt = meeting.createdAt ? new Date(meeting.createdAt).getTime() : 0;
-        return createdAt > new Date(scheduleSeenAt).getTime();
-      }).length;
+      const unseenMeetings = meetings.filter((m) => !seenMeetingIds.has(String(m.id))).length;
+      const newTeamInvites = teamInvites.filter((i) => !seenGamesIds.has(`invite:${i.id}`)).length;
       const challengeTurnsCount = challengeRows.filter((c) => {
         const isChallenger = Number(c.challengerId) === Number(userId);
-        if (c.status === 'pending') return !isChallenger;
-        if (c.status === 'accepted' || c.status === 'in_progress') {
-          return isChallenger ? c.challengerScore == null : c.challengedScore == null;
-        }
-        return false;
+        const myTurn =
+          c.status === 'pending'
+            ? !isChallenger
+            : c.status === 'accepted' || c.status === 'in_progress'
+              ? isChallenger
+                ? c.challengerScore == null
+                : c.challengedScore == null
+              : false;
+        if (!myTurn) return false;
+        return !seenGamesIds.has(`challenge:${c.id}`);
       }).length;
-      const gameInvitesCount = teamInvites.length + challengeTurnsCount;
+      const gameInvitesCount = newTeamInvites + challengeTurnsCount;
 
       const unreadPostcards = receivedPostcards.filter((p) => !p.readAt).length;
       setPartnersNotifCount(unreadChats + pendingIncomingRequests + unreadPostcards);
@@ -115,7 +130,7 @@ export function AppShell() {
     } catch {
       // Keep nav usable even when notification fetch fails.
     }
-  }, [getScheduleSeenAt, getSeenMap, userId]);
+  }, [getSeenIdSet, getSeenMap, userId]);
 
   useEffect(() => {
     void loadNotifications();
@@ -128,36 +143,77 @@ export function AppShell() {
   useEffect(() => {
     if (!userId) return;
     if (location.pathname !== '/schedule') return;
-    try {
-      window.localStorage.setItem(`scheduleSeenAt:${userId}`, new Date().toISOString());
-    } catch {
-      // Ignore localStorage failures.
-    }
-    setScheduleNotifCount(0);
-  }, [location.pathname, userId]);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const meetings = await getMeetingsForUserApi(userId);
+        if (cancelled) return;
+        writeSeenIdSet('seenMeetingIds', meetings.map((m) => String(m.id)));
+        setScheduleNotifCount(0);
+      } catch {
+        setScheduleNotifCount(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, userId, writeSeenIdSet]);
 
   useEffect(() => {
     if (!userId) return;
-    if (!(location.pathname === '/partners' || location.pathname.startsWith('/chat'))) return;
+    if (!location.pathname.startsWith('/games')) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [invites, challenges] = await Promise.all([
+          getPendingTeamInvites(userId),
+          getChallengesForUser(userId),
+        ]);
+        if (cancelled) return;
+        const ids = [
+          ...invites.map((i) => `invite:${i.id}`),
+          ...challenges.map((c) => `challenge:${c.id}`),
+        ];
+        writeSeenIdSet('seenGamesIds', ids);
+        setGamesNotifCount(0);
+      } catch {
+        setGamesNotifCount(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, userId, writeSeenIdSet]);
+
+  useEffect(() => {
+    if (!userId) return;
+    // Only mark a single chat as seen when the user actually opens it.
+    // Visiting the friends list shouldn't zero out unread badges for unopened chats.
+    if (!location.pathname.startsWith('/chat/')) return;
+    const partnerId = location.pathname.split('/chat/')[1]?.split('/')[0];
+    if (!partnerId) return;
     let cancelled = false;
     (async () => {
       try {
         const chats = await getChatsForUser(userId);
+        const chat = chats.find((c) => {
+          const sender = String(c.senderId);
+          const receiver = String(c.receiverId);
+          return (
+            (sender === String(userId) && receiver === partnerId) ||
+            (sender === partnerId && receiver === String(userId))
+          );
+        });
+        if (!chat) return;
+        const rows = await getMessages(Number(chat.id));
+        const latest = rows
+          .slice()
+          .sort(
+            (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+          )[0];
         const raw = window.localStorage.getItem(`chatSeenAt:${userId}`);
         const seenMap = raw ? (JSON.parse(raw) as Record<string, string>) : {};
-        await Promise.all(
-          chats.map(async (chat) => {
-            const rows = await getMessages(Number(chat.id));
-            const latest = rows
-              .slice()
-              .sort(
-                (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-              )[0];
-            if (latest) {
-              seenMap[String(chat.id)] = latest.createdAt || new Date().toISOString();
-            }
-          })
-        );
+        seenMap[String(chat.id)] = latest?.createdAt || new Date().toISOString();
         if (!cancelled) {
           window.localStorage.setItem(`chatSeenAt:${userId}`, JSON.stringify(seenMap));
           void loadNotifications();
@@ -174,9 +230,9 @@ export function AppShell() {
   const navItems = [
     { path: '/home', icon: Home, label: t('Home', '홈'), notifCount: 0 },
     { path: '/discover', icon: Search, label: t('Discover', '발견'), notifCount: 0 },
-    { path: '/partners', icon: MessageSquare, label: t('Partners', '파트너'), notifCount: partnersNotifCount },
-    { path: '/schedule', icon: Calendar, label: t('Calls & meetings', '통화 · 미팅'), notifCount: scheduleNotifCount },
-    { path: '/games', icon: Gamepad2, label: t('Games', '게임'), notifCount: gamesNotifCount },
+    { path: '/partners', icon: MessageSquare, label: t('Friends', '친구'), notifCount: partnersNotifCount },
+    { path: '/schedule', icon: Calendar, label: t('Calls & meetings', '통화 · 미팅'), notifCount: location.pathname === '/schedule' ? 0 : scheduleNotifCount },
+    { path: '/games', icon: Gamepad2, label: t('Games', '게임'), notifCount: location.pathname.startsWith('/games') ? 0 : gamesNotifCount },
   ];
 
   return (
@@ -284,6 +340,7 @@ export function AppShell() {
 
       <AIAssistant />
       <Translator />
+      <IncomingCallNotifier />
       {showLogoutModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"

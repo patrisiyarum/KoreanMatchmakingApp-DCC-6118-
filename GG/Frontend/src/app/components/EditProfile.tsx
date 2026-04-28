@@ -150,11 +150,11 @@ export function EditProfile() {
   const [communicationStyle, setCommunicationStyle] = useState('');
   const [commitmentLevel, setCommitmentLevel] = useState(3);
   const [age, setAge] = useState(22);
-  const [gender, setGender] = useState('Other');
-  const [profession, setProfession] = useState('Other');
-  const [mbti, setMbti] = useState('INTJ');
-  const [zodiac, setZodiac] = useState('Aries');
-  const [defaultTimeZone, setDefaultTimeZone] = useState('UTC');
+  const [gender, setGender] = useState('');
+  const [profession, setProfession] = useState('');
+  const [mbti, setMbti] = useState('');
+  const [zodiac, setZodiac] = useState('');
+  const [defaultTimeZone, setDefaultTimeZone] = useState('');
   const [visibility, setVisibility] = useState('Show');
   const [interests, setInterests] = useState<string[]>([]);
 
@@ -225,11 +225,11 @@ export function EditProfile() {
         setCommunicationStyle(profile.communication_style || options?.communicationStyles[0] || '');
         setCommitmentLevel(profile.commitment_level ?? options?.commitmentLevel.default ?? 3);
         setAge(profile.age ?? 22);
-        setGender(profile.gender || 'Other');
-        setProfession(profile.profession || 'Other');
-        setMbti(profile.mbti || 'INTJ');
-        setZodiac(profile.zodiac || 'Aries');
-        setDefaultTimeZone(profile.default_time_zone || 'UTC');
+        setGender(profile.gender || '');
+        setProfession(profile.profession || '');
+        setMbti(profile.mbti || '');
+        setZodiac(profile.zodiac || '');
+        setDefaultTimeZone(profile.default_time_zone || '');
         setVisibility(profile.visibility || 'Show');
       } else {
         setHasProfile(false);
@@ -511,6 +511,7 @@ export function EditProfile() {
                 onChange={(e) => setGender(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
+                <option value="" disabled>{t('Select gender', '성별 선택')}</option>
                 {GenderOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
@@ -525,6 +526,7 @@ export function EditProfile() {
                 onChange={(e) => setProfession(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
+                <option value="" disabled>{t('Select profession', '직업 선택')}</option>
                 {ProfessionOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
@@ -541,6 +543,7 @@ export function EditProfile() {
                 onChange={(e) => setMbti(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
+                <option value="" disabled>{t('Select MBTI', 'MBTI 선택')}</option>
                 {MBTIOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
@@ -555,6 +558,7 @@ export function EditProfile() {
                 onChange={(e) => setZodiac(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
+                <option value="" disabled>{t('Select zodiac', '별자리 선택')}</option>
                 {ZodiacOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
@@ -572,6 +576,7 @@ export function EditProfile() {
               onChange={(e) => setDefaultTimeZone(e.target.value)}
               className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
+              <option value="" disabled>{t('Select time zone', '시간대 선택')}</option>
               {TimeZoneOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
@@ -604,6 +609,7 @@ export function EditProfile() {
               onChange={(e) => setLearningGoal(e.target.value)}
               className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
+              <option value="" disabled>{t('Select learning goal', '학습 목표 선택')}</option>
               {LearningGoalOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
@@ -620,6 +626,7 @@ export function EditProfile() {
               onChange={(e) => setCommunicationStyle(e.target.value)}
               className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
+              <option value="" disabled>{t('Select communication style', '소통 방식 선택')}</option>
               {CommunicationStyleOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
@@ -647,34 +654,6 @@ export function EditProfile() {
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* ── Game Stats ── */}
-          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-neutral-900">
-                {t('Game stats', '게임 통계')}
-              </p>
-              <Link
-                to={userId ? `/games/profile/${userId}` : '/games/profile'}
-                className="text-xs font-semibold text-blue-700 hover:text-blue-800"
-              >
-                {t('Games profile', '게임 프로필')}
-              </Link>
-            </div>
-            {gameStats ? (
-              <div className="grid grid-cols-2 gap-2 text-xs text-neutral-700">
-                <div>{t('Games played', '플레이한 게임')}: <span className="font-semibold">{gameStats.gamesPlayed}</span></div>
-                <div>{t('Perfect rounds', '퍼펙트 라운드')}: <span className="font-semibold">{gameStats.perfectRounds}</span></div>
-                <div>{t('Term matching', '단어 매칭')}: <span className="font-semibold">{gameStats.termMatching}</span></div>
-                <div>{t('Grammar quiz', '문법 퀴즈')}: <span className="font-semibold">{gameStats.grammarQuiz}</span></div>
-                <div>{t('Pronunciation', '발음')}: <span className="font-semibold">{gameStats.pronunciation}</span></div>
-              </div>
-            ) : (
-              <p className="text-xs text-neutral-600">
-                {t('No game stats yet.', '아직 게임 통계가 없습니다.')}
-              </p>
-            )}
           </div>
 
           {/* ── Interests ── */}

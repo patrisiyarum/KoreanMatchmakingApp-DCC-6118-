@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Loader2 } from 'lucide-react';
+import { ArrowRight, BookOpen, Gamepad2, Loader2, Mic, Target } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { publicAssetUrl } from '../utils/profileImage';
+import { UserAvatar } from './UserAvatar';
 import {
   fetchUserAccount,
   fetchUserProfilePayload,
@@ -39,7 +39,6 @@ export function ViewProfile() {
 
   const [dataLoaded, setDataLoaded] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [profileImgError, setProfileImgError] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Account
@@ -132,11 +131,7 @@ export function ViewProfile() {
     loadAll();
   }, [userId]);
 
-  const getInitial = () => (firstName ? firstName.charAt(0).toUpperCase() : '?');
-
   const handleLogout = () => navigate('/login');
-
-  const photoSrc = publicAssetUrl(profileImage);
 
   // ── Loading state ──────────────────────────────────────────────────────────
 
@@ -157,18 +152,14 @@ export function ViewProfile() {
 
           {/* ── Avatar + Name ── */}
           <div className="flex flex-col items-center text-center gap-2">
-            <span className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-neutral-200 bg-neutral-100 shadow-sm">
-              {photoSrc && !profileImgError ? (
-                <img
-                  src={photoSrc}
-                  alt="Profile"
-                  className="h-full w-full object-cover"
-                  onError={() => setProfileImgError(true)}
-                />
-              ) : (
-                <span className="text-3xl font-semibold text-neutral-500">{getInitial()}</span>
-              )}
-            </span>
+            <UserAvatar
+              seed={userId ?? `${firstName}-${lastName}`}
+              name={`${firstName} ${lastName}`.trim() || 'You'}
+              profileImage={profileImage}
+              nativeLanguage={nativeLanguage}
+              size="2xl"
+              className="border-2 border-neutral-200 shadow-sm"
+            />
             <div>
               <h1 className="text-lg font-semibold text-neutral-900">
                 {firstName} {lastName}
@@ -253,29 +244,54 @@ export function ViewProfile() {
           </div>
 
           {/* ── Game Stats ── */}
-          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-neutral-900">{t('Game stats', '게임 통계')}</p>
-              <button
-                type="button"
-                onClick={() => navigate(userId ? `/games/profile/${userId}` : '/games/profile')}
-                className="text-sm font-semibold text-blue-700 hover:text-blue-800"
-              >
+          <button
+            type="button"
+            onClick={() => navigate(userId ? `/games/profile/${userId}?from=profile` : '/games/profile?from=profile')}
+            className="block w-full text-left rounded-xl border border-stone-200 bg-stone-50 p-3 hover:border-indigo-300 hover:bg-stone-100 transition-colors"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-bold text-neutral-900">
                 {t('Games profile', '게임 프로필')}
-              </button>
+              </p>
+              <ArrowRight className="h-4 w-4 text-indigo-700" />
             </div>
             {gameStats ? (
-              <div className="grid grid-cols-2 gap-2 text-xs text-neutral-700">
-                <div>{t('Games played', '플레이한 게임')}: <span className="font-semibold">{gameStats.gamesPlayed}</span></div>
-                <div>{t('Perfect rounds', '퍼펙트 라운드')}: <span className="font-semibold">{gameStats.perfectRounds}</span></div>
-                <div>{t('Term matching', '단어 매칭')}: <span className="font-semibold">{gameStats.termMatching}</span></div>
-                <div>{t('Grammar quiz', '문법 퀴즈')}: <span className="font-semibold">{gameStats.grammarQuiz}</span></div>
-                <div>{t('Pronunciation', '발음')}: <span className="font-semibold">{gameStats.pronunciation}</span></div>
+              <div className="grid grid-cols-4 gap-1.5">
+                <div className="flex flex-col justify-between rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                  <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
+                    <Gamepad2 className="h-3 w-3" />
+                    {t('Perfect Games', '퍼펙트 게임')}
+                  </div>
+                  <div className="mt-0.5 text-sm font-bold text-neutral-900">
+                    {gameStats.perfectRounds}
+                  </div>
+                </div>
+                <div className="flex flex-col justify-between rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                  <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
+                    <BookOpen className="h-3 w-3" />
+                    {t('Terms', '단어')}
+                  </div>
+                  <div className="mt-0.5 text-sm font-bold text-neutral-900">{gameStats.termMatching}</div>
+                </div>
+                <div className="flex flex-col justify-between rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                  <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
+                    <Target className="h-3 w-3" />
+                    {t('Grammar', '문법')}
+                  </div>
+                  <div className="mt-0.5 text-sm font-bold text-neutral-900">{gameStats.grammarQuiz}</div>
+                </div>
+                <div className="flex flex-col justify-between rounded-lg bg-white p-2 ring-1 ring-stone-200">
+                  <div className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
+                    <Mic className="h-3 w-3" />
+                    {t('Pron.', '발음')}
+                  </div>
+                  <div className="mt-0.5 text-sm font-bold text-neutral-900">{gameStats.pronunciation}</div>
+                </div>
               </div>
             ) : (
               <p className="text-xs text-neutral-600">{t('No game stats yet.', '아직 게임 통계가 없습니다.')}</p>
             )}
-          </div>
+          </button>
 
           {/* ── Interests ── */}
           {interests.length > 0 && (

@@ -343,4 +343,24 @@ router.post('/:id/submit-score', async (req, res) => {
   }
 });
 
+// DELETE /api/challenges/:id — body { userId }
+// Either party can remove a challenge (hard delete).
+router.delete('/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const userId = Number(req.body?.userId);
+    if (!id || !userId) return res.status(400).json({ error: 'id and userId required' });
+    const challenge = await db.Challenge.findByPk(id);
+    if (!challenge) return res.status(404).json({ error: 'Challenge not found' });
+    if (challenge.challengerId !== userId && challenge.challengedId !== userId) {
+      return res.status(403).json({ error: 'Not your challenge' });
+    }
+    await challenge.destroy();
+    return res.status(200).json({ deleted: true });
+  } catch (err) {
+    console.error('Error deleting challenge:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

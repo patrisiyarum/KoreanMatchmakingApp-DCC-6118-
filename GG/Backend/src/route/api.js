@@ -12,6 +12,7 @@ import messageController from "../controller/messageController.js";
 import dashboardService from "../Service/dashboardService.js";
 import * as assistantController from "../controller/assistantController.js";
 import * as aiAssistantController from "../controller/aiAssistantController.js";
+import { translate } from "../controller/translateController.js";
 import recordingController from "../controller/recordingController.js"; // Add this
 import { getMeetingsForUser } from "../controller/meetingController.js";
 import fs from "fs";
@@ -25,6 +26,7 @@ import uploadRoutes from './uploadRoutes.js';
 import userController from '../controller/userController.js';
 import { submitFeedback } from '../controller/feedbackController.js';
 import postcardController from '../controller/postcardController.js';
+import callInviteRoutes from './callInviteRoutes.js';
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -105,6 +107,7 @@ const initAPIRoute = (app) => {
     router.post('/addTrueFriend', APIController.addTrueFriend);
     router.delete('/removeTrueFriend', APIController.removeTrueFriend);
     router.get('/friends/:userId', APIController.getTrueFriendsList);
+    router.get('/friends-leaderboard/:userId', APIController.getFriendsLeaderboard);
     router.get('/friendRequests/:userId', APIController.getFriendRequests);
     router.put('/friendRequests/:requestId/accept', APIController.acceptFriendRequest);
     router.put('/friendRequests/:requestId/reject', APIController.rejectFriendRequest);
@@ -199,6 +202,7 @@ const initAPIRoute = (app) => {
     router.post('/ai-assistant/parse/:chatId', assistantController.parseConversation);
 
     // AI routes (chat, history, parse — unified under /ai-assistant)
+    router.post('/translate', translate);
     router.post('/ai-assistant/chat', memoryUpload.single('audioFile'), aiAssistantController.chatWithAssistant);
     router.post('/ai-assistant/save', aiAssistantController.saveConversation);
     router.post('/ai-assistant/load', aiAssistantController.loadConversationFromDB);
@@ -217,6 +221,7 @@ const initAPIRoute = (app) => {
     app.use('/api/challenges', challengeRoutes);
     app.use('/api/upload', uploadRoutes);
 
+    app.use('/api/v1/call-invite', callInviteRoutes);
     return app.use('/api/v1/', router)
 
 }

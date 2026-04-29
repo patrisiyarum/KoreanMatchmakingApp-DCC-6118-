@@ -46,7 +46,7 @@ import {
   submitChallengeScoreApi,
   type ChallengeRow,
 } from '@/api/challengesApi';
-import { fetchUserGameStats, submitGameResult, type GameType, type SubmitGameResultResponse } from '@/api/profileApi';
+import { fetchUserGameStats, fetchUserProfilePayload, submitGameResult, type GameType, type SubmitGameResultResponse } from '@/api/profileApi';
 import { getUserBadges, type UserBadgeRow } from '@/api/badgesApi';
 
 interface QuizQuestion {
@@ -142,11 +142,73 @@ const pronunciationDrillQuestions: QuizQuestion[] = [
   { prompt: 'When unsure about 받침, you should…', answer: 'Check a native sample and repeat', options: ['Ignore it', 'Check a native sample and repeat', 'Replace with English sound', 'Drop final consonants always'] },
 ];
 
-const QUESTION_SETS: Record<'vocab' | 'grammar' | 'pronunciation', QuizQuestion[]> = {
-  vocab: termMatchingQuestions,
-  grammar: grammarQuizQuestions,
-  pronunciation: pronunciationDrillQuestions,
+const termMatchingQuestionsEn: QuizQuestion[] = [
+  { prompt: 'Hello', answer: '안녕하세요', options: ['안녕하세요', '안녕히 가세요', '감사합니다', '미안합니다'] },
+  { prompt: 'Thank you', answer: '감사합니다', options: ['미안합니다', '감사합니다', '천만에요', '실례합니다'] },
+  { prompt: 'I love you', answer: '사랑해요', options: ['사랑해요', '좋아해요', '보고 싶어요', '필요해요'] },
+  { prompt: "I'm hungry", answer: '배고파요', options: ['피곤해요', '배고파요', '목말라요', '추워요'] },
+  { prompt: 'Water', answer: '물', options: ['물', '불', '땅', '공기'] },
+  { prompt: 'School', answer: '학교', options: ['학교', '병원', '역', '도서관'] },
+  { prompt: 'Friend', answer: '친구', options: ['선생님', '친구', '가족', '이웃'] },
+  { prompt: 'Today', answer: '오늘', options: ['어제', '내일', '오늘', '아침'] },
+  { prompt: 'Tomorrow', answer: '내일', options: ['내일', '지금', '오늘 밤', '주'] },
+  { prompt: 'Book', answer: '책', options: ['펜', '책', '공책', '사전'] },
+  { prompt: 'Coffee', answer: '커피', options: ['차', '커피', '물', '주스'] },
+  { prompt: 'Cat', answer: '고양이', options: ['개', '고양이', '새', '토끼'] },
+  { prompt: 'Quickly', answer: '빨리', options: ['천천히', '빨리', '조용히', '밝게'] },
+  { prompt: 'I am happy', answer: '행복해요', options: ['슬퍼요', '행복해요', '피곤해요', '아파요'] },
+  { prompt: 'Left', answer: '왼쪽', options: ['오른쪽', '가운데', '왼쪽', '위'] },
+  { prompt: 'Right', answer: '오른쪽', options: ['왼쪽', '오른쪽', '앞', '뒤'] },
+];
+
+const grammarQuizQuestionsEn: QuizQuestion[] = [
+  { prompt: 'She ___ to school every day.', answer: 'goes', options: ['go', 'goes', 'going', 'gone'], hint: 'Third person singular present.' },
+  { prompt: 'I ___ a book yesterday.', answer: 'read', options: ['read', 'readed', 'reading', 'reads'] },
+  { prompt: 'They have ___ in this town for ten years.', answer: 'lived', options: ['lived', 'live', 'living', 'lives'] },
+  { prompt: 'If it rains tomorrow, we ___ stay home.', answer: 'will', options: ['will', 'would', 'are', 'have'] },
+  { prompt: 'There ___ many people at the party.', answer: 'were', options: ['was', 'were', 'is', 'be'] },
+  { prompt: 'She is taller ___ her brother.', answer: 'than', options: ['then', 'than', 'as', 'that'] },
+  { prompt: 'I look forward ___ seeing you.', answer: 'to', options: ['for', 'to', 'at', 'in'] },
+  { prompt: 'He ___ never been to Korea.', answer: 'has', options: ['have', 'has', 'is', 'was'] },
+  { prompt: 'The book ___ I read was great.', answer: 'that', options: ['who', 'which', 'that', 'whose'] },
+  { prompt: 'Could you ___ me a favor?', answer: 'do', options: ['make', 'do', 'have', 'take'] },
+  { prompt: 'I am interested ___ learning English.', answer: 'in', options: ['on', 'at', 'in', 'for'] },
+  { prompt: 'She suggested ___ a movie tonight.', answer: 'watching', options: ['to watch', 'watching', 'watch', 'watched'] },
+];
+
+const pronunciationDrillQuestionsEn: QuizQuestion[] = [
+  { prompt: 'How is "th" in "think" pronounced?', answer: 'Voiceless dental fricative', options: ['Voiced dental fricative', 'Voiceless dental fricative', 'Like t', 'Like d'] },
+  { prompt: 'The "ed" in "walked" sounds like…', answer: 't', options: ['ed', 't', 'd', 'id'] },
+  { prompt: 'Stress in "photograph" falls on…', answer: 'PHO', options: ['PHO', 'to', 'graph', 'evenly distributed'] },
+  { prompt: 'Best practice for English "r" vs Korean "ㄹ"?', answer: 'Curl tongue back, no tap', options: ['Tap once like ㄹ', 'Curl tongue back, no tap', 'Drop the r', 'Roll it'] },
+  { prompt: 'Which vowel pair is hardest for Korean speakers?', answer: 'i / ɪ (sheep/ship)', options: ['a / e', 'i / ɪ (sheep/ship)', 'o / u', 'a / o'] },
+  { prompt: 'Final consonants in English are usually…', answer: 'Released, not dropped', options: ['Dropped', 'Released, not dropped', 'Always silent', 'Doubled'] },
+  { prompt: 'How is "v" in "very" pronounced?', answer: 'Voiced lip-teeth fricative', options: ['Like b', 'Voiced lip-teeth fricative', 'Like w', 'Silent'] },
+  { prompt: 'Best way to learn English intonation?', answer: 'Shadow native audio', options: ['Read silently', 'Shadow native audio', 'Avoid listening', 'Speak slower'] },
+  { prompt: 'In US English, "schedule" begins with…', answer: 'sk', options: ['sh', 'sk', 'ch', 's'] },
+  { prompt: 'The plural "s" in "dogs" sounds like…', answer: 'z', options: ['s', 'z', 'sh', 'silent'] },
+  { prompt: 'Most useful feedback for pronunciation?', answer: 'Record and compare to native', options: ['Read in your head', 'Record and compare to native', 'Avoid listening', 'Speak once a week'] },
+  { prompt: 'For clearer English vowels, focus on…', answer: 'Length and mouth shape', options: ['Speaking louder', 'Length and mouth shape', 'Speaking faster', 'Adding Korean stress'] },
+];
+
+type QuizTarget = 'Korean' | 'English';
+
+const QUESTION_SETS_BY_TARGET: Record<QuizTarget, Record<'vocab' | 'grammar' | 'pronunciation', QuizQuestion[]>> = {
+  Korean: {
+    vocab: termMatchingQuestions,
+    grammar: grammarQuizQuestions,
+    pronunciation: pronunciationDrillQuestions,
+  },
+  English: {
+    vocab: termMatchingQuestionsEn,
+    grammar: grammarQuizQuestionsEn,
+    pronunciation: pronunciationDrillQuestionsEn,
+  },
 };
+
+function resolveQuizTarget(raw: string | null | undefined): QuizTarget {
+  return raw && raw.toLowerCase().includes('english') ? 'English' : 'Korean';
+}
 
 const QUIZ_ROUND_SIZE = 5;
 
@@ -159,8 +221,8 @@ function shuffled<T>(arr: T[]): T[] {
   return next;
 }
 
-function makeRoundQuestions(type: 'vocab' | 'grammar' | 'pronunciation') {
-  const all = QUESTION_SETS[type];
+function makeRoundQuestions(type: 'vocab' | 'grammar' | 'pronunciation', target: QuizTarget = 'Korean') {
+  const all = QUESTION_SETS_BY_TARGET[target][type];
   return shuffled(all).slice(0, Math.min(QUIZ_ROUND_SIZE, all.length));
 }
 
@@ -172,6 +234,7 @@ export function Games() {
   const [view, setView] = useState<'menu' | 'solo' | 'challenge' | 'teams'>('menu');
   const [gameMode, setGameMode] = useState<'menu' | 'vocab' | 'results'>('menu');
   const [soloGameType, setSoloGameType] = useState<'vocab' | 'grammar' | 'pronunciation'>('vocab');
+  const [quizTarget, setQuizTarget] = useState<QuizTarget>('Korean');
   const [roundQuestions, setRoundQuestions] = useState<QuizQuestion[]>(() => makeRoundQuestions('vocab'));
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [score, setScore] = useState(0);
@@ -285,6 +348,19 @@ export function Games() {
     } finally {
       setPlayerStatsLoading(false);
     }
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    void (async () => {
+      const profile = await fetchUserProfilePayload(userId);
+      if (cancelled) return;
+      setQuizTarget(resolveQuizTarget(profile?.target_language));
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [userId]);
 
   useEffect(() => {
@@ -495,12 +571,12 @@ export function Games() {
     void loadTeamInvites();
   }, [loadChallenges, loadTeamInvites, userId, view]);
 
-  const activeQuestions = roundQuestions.length ? roundQuestions : makeRoundQuestions(soloGameType);
+  const activeQuestions = roundQuestions.length ? roundQuestions : makeRoundQuestions(soloGameType, quizTarget);
   const question = activeQuestions[currentQuestion] || activeQuestions[0];
 
   const startSoloGame = (type: 'vocab' | 'grammar' | 'pronunciation') => {
     setSoloGameType(type);
-    setRoundQuestions(makeRoundQuestions(type));
+    setRoundQuestions(makeRoundQuestions(type, quizTarget));
     setCurrentQuestion(0);
     setScore(0);
     setSelectedAnswer(null);

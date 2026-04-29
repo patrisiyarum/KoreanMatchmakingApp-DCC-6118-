@@ -11,6 +11,7 @@ LangMatch pairs English and Korean speakers for language practice. Users build a
 |---|---|
 | [Install_Guide.md](Install_Guide.md) | Prerequisites, dependencies, build, install, run, and troubleshooting for a fresh local setup. |
 | [DCC-6118_Detailed Design.pdf](DCC-6118_Detailed%20Design.pdf) | Detailed architecture and design document. |
+| [DATABASE_OVERVIEW.md](DATABASE_OVERVIEW.md) | Schema overview for the `languageexchangematchmaker` MySQL database. |
 
 ## Repository Layout
 

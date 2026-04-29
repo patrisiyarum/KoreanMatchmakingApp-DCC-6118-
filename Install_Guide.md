@@ -21,7 +21,7 @@ This guide walks a new operator through installing, building, and running LangMa
 | Service | Used for | How to get a key |
 |---|---|---|
 | Google Gemini | AI Chat Assistant + in-site translator | https://aistudio.google.com/apikey (free tier available) |
-| Zoom | Video calls (paste an invite link in the app) | https://zoom.us/start |
+| Agora | In-app video calls (RTC SDK) | https://console.agora.io/ — create a project to get an App ID |
 
 ## 2. Download
 
@@ -82,6 +82,8 @@ cp .env.example .env
 
 Open `.env` and set:
 * `GEMINI_API_KEY` — your Google AI Studio key (required for AI Chat + translator).
+* `AGORA_APP_ID` — your Agora project App ID (required for video calls).
+* *(Optional)* `AGORA_APP_CERTIFICATE` — required only if your Agora project enforces token-based authentication.
 * *(Optional)* `GEMINI_MODEL` — override the default `gemini-2.5-flash-lite`.
 * *(Optional)* `PORT` — backend port (defaults to `8080`).
 
@@ -131,10 +133,14 @@ Open http://localhost:5173 in your browser.
 2. Restart the backend after changing the key.
 Without a valid key the assistant returns "Sorry! There was a backend error."
 
-### Video Calls (Zoom)
-1. In Zoom, **create a meeting** and copy the invite link (e.g. `https://zoom.us/j/…`).
-2. In the app, go to **Calls** (`/Videocall`), paste the link, and continue. Zoom opens in a new tab.
-3. The in-app **Record mic** option captures only your microphone for transcripts — not the full Zoom audio mix.
+### Video Calls (Agora)
+1. Create a project at https://console.agora.io/ and copy the **App ID**. For token-secured channels also copy the **App Certificate**.
+2. In `GG/Backend/.env` set:
+   ```
+   AGORA_APP_ID=your_app_id
+   AGORA_APP_CERTIFICATE=your_app_certificate   # optional; required if your project enforces tokens
+   ```
+3. Restart the backend. Calls run inside the SPA via the Agora Web SDK (no external app or invite link required).
 
 ## 9. Troubleshooting
 

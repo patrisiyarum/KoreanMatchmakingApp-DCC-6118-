@@ -9,8 +9,8 @@
 * **Bidirectional quiz banks**: Quizzes auto-select the correct question set based on the user's `target_language`. Users learning Korean see Korean prompts; users learning English see English prompts. A "Learning: X" badge surfaces in the quiz UI to confirm which bank loaded.
 * **Enhanced profile customization**: Preferred learning style, profile image upload, interests list, commitment level, MBTI, zodiac, age, gender, profession, and time zone.
 * **Discover (matchmaking)**: Tinder-style one-at-a-time partner cards with friend-request / skip; cards now scaled down for better screen fit.
-* **Communication**: Friend video calls (Zoom integration), text messaging, and personalized postcards.
-* **AI Chat assistant**: Powered by Google Gemini with starter prompts, partner-recommendation suggestions, audio pronunciation feedback, and saved conversation history.
+* **Communication**: Friend video calls powered by the Agora SDK, text messaging, and personalized postcards.
+* **AI Chat assistant**: Powered by Google Gemini with starter prompts and partner-recommendation suggestions.
 * **In-site translator**: One-click toggle between English and Korean for most UI strings; standalone translator page powered by Gemini.
 * **Scheduler**: View overlapping availability with friends and schedule meetings normalized to time zones.
 
@@ -24,10 +24,13 @@
 ### Known Issues / Outstanding
 * Discover page UI can clip on uncommon screen resolutions.
 * Some text strings (notably in the AI Chat) are not picked up by the translation tool.
-* Users physically located in mainland China / behind certain firewalls have reported connectivity issues with the Plesk host.
+* Users physically located in Korea have reported connectivity issues reaching the Plesk-hosted site.
 * Free Google Gemini plan has daily rate limits; the API key is stored server-side in `GG/Backend/.env`.
-* Video calls require a manually created **Zoom** invite link (the app cannot create Zoom meetings without Zoom API credentials).
+* Video calls require an Agora project (`AGORA_APP_ID`, optionally `AGORA_APP_CERTIFICATE`) configured in `GG/Backend/.env`.
 * Comments cannot yet be submitted for a partner after a practice session.
+
+### Future Improvements (post-handoff)
+* **In-call AI assistant** (Dr. Kim's request): an AI tutor that lives inside the Agora video call and can answer questions, offer translations, and prompt practice activities in real time during a session.
 
 ---
 
@@ -36,12 +39,9 @@
 * Users can set zodiac sign, interests, available times, and default time zone at profile creation. Edit Profile preloads previously selected attributes.
 * Find Friends page supports filtering by zodiac, MBTI, interests, and availability.
 * Scheduler page shows friends' overlapping availabilities and supports creating/deleting meetings.
-* Pre-call AI consent: choose whether the AI may access the call transcript afterward.
 * Post-call rating system: rate practice partners; an aggregate average is exposed via User Ratings.
 * Recorded video calls produce a transcript accessible via the Transcripts page.
 * AI Chat Assistant suggests partners by compatibility (interests, age, gender, proficiency), summarizes session transcripts by ID, schedules meetings (time-zone normalized), and answers general language-learning questions.
-* Audio submissions to the AI assistant return qualitative + quantitative pronunciation feedback.
-* AI chat history is saved and resumable.
 
 ### Bug Fixes
 * Removed deprecated `friends_list` (local-storage based) in favor of the `FriendsModel` DB table.
@@ -51,7 +51,7 @@
 
 ### Outstanding Issues
 * Cannot submit comments for the other user after a practice session.
-* Video calls use Zoom invite links (manual creation required without Zoom API credentials).
+* Video calls relied on a manually pasted invite link at this version; Agora SDK integration arrived in 5.0.0.
 * Free Gemini plan has rate limits; API token was hardcoded at the time.
 
 ---

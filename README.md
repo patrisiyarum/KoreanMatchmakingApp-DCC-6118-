@@ -43,7 +43,7 @@ Then follow [Install_Guide.md](Install_Guide.md) for the full setup.
 - **Backend:** Node.js + Express, Sequelize ORM, MySQL
 - **Realtime:** Socket.io
 - **AI:** Google Gemini API (chat assistant + translator)
-- **Video:** Zoom invite links
+- **Video:** Agora SDK
 - **Hosting:** Plesk (GaTech), Phusion Passenger
 
 ## Support

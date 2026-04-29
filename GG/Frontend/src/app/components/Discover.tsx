@@ -202,32 +202,32 @@ export function Discover() {
           animate={{ scale: 1, opacity: 1, rotateY: 0 }}
           exit={{ scale: 0.9, opacity: 0, rotateY: 20 }}
           transition={{ duration: 0.3 }}
-          className="w-full max-w-md"
+          className="w-full max-w-sm"
         >
           <div className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-lg">
-            <div className="bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 p-10 sm:p-12 text-center">
-              <div className="mb-4 flex justify-center">
+            <div className="bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 p-5 sm:p-6 text-center">
+              <div className="mb-3 flex justify-center">
                 <UserAvatar
                   seed={currentPartner.id}
                   name={currentPartner.name}
                   profileImage={currentPartner.profileImage}
                   nativeLanguage={currentPartner.nativeLanguage}
-                  size="2xl"
+                  size="xl"
                   className="border-4 border-white/40 shadow-md"
                 />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">{currentPartner.name}</h3>
-              <p className="text-white/85 text-sm font-medium mb-1">
+              <h3 className="text-lg font-bold text-white mb-0.5">{currentPartner.name}</h3>
+              <p className="text-white/85 text-xs font-medium mb-0.5">
                 {t('Level', '레벨')}: {currentPartner.gameLevel ?? '—'}
               </p>
-              <div className="flex items-center justify-center gap-2 text-white/90 text-sm">
+              <div className="flex items-center justify-center gap-2 text-white/90 text-xs">
                 <span>{currentPartner.nativeLanguage}</span>
                 <span>↔</span>
                 <span>{currentPartner.learningLanguage}</span>
               </div>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-4 space-y-3">
               <div>
                 <div className="text-xs font-medium text-neutral-500 mb-1">LEVEL</div>
                 <div className="text-sm text-neutral-900">{currentPartner.level}</div>

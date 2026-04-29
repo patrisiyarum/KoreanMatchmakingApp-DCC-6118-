@@ -8,7 +8,7 @@
 * **Gamification**: Three language-learning games (term matching, grammar quiz, pronunciation drill) with profile XP/levels, badges, 1-on-1 challenge mode, and team battle mode.
 * **Bidirectional quiz banks**: Quizzes auto-select the correct question set based on the user's `target_language`. Users learning Korean see Korean prompts; users learning English see English prompts. A "Learning: X" badge surfaces in the quiz UI to confirm which bank loaded.
 * **Enhanced profile customization**: Preferred learning style, profile image upload, interests list, commitment level, MBTI, zodiac, age, gender, profession, and time zone.
-* **Discover (matchmaking)**: Tinder-style one-at-a-time partner cards with friend-request / skip; cards now scaled down for better screen fit.
+* **Discover (dating-app-style matchmaking)**: A new Tinder-inspired flow that surfaces one potential language partner at a time. A compatibility algorithm scores each candidate against the viewer's profile — weighting shared interests, learning goal, communication style, profession, gender preference, age proximity, and matching native/target language pair — so the highest-affinity partners appear first. Users send a friend request or skip, just like swiping right or left.
 * **Communication**: Friend video calls powered by the Agora SDK, text messaging, and personalized postcards.
 * **AI Chat assistant**: Powered by Google Gemini with starter prompts and partner-recommendation suggestions.
 * **In-site translator**: One-click toggle between English and Korean for most UI strings; standalone translator page powered by Gemini.

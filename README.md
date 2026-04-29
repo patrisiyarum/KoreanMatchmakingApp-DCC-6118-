@@ -12,7 +12,6 @@ LangMatch pairs English and Korean speakers for language practice. Users build a
 | [RELEASE_NOTES.md](RELEASE_NOTES.md) | Current version (5.0.0), features, bug fixes, and known issues — plus prior-release history. |
 | [Install_Guide.md](Install_Guide.md) | Prerequisites, dependencies, build, install, run, and troubleshooting for a fresh local setup. |
 | [DATABASE_OVERVIEW.md](DATABASE_OVERVIEW.md) | Schema overview for the `languageexchangematchmaker` MySQL database. |
-| [USER_STORIES_IMPLEMENTATION.md](USER_STORIES_IMPLEMENTATION.md) | Mapping of user stories to implementation status. |
 | [DCC-6118_Detailed Design.pdf](DCC-6118_Detailed%20Design.pdf) | Detailed architecture and design document. |
 
 ## Repository Layout

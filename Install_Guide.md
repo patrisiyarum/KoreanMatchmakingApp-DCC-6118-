@@ -1,90 +1,157 @@
-# Install Guide
-## PREREQUISITES 
-* A computer terminal to download and run the application.
-* Google Chrome to host the application.
+# Install Guide — LangMatch (DCC 6118)
 
-Requirements:
-* Git (https://git-scm.com/install/)
-* Node.js / Node Package Manager (npm) (https://nodejs.org/en)
-* MySQL (easiest to just install the "full" version) (https://dev.mysql.com/downloads/installer/)
-*** Visit "Tutorial Resources" section for additional resources on setting up required software.
+This guide walks a new operator through installing, building, and running LangMatch locally. The deployed instance is at https://languagematchmaker.modlangs.gatech.edu — these instructions are for self-hosting / development.
 
+## 1. Prerequisites
 
-## DEPENDENCIES 
-Open the project directory in your terminal under the GG folder.
+### Hardware
+* Any modern macOS, Linux, or Windows machine (~4 GB RAM minimum free).
+* ~2 GB free disk space (for `node_modules` of both Backend and Frontend).
 
-For Backend dependencies (terminal commands): 
+### Software
+| Tool | Version | Link |
+|---|---|---|
+| Git | latest | https://git-scm.com/downloads |
+| Node.js + npm | 18 LTS or newer (tested on 22) | https://nodejs.org/en |
+| MySQL Server | 8.x (use the "full" installer for the easiest setup) | https://dev.mysql.com/downloads/installer/ |
+| Python 3 | 3.9+ (only if you need on-device transcription via Whisper) | https://www.python.org/downloads/ |
+| Modern browser | Chrome / Edge / Firefox | — |
 
-    cd Backend
-    npm install
-    python install_whisper.py (for MacOS/Linux)
-    python install_whisper_windows.py (for Windows)
+### External accounts (optional, but several features require them)
+| Service | Used for | How to get a key |
+|---|---|---|
+| Google Gemini | AI Chat Assistant + in-site translator | https://aistudio.google.com/apikey (free tier available) |
+| Zoom | Video calls (paste an invite link in the app) | https://zoom.us/start |
 
-For Frontend dependecies (terminal commands): 
+## 2. Download
 
-    cd Frontend 
-    npm install --legacy-peer-deps
-    npm install translate --legacy-peer-deps
+```bash
+git clone https://github.com/patrisiyarum/KoreanMatchmakingApp-DCC-6118-.git
+cd KoreanMatchmakingApp-DCC-6118-/GG
+```
 
-To migrate the database:
+All commands below assume you are inside `KoreanMatchmakingApp-DCC-6118-/GG`.
 
-    cd Backend
-    npx sequelize-cli db:migrate
-*Note that you will need to remove your database's password and create a schema named languageexchangematchmaker in order to get the database working (or update 'null' values with your DB password under relevant files in Backend/src/config/ folder)* 
+## 3. Install Dependencies
 
-## DOWNLOAD
-Clone this repository locally.
+### Backend
+```bash
+cd Backend
+npm install
+# Optional — only if you want local Whisper transcription:
+python install_whisper.py            # macOS / Linux
+python install_whisper_windows.py    # Windows
+```
 
-## BUILD 
-No builds are necessary for this app.
+### Frontend
+```bash
+cd ../Frontend
+npm install --legacy-peer-deps
+```
 
-## INSTALLATION 
-No additional files need to be added.
+### Socket.io chat server
+```bash
+cd ../socket
+npm install
+```
 
-## RUNNING APPLICATION
-Backend
+## 4. Configure the Database
 
-    cd Backend 
-    npm start
+1. Start MySQL and connect as root.
+2. Create an empty schema named exactly `languageexchangematchmaker`:
+   ```sql
+   CREATE SCHEMA languageexchangematchmaker;
+   ```
+3. Either set your MySQL root password to empty (`SET PASSWORD FOR 'root'@'localhost' = '';`) **or** edit `GG/Backend/src/config/sequelize.config.cjs` and put your password where the value is `null`.
+4. Run the migrations:
+   ```bash
+   cd GG/Backend
+   npx sequelize-cli db:migrate --config src/config/sequelize.config.cjs
+   ```
+5. *(Optional)* Seed sample data:
+   ```bash
+   cat ../../database-import-all-in-one.sql | mysql -u root languageexchangematchmaker
+   ```
 
-Frontend
+## 5. Configure Environment Variables
 
-    cd Frontend
-    - `npm run dev` — Vite dev server (default `http://localhost:5173`). API calls use `src/api/apiBase.ts` and target `http://localhost:8080` in development when `public/config.js` has `API_BASE_URL: ''`.
-    - `npm run build` — output in `build/` (used for static deploy / Plesk).
-    - `npm run build:zip` — `build/` + `build.zip`.
+```bash
+cd GG/Backend
+cp .env.example .env
+```
 
-# Troubleshooting: 
-If the database does not properly migrate into MySQL, this is most commonly because your MySQL root/local instance still has a password or there is no languageexchangematchmaker schema.
+Open `.env` and set:
+* `GEMINI_API_KEY` — your Google AI Studio key (required for AI Chat + translator).
+* *(Optional)* `GEMINI_MODEL` — override the default `gemini-2.5-flash-lite`.
+* *(Optional)* `PORT` — backend port (defaults to `8080`).
 
-To remove your root/local instance password:
-* Right click on the local instance.
-* Select "Start Command Line Client."
-* Enter your password.
-* Enter the command: set password for root@localhost='';
+The Frontend reads its API base from `GG/Frontend/public/config.js`. Leaving `API_BASE_URL: ''` lets the dev server proxy `/api` to the backend automatically (no edit needed for local dev).
 
-To create the correct schema, simply select "Create a new schema in the selected server" within your root/local instance and name it "languageexchangematchmaker"
+## 6. Build the Frontend
 
-# Chat Assistant (AI)
-The Chat Assistant uses Google's Gemini API. To enable it:
+For local development, you do **not** need a production build — `npm run dev` runs Vite with hot reload.
 
-1. Get a free API key at https://aistudio.google.com/apikey
-2. Copy `GG/Backend/.env.example` to `GG/Backend/.env`
-3. Set `GEMINI_API_KEY=your_key_here` in `.env`
-4. Restart the backend server
+For deployment / static hosting:
+```bash
+cd GG/Frontend
+npm run build           # outputs to GG/Frontend/build/
+# or
+npm run build:zip       # also produces build.zip for upload
+```
+The Express backend serves the built `index.html` and `assets/` from `GG/Backend/src/public/` when present. To deploy locally, copy `build/` contents into `GG/Backend/src/public/`.
 
-Without a valid `GEMINI_API_KEY`, the Chat Assistant will return "Sorry! There was a backend error."
+## 7. Run the Application
 
-# Video calls (Zoom)
-1. Open [Zoom](https://zoom.us/start) (or the desktop app) and **create a meeting**.
-2. Copy the **invite link** (e.g. `https://zoom.us/j/…`).
-3. In the app, go to **Calls** (`/Videocall`), paste the link, and continue. The app opens Zoom in a new tab; video runs there, not inside the SPA.
-4. Optional **Record mic** in the app records only your microphone in the browser for transcripts (not the full Zoom mix).
+You will need **three terminals** running simultaneously.
 
-# Chat (messaging)
-The `/Chat` route provides a messaging UI. It expects a **Socket.io** server on port **8800** (`GG/socket/index.js`). Run it separately, e.g. `cd GG/socket && npm install && node index.js`, and ensure the client URL matches your environment (the client currently uses `ws://localhost:8800` in `Chat.js`).
+**Terminal 1 — Backend (port 8080):**
+```bash
+cd GG/Backend
+npm start
+```
 
-# Tutorial Resources: 
-* https://sequelize.org/docs/v6/other-topics/migrations/ 
-* https://reactjs.org/tutorial/tutorial.html 
-* https://www.bezkoder.com/react-node-express-mysql/. 
+**Terminal 2 — Frontend (dev server, port 5173):**
+```bash
+cd GG/Frontend
+npm run dev
+```
+
+**Terminal 3 — Socket.io chat (port 8800):**
+```bash
+cd GG/socket
+node index.js
+```
+
+Open http://localhost:5173 in your browser.
+
+## 8. Using AI / Video Features
+
+### AI Chat Assistant (Gemini)
+1. Confirm `GEMINI_API_KEY` is set in `GG/Backend/.env` (see step 5).
+2. Restart the backend after changing the key.
+Without a valid key the assistant returns "Sorry! There was a backend error."
+
+### Video Calls (Zoom)
+1. In Zoom, **create a meeting** and copy the invite link (e.g. `https://zoom.us/j/…`).
+2. In the app, go to **Calls** (`/Videocall`), paste the link, and continue. Zoom opens in a new tab.
+3. The in-app **Record mic** option captures only your microphone for transcripts — not the full Zoom audio mix.
+
+## 9. Troubleshooting
+
+| Symptom | Cause / Fix |
+|---|---|
+| `db:migrate` fails with auth error | MySQL root has a password but `sequelize.config.cjs` has `null`. Either remove the password (`SET PASSWORD FOR 'root'@'localhost' = '';`) or edit the config file. |
+| `db:migrate` fails with "Unknown database" | The `languageexchangematchmaker` schema does not exist. Create it (see step 4.2). |
+| Backend won't start on port 8080 | Another process is using the port. Find and kill it: `lsof -t -i:8080 | xargs kill` (macOS/Linux). |
+| Frontend shows blank page in production | The Express SPA static dir (`GG/Backend/src/public/`) doesn't have your latest `index.html`/`assets/`. Re-run `npm run build` and copy `build/` contents in. |
+| AI Chat returns "Sorry! There was a backend error." | `GEMINI_API_KEY` missing/invalid in `.env`, or the free-tier daily quota was hit. Check Google AI Studio. |
+| Chat messages not delivered | Socket.io server (`GG/socket`) is not running, or the client URL doesn't match. The client expects `ws://localhost:8800`. |
+| `npm install` fails with peer-dep errors | Use `npm install --legacy-peer-deps` in `GG/Frontend`. |
+| Login fails on a deployed site | Check `GG/Frontend/public/config.js` — `API_BASE_URL` should be `''` when the same Node app serves both SPA and API; otherwise set the absolute backend URL. |
+
+## 10. Tutorial Resources
+
+* Sequelize migrations — https://sequelize.org/docs/v6/other-topics/migrations/
+* React tutorial — https://react.dev/learn
+* React + Node + Express + MySQL walkthrough — https://www.bezkoder.com/react-node-express-mysql/
+* Vite docs — https://vite.dev/guide/

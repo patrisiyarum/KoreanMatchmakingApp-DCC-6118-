@@ -350,18 +350,22 @@ export function Games() {
     }
   }, [userId]);
 
-  useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
-    void (async () => {
-      const profile = await fetchUserProfilePayload(userId);
-      if (cancelled) return;
-      setQuizTarget(resolveQuizTarget(profile?.target_language));
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const refreshQuizTarget = useCallback(async (): Promise<QuizTarget> => {
+    if (!userId) return 'Korean';
+    const profile = await fetchUserProfilePayload(userId);
+    const resolved = resolveQuizTarget(profile?.target_language);
+    console.log('[Games] quizTarget resolved:', resolved, 'from target_language:', profile?.target_language);
+    setQuizTarget(resolved);
+    return resolved;
   }, [userId]);
+
+  useEffect(() => {
+    void refreshQuizTarget();
+  }, [refreshQuizTarget]);
+
+  useEffect(() => {
+    if (view === 'menu') void refreshQuizTarget();
+  }, [view, refreshQuizTarget]);
 
   useEffect(() => {
     if (view === 'teams') refreshTeam();
@@ -576,13 +580,17 @@ export function Games() {
 
   const startSoloGame = (type: 'vocab' | 'grammar' | 'pronunciation') => {
     setSoloGameType(type);
-    setRoundQuestions(makeRoundQuestions(type, quizTarget));
     setCurrentQuestion(0);
     setScore(0);
     setSelectedAnswer(null);
     setShowFeedback(false);
     setGameMode('vocab');
     setView('solo');
+    setRoundQuestions(makeRoundQuestions(type, quizTarget));
+    void (async () => {
+      const target = await refreshQuizTarget();
+      setRoundQuestions(makeRoundQuestions(type, target));
+    })();
   };
   const GAME_TYPE_MAP: Record<'vocab' | 'grammar' | 'pronunciation', GameType> = {
     vocab:         'term-matching',
@@ -2053,6 +2061,11 @@ export function Games() {
             <Trophy className="w-4 h-4" />
             <span>{t('Score', '점수')}: {score}</span>
           </div>
+        </div>
+        <div className="mb-3 text-center">
+          <span className="inline-block rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600">
+            {t('Learning:', '배우는 언어:')} {quizTarget}
+          </span>
         </div>
 
         <div className="bg-gradient-to-r from-purple-600 to-pink-500 rounded-2xl p-8 mb-6 text-center shadow-md">

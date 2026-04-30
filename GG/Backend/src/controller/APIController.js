@@ -124,13 +124,28 @@ let deleteUser = async (req, res) => { // DELETE function
         const cascadeStatements = [
             ['DELETE FROM FriendRequest WHERE pairUser1Id = ? OR pairUser2Id = ?', [userId, userId]],
             ['DELETE FROM FriendsModel WHERE user1_ID = ? OR user2_ID = ?', [userId, userId]],
-            ['DELETE FROM Chat WHERE senderId = ? OR receiverId = ?', [userId, userId]],
-            ['DELETE FROM Message WHERE senderId = ?', [userId]],
-            ['DELETE FROM Postcard WHERE senderId = ? OR recipientId = ?', [userId, userId]],
-            ['DELETE FROM Challenge WHERE hosterId = ? OR opponentId = ?', [userId, userId]],
+            ['DELETE FROM ChatModel WHERE senderId = ? OR receiverId = ?', [userId, userId]],
+            ['DELETE FROM MessageModel WHERE senderId = ?', [userId]],
+            ['DELETE FROM PostcardModel WHERE senderId = ? OR recipientId = ?', [userId, userId]],
+            ['DELETE FROM PostcardRecentMediaModel WHERE userId = ?', [userId]],
+            ['DELETE FROM Challenge WHERE challengerId = ? OR challengedId = ?', [userId, userId]],
+            ['DELETE FROM GameSession WHERE userId = ?', [userId]],
             ['DELETE FROM TeamInvite WHERE userId = ?', [userId]],
             ['DELETE FROM TeamMember WHERE userId = ?', [userId]],
-            ['DELETE FROM CallInvite WHERE callerId = ? OR calleeId = ?', [userId, userId]],
+            ['DELETE FROM VideoCallInvite WHERE callerId = ? OR calleeId = ?', [userId, userId]],
+            ['DELETE FROM MeetingModel WHERE hostId = ? OR attendeeId = ?', [userId, userId]],
+            ['DELETE FROM TranscriptUsers WHERE userId = ?', [userId]],
+            ['DELETE FROM Transcripts WHERE userId = ?', [userId]],
+            ['DELETE FROM AIChats WHERE userId = ?', [userId]],
+            ['DELETE FROM UserTranslations WHERE userId = ?', [userId]],
+            ['DELETE FROM UserQuestProgress WHERE userId = ?', [userId]],
+            ['DELETE FROM UserBadge WHERE userId = ?', [userId]],
+            ['DELETE FROM UserInterest WHERE user_id = ?', [userId]],
+            ['DELETE FROM UserAvailability WHERE userId = ?', [userId]],
+            ['DELETE FROM PronunciationRatings WHERE userId = ?', [userId]],
+            ['DELETE FROM UserRatings WHERE userId = ?', [userId]],
+            // UserProfile FK on the live DB lacks ON DELETE CASCADE, so delete it explicitly.
+            ['DELETE FROM UserProfile WHERE id = ?', [userId]],
         ];
         for (const [sql, params] of cascadeStatements) {
             try {

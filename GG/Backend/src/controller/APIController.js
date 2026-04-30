@@ -110,18 +110,53 @@ let updateUser = async (req, res) => { // PUT function
 }
 
 let deleteUser = async (req, res) => { // DELETE function
-     let userId = req.params.id;
-     if (!userId) { 
-        return res.status(200).json({
-            message: 'missing @params'
-        })
+    const userId = Number(req.params.id);
+    if (!userId || Number.isNaN(userId)) {
+        return res.status(400).json({ message: 'missing or invalid id' });
     }
-
-    await pool.execute('delete from useraccount where id = ?', [userId])
-      return res.status(200).json({
-        message: 'ok'
-    })
-}
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+        // Defensive cascade: explicitly clear rows in tables that may not have ON DELETE CASCADE
+        // in every deployed environment. Errors on missing tables are swallowed individually
+        // so a single missing optional table can't fail the whole delete.
+        const cascadeStatements = [
+            ['DELETE FROM FriendRequest WHERE pairUser1Id = ? OR pairUser2Id = ?', [userId, userId]],
+            ['DELETE FROM FriendsModel WHERE user1_ID = ? OR user2_ID = ?', [userId, userId]],
+            ['DELETE FROM Chat WHERE senderId = ? OR receiverId = ?', [userId, userId]],
+            ['DELETE FROM Message WHERE senderId = ?', [userId]],
+            ['DELETE FROM Postcard WHERE senderId = ? OR recipientId = ?', [userId, userId]],
+            ['DELETE FROM Challenge WHERE hosterId = ? OR opponentId = ?', [userId, userId]],
+            ['DELETE FROM TeamInvite WHERE userId = ?', [userId]],
+            ['DELETE FROM TeamMember WHERE userId = ?', [userId]],
+            ['DELETE FROM CallInvite WHERE callerId = ? OR calleeId = ?', [userId, userId]],
+        ];
+        for (const [sql, params] of cascadeStatements) {
+            try {
+                await conn.execute(sql, params);
+            } catch (e) {
+                if (e && e.code !== 'ER_NO_SUCH_TABLE' && e.code !== 'ER_BAD_FIELD_ERROR') {
+                    throw e;
+                }
+            }
+        }
+        await conn.execute('DELETE FROM useraccount WHERE id = ?', [userId]);
+        await conn.commit();
+        return res.status(200).json({ message: 'ok' });
+    } catch (err) {
+        if (conn) {
+            try { await conn.rollback(); } catch {}
+        }
+        console.error('deleteUser failed:', err);
+        return res.status(500).json({
+            message: 'Could not delete user',
+            error: err && err.message ? err.message : String(err),
+        });
+    } finally {
+        if (conn) conn.release();
+    }
+};
 const getUserPreferences = async (req , res) => {
   try {
     const [userPreferences] = await pool.execute(`SELECT * FROM UserProfile`); 

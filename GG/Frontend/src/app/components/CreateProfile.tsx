@@ -220,6 +220,8 @@ export function CreateProfile() {
     if (profile.age === '' || Number(profile.age) <= 0) fieldErrors.age = t('Please enter a valid age', '유효한 나이를 입력해 주세요');
     if (!profile.gender) fieldErrors.gender = t('Please select your gender', '성별을 선택해 주세요');
     if (!profile.profession) fieldErrors.profession = t('Please select your profession', '직업을 선택해 주세요');
+    if (!profile.learningGoal) fieldErrors.learningGoal = t('Please select a learning goal', '학습 목표를 선택해 주세요');
+    if (!profile.communicationStyle) fieldErrors.communicationStyle = t('Please select a communication style', '소통 방식을 선택해 주세요');
     if (profile.interests.length === 0) fieldErrors.interests = t('Please pick at least one interest', '관심사를 하나 이상 선택해 주세요');
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
@@ -541,35 +543,37 @@ export function CreateProfile() {
           {/* ── Learning Goal ── */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
-              {t('Learning Goal', '학습 목표')}{optionalTag}
+              {t('Learning Goal', '학습 목표')}{requiredAsterisk}
             </label>
             <select
               value={profile.learningGoal}
-              onChange={(e) => set('learningGoal', e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => { set('learningGoal', e.target.value); clearError('learningGoal'); }}
+              className={inputClass('learningGoal')}
             >
               <option value="" disabled>{t('Select learning goal', '학습 목표 선택')}</option>
               {LearningGoalOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
+            {fieldError('learningGoal')}
           </div>
 
           {/* ── Communication Style ── */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
-              {t('Communication Style', '소통 방식')}{optionalTag}
+              {t('Communication Style', '소통 방식')}{requiredAsterisk}
             </label>
             <select
               value={profile.communicationStyle}
-              onChange={(e) => set('communicationStyle', e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => { set('communicationStyle', e.target.value); clearError('communicationStyle'); }}
+              className={inputClass('communicationStyle')}
             >
               <option value="" disabled>{t('Select communication style', '소통 방식 선택')}</option>
               {CommunicationStyleOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
+            {fieldError('communicationStyle')}
           </div>
 
           {/* ── Commitment Level ── */}

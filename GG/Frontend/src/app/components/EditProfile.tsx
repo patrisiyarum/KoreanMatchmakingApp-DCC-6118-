@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Camera, ChevronRight, Loader2, UserRound } from 'lucide-react';
+import { Camera, ChevronRight, Loader2, Trash2, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { publicAssetUrl } from '../utils/profileImage';
 import {
   createProfile,
+  deleteUserAccount,
   fetchUserGameStats,
   fetchProfileOptions,
   fetchUserAccount,
@@ -129,7 +130,9 @@ function profilePayloadHasBioKey(profile: Record<string, unknown> | null | undef
 
 export function EditProfile() {
   const navigate = useNavigate();
-  const { userId } = useAuth();
+  const { userId, logout } = useAuth();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -726,8 +729,74 @@ export function EditProfile() {
             <span>{hasProfile ? t('Save changes', '변경 저장') : t('Create profile', '프로필 만들기')}</span>
             {!saving ? <ChevronRight className="w-5 h-5" /> : null}
           </button>
+
+          {/* ── Delete profile ── */}
+          {hasProfile && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteModal(true)}
+              className="w-full mt-2 inline-flex items-center justify-center gap-2 py-3 rounded-lg border border-red-200 bg-white text-red-600 text-sm font-medium hover:bg-red-50 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              {t('Delete profile', '프로필 삭제')}
+            </button>
+          )}
         </div>
       </div>
+
+      {showDeleteModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => { if (!deleting) setShowDeleteModal(false); }}
+        >
+          <div
+            className="bg-white rounded-2xl border border-neutral-200 p-6 w-full max-w-sm mx-4 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-neutral-900">
+              {t('Delete your profile?', '프로필을 삭제하시겠습니까?')}
+            </h3>
+            <p className="text-sm text-neutral-600">
+              {t(
+                'This permanently removes your account, profile, friends, messages, and game progress. This cannot be undone.',
+                '계정, 프로필, 친구, 메시지, 게임 진행 상황이 영구적으로 삭제됩니다. 되돌릴 수 없습니다.'
+              )}
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 py-2.5 rounded-lg border border-neutral-300 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-60 transition-colors"
+              >
+                {t('Cancel', '취소')}
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={async () => {
+                  if (!userId) return;
+                  setDeleting(true);
+                  const res = await deleteUserAccount(userId);
+                  setDeleting(false);
+                  if (!res.ok) {
+                    toast.error(res.message || t('Could not delete profile', '프로필을 삭제하지 못했습니다'));
+                    return;
+                  }
+                  toast.success(t('Profile deleted', '프로필이 삭제되었습니다'));
+                  setShowDeleteModal(false);
+                  logout();
+                  navigate('/login');
+                }}
+                className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
+              >
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {t('Delete', '삭제')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

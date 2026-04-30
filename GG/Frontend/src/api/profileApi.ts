@@ -116,6 +116,18 @@ export async function uploadProfileImage(userId: string, file: File) {
   return data;
 }
 
+export async function deleteUserAccount(userId: string): Promise<{ ok: boolean; message?: string }> {
+  try {
+    const res = (await http.delete<{ message?: string }>(`/api/v1/delete-user/${userId}`)) as
+      | { message?: string }
+      | undefined;
+    return { ok: true, message: res?.message };
+  } catch (e) {
+    const err = e as { response?: { data?: { message?: string } }; message?: string };
+    return { ok: false, message: err.response?.data?.message || err.message || 'Delete failed' };
+  }
+}
+
 export async function removeProfileImage(userId: string) {
   const { data } = await axios.delete<{ message?: string }>(
     `${getApiBase()}/api/upload/profile`,

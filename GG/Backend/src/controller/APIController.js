@@ -121,6 +121,24 @@ let deleteUser = async (req, res) => { // DELETE function
         // Defensive cascade: explicitly clear rows in tables that may not have ON DELETE CASCADE
         // in every deployed environment. Errors on missing tables are swallowed individually
         // so a single missing optional table can't fail the whole delete.
+        // Team has child TeamMatch rows (teamAId/teamBId FK with ON DELETE NO ACTION).
+        // Cascading useraccount → Team would otherwise be blocked by lingering matches.
+        try {
+            const [teamRows] = await conn.execute(
+                'SELECT id FROM Team WHERE ownerID = ?',
+                [userId]
+            );
+            const teamIds = teamRows.map((r) => r.id);
+            if (teamIds.length > 0) {
+                await conn.query(
+                    'DELETE FROM TeamMatch WHERE teamAId IN (?) OR teamBId IN (?)',
+                    [teamIds, teamIds]
+                );
+            }
+        } catch (e) {
+            if (e && e.code !== 'ER_NO_SUCH_TABLE' && e.code !== 'ER_BAD_FIELD_ERROR') throw e;
+        }
+
         // ChatModel has child MessageModel rows (chatId FK). Wipe child rows first
         // for any chat where this user is sender OR receiver, then drop the chats.
         try {

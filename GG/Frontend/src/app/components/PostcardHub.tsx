@@ -16,11 +16,13 @@ import {
   ImagePlus,
   Paperclip,
   Layers,
+  Languages,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getFriendsList, type FriendRow } from '@/api/friendsApi';
+import { translateText } from '@/api/translateApi';
 import { publicAssetUrl } from '../utils/profileImage';
 import {
   sendPostcard,
@@ -324,7 +326,7 @@ const MAX_IMAGES_BACKGROUND = 1;
 const MAX_IMAGES_ATTACHMENT = 4;
 
 export function PostcardHub() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { userId } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -355,6 +357,8 @@ export function PostcardHub() {
   const [loadingInbox, setLoadingInbox] = useState(false);
   const [openedPostcard, setOpenedPostcard] = useState<PostcardRow | null>(null);
   const [modalFlipped, setModalFlipped] = useState(false);
+  const [translatedMessage, setTranslatedMessage] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
   const [friendMap, setFriendMap] = useState<Record<string, FriendRow>>({});
 
   // ── Load friends ──────────────────────────────────────────────────────────
@@ -906,7 +910,7 @@ export function PostcardHub() {
       <AnimatePresence>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-          onClick={() => { setOpenedPostcard(null); setModalFlipped(false); }}>
+          onClick={() => { setOpenedPostcard(null); setModalFlipped(false); setTranslatedMessage(null); }}>
           <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.92, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
@@ -925,7 +929,7 @@ export function PostcardHub() {
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
-                <button type="button" onClick={() => { setOpenedPostcard(null); setModalFlipped(false); }}
+                <button type="button" onClick={() => { setOpenedPostcard(null); setModalFlipped(false); setTranslatedMessage(null); }}
                   className="p-1.5 rounded-lg hover:bg-neutral-100 transition-colors">
                   <X className="w-5 h-5 text-neutral-600" />
                 </button>
@@ -948,6 +952,57 @@ export function PostcardHub() {
               <p className="text-xs text-neutral-500 text-center">
                 {t('Tap the postcard to browse attached photos', '엽서를 탭해 첨부 사진을 확인하세요')}
               </p>
+            )}
+
+            {(openedPostcard.message ?? '').trim() && (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  disabled={translating}
+                  onClick={async () => {
+                    if (translatedMessage) {
+                      setTranslatedMessage(null);
+                      return;
+                    }
+                    const original = openedPostcard.message ?? '';
+                    if (!original.trim()) return;
+                    setTranslating(true);
+                    try {
+                      const targetLang = language === 'ko' ? 'English' : 'Korean';
+                      const out = await translateText(original, 'auto', targetLang);
+                      if (out && out.trim()) {
+                        setTranslatedMessage(out);
+                      } else {
+                        toast.error(t('Translation unavailable', '번역을 사용할 수 없습니다'));
+                      }
+                    } catch {
+                      toast.error(t('Translation failed', '번역 실패'));
+                    } finally {
+                      setTranslating(false);
+                    }
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-violet-200 bg-violet-50 text-violet-700 text-sm font-medium hover:bg-violet-100 disabled:opacity-60 transition-colors"
+                >
+                  {translating ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Languages className="w-4 h-4" />
+                  )}
+                  {translatedMessage
+                    ? t('Show original', '원문 보기')
+                    : t('Translate message', '메시지 번역')}
+                </button>
+                {translatedMessage && (
+                  <div className="rounded-lg border border-violet-200 bg-violet-50/50 p-3">
+                    <p className="text-[11px] uppercase tracking-wide text-violet-600 mb-1">
+                      {t('Translation', '번역')}
+                    </p>
+                    <p className="text-sm text-neutral-800 whitespace-pre-wrap">
+                      {translatedMessage}
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
           </motion.div>
         </motion.div>

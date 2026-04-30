@@ -132,6 +132,15 @@ export function CreateProfile() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [bootLoading, setBootLoading] = useState(true);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const clearError = (field: string) =>
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
 
   const [profile, setProfile] = useState({
     name: '',
@@ -205,15 +214,19 @@ export function CreateProfile() {
   };
 
   const handleContinue = async () => {
-    if (!(profile.name.trim() && profile.interests.length > 0) || !userId) return;
-    const missing: string[] = [];
-    if (profile.age === '' || Number(profile.age) <= 0) missing.push(t('age', '나이'));
-    if (!profile.gender) missing.push(t('gender', '성별'));
-    if (!profile.profession) missing.push(t('profession', '직업'));
-    if (missing.length) {
-      toast.error(t('Please fill in: ', '다음 항목을 입력해 주세요: ') + missing.join(', '));
+    if (!userId) return;
+    const fieldErrors: Record<string, string> = {};
+    if (!profile.name.trim()) fieldErrors.name = t('Please enter your name', '이름을 입력해 주세요');
+    if (profile.age === '' || Number(profile.age) <= 0) fieldErrors.age = t('Please enter a valid age', '유효한 나이를 입력해 주세요');
+    if (!profile.gender) fieldErrors.gender = t('Please select your gender', '성별을 선택해 주세요');
+    if (!profile.profession) fieldErrors.profession = t('Please select your profession', '직업을 선택해 주세요');
+    if (profile.interests.length === 0) fieldErrors.interests = t('Please pick at least one interest', '관심사를 하나 이상 선택해 주세요');
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
+      toast.error(t('Please complete the highlighted fields', '강조된 항목을 완성해 주세요'));
       return;
     }
+    setErrors({});
     const parts = profile.name.trim().split(/\s+/);
     const firstName = parts[0] || 'User';
     const lastName = parts.slice(1).join(' ') || '';
@@ -256,7 +269,16 @@ export function CreateProfile() {
     }
   };
 
-  const canContinue = Boolean(profile.name.trim()) && profile.interests.length > 0;
+  const requiredAsterisk = <span className="text-red-500" aria-hidden> *</span>;
+  const optionalTag = (
+    <span className="text-xs text-neutral-400 font-normal ml-1">{t('(optional)', '(선택)')}</span>
+  );
+  const inputClass = (field: string) =>
+    `w-full px-4 py-3 rounded-lg border ${
+      errors[field] ? 'border-red-500 focus:ring-red-500' : 'border-neutral-300 focus:ring-blue-500'
+    } focus:outline-none focus:ring-2`;
+  const fieldError = (field: string) =>
+    errors[field] ? <p className="text-xs text-red-600 mt-1">{errors[field]}</p> : null;
 
   // ── Loading / unauthenticated states ──────────────────────────────────────
 
@@ -289,6 +311,11 @@ export function CreateProfile() {
         className="w-full max-w-md"
       >
         <div className="bg-white rounded-2xl border border-neutral-200 p-5 space-y-5">
+
+          {/* ── Required-fields legend ── */}
+          <p className="text-xs text-neutral-500 text-center">
+            <span className="text-red-500">*</span> {t('Required field', '필수 항목')}
+          </p>
 
           {/* ── Photo ── */}
           <div className="flex flex-col items-center text-center">
@@ -334,22 +361,23 @@ export function CreateProfile() {
           {/* ── Name ── */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
-              {t('Your Name', '이름')}
+              {t('Your Name', '이름')}{requiredAsterisk}
             </label>
             <input
               type="text"
               value={profile.name}
-              onChange={(e) => set('name', e.target.value)}
+              onChange={(e) => { set('name', e.target.value); clearError('name'); }}
               placeholder={t('Enter your name • 이름을 입력하세요', '이름을 입력하세요')}
-              className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass('name')}
             />
+            {fieldError('name')}
           </div>
 
           {/* ── Languages ── */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-2">
-                {t('Native Language', '모국어')}
+                {t('Native Language', '모국어')}{requiredAsterisk}
               </label>
               <select
                 value={profile.nativeLanguage}
@@ -363,7 +391,7 @@ export function CreateProfile() {
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-2">
-                {t("I'm learning", '배우는 언어')}
+                {t("I'm learning", '배우는 언어')}{requiredAsterisk}
               </label>
               <select
                 value={profile.learningLanguage}
@@ -380,7 +408,7 @@ export function CreateProfile() {
           {/* ── Proficiency ── */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
-              {t('My Level', '레벨')}
+              {t('My Level', '레벨')}{requiredAsterisk}
             </label>
             <select
               value={profile.level}
@@ -396,56 +424,59 @@ export function CreateProfile() {
           {/* ── Age ── */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
-              {t('Age', '나이')}
+              {t('Age', '나이')}{requiredAsterisk}
             </label>
             <input
               type="number"
               min={13}
               max={120}
               value={profile.age}
-              onChange={(e) => set('age', Number(e.target.value))}
-              className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => { set('age', Number(e.target.value)); clearError('age'); }}
+              className={inputClass('age')}
             />
+            {fieldError('age')}
           </div>
 
           {/* ── Gender & Profession ── */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-2">
-                {t('Gender', '성별')}
+                {t('Gender', '성별')}{requiredAsterisk}
               </label>
               <select
                 value={profile.gender}
-                onChange={(e) => set('gender', e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => { set('gender', e.target.value); clearError('gender'); }}
+                className={inputClass('gender')}
               >
                 <option value="" disabled>{t('Select gender', '성별 선택')}</option>
                 {GenderOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
+              {fieldError('gender')}
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-2">
-                {t('Profession', '직업')}
+                {t('Profession', '직업')}{requiredAsterisk}
               </label>
               <select
                 value={profile.profession}
-                onChange={(e) => set('profession', e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => { set('profession', e.target.value); clearError('profession'); }}
+                className={inputClass('profession')}
               >
                 <option value="" disabled>{t('Select profession', '직업 선택')}</option>
                 {ProfessionOptions.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
+              {fieldError('profession')}
             </div>
           </div>
 
           {/* ── MBTI & Zodiac ── */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">MBTI</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">MBTI{optionalTag}</label>
               <select
                 value={profile.mbti}
                 onChange={(e) => set('mbti', e.target.value)}
@@ -459,7 +490,7 @@ export function CreateProfile() {
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-2">
-                {t('Zodiac', '별자리')}
+                {t('Zodiac', '별자리')}{optionalTag}
               </label>
               <select
                 value={profile.zodiac}
@@ -477,7 +508,7 @@ export function CreateProfile() {
           {/* ── Time Zone ── */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
-              {t('Time Zone', '시간대')}
+              {t('Time Zone', '시간대')}{optionalTag}
             </label>
             <select
               value={profile.defaultTimeZone}
@@ -494,7 +525,7 @@ export function CreateProfile() {
           {/* ── Visibility ── */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
-              {t('Profile Visibility', '프로필 공개')}
+              {t('Profile Visibility', '프로필 공개')}{optionalTag}
             </label>
             <select
               value={profile.visibility}
@@ -510,7 +541,7 @@ export function CreateProfile() {
           {/* ── Learning Goal ── */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
-              {t('Learning Goal', '학습 목표')}
+              {t('Learning Goal', '학습 목표')}{optionalTag}
             </label>
             <select
               value={profile.learningGoal}
@@ -527,7 +558,7 @@ export function CreateProfile() {
           {/* ── Communication Style ── */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
-              {t('Communication Style', '소통 방식')}
+              {t('Communication Style', '소통 방식')}{optionalTag}
             </label>
             <select
               value={profile.communicationStyle}
@@ -544,7 +575,7 @@ export function CreateProfile() {
           {/* ── Commitment Level ── */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
-              {t('Commitment Level', '헌신도')}{' '}
+              {t('Commitment Level', '헌신도')}{optionalTag}{' '}
               <span className="text-xs text-neutral-500">
                 ({profile.commitmentLevel <= 2
                   ? t('Casual', '캐주얼')
@@ -573,15 +604,19 @@ export function CreateProfile() {
           {/* ── Interests ── */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-3">
-              {t('Interests', '관심사')}{' '}
+              {t('Interests', '관심사')}{requiredAsterisk}{' '}
               <span className="text-xs text-neutral-500">({t('select at least one', '하나 이상 선택')})</span>
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div
+              className={`flex flex-wrap gap-2 ${
+                errors.interests ? 'p-2 rounded-lg border border-red-500' : ''
+              }`}
+            >
               {PROFILE_INTEREST_OPTIONS.map((interest) => (
                 <button
                   key={interest}
                   type="button"
-                  onClick={() => toggleInterest(interest)}
+                  onClick={() => { toggleInterest(interest); clearError('interests'); }}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                     profile.interests.includes(interest)
                       ? 'bg-blue-600 text-white'
@@ -592,6 +627,7 @@ export function CreateProfile() {
                 </button>
               ))}
             </div>
+            {fieldError('interests')}
           </div>
 
           {/* ── Bio ── */}
@@ -613,7 +649,7 @@ export function CreateProfile() {
           <button
             type="button"
             onClick={handleContinue}
-            disabled={starting || !canContinue}
+            disabled={starting}
             className="w-full bg-blue-600 text-white py-4 rounded-lg font-medium hover:bg-blue-700 disabled:bg-neutral-300 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
           >
             {starting ? <Loader2 className="w-5 h-5 animate-spin" /> : null}

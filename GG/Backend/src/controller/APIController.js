@@ -121,11 +121,26 @@ let deleteUser = async (req, res) => { // DELETE function
         // Defensive cascade: explicitly clear rows in tables that may not have ON DELETE CASCADE
         // in every deployed environment. Errors on missing tables are swallowed individually
         // so a single missing optional table can't fail the whole delete.
+        // ChatModel has child MessageModel rows (chatId FK). Wipe child rows first
+        // for any chat where this user is sender OR receiver, then drop the chats.
+        try {
+            const [chatRows] = await conn.execute(
+                'SELECT id FROM ChatModel WHERE senderId = ? OR receiverId = ?',
+                [userId, userId]
+            );
+            const chatIds = chatRows.map((r) => r.id);
+            if (chatIds.length > 0) {
+                await conn.query('DELETE FROM MessageModel WHERE chatId IN (?)', [chatIds]);
+            }
+        } catch (e) {
+            if (e && e.code !== 'ER_NO_SUCH_TABLE' && e.code !== 'ER_BAD_FIELD_ERROR') throw e;
+        }
+
         const cascadeStatements = [
             ['DELETE FROM FriendRequest WHERE pairUser1Id = ? OR pairUser2Id = ?', [userId, userId]],
             ['DELETE FROM FriendsModel WHERE user1_ID = ? OR user2_ID = ?', [userId, userId]],
-            ['DELETE FROM ChatModel WHERE senderId = ? OR receiverId = ?', [userId, userId]],
             ['DELETE FROM MessageModel WHERE senderId = ?', [userId]],
+            ['DELETE FROM ChatModel WHERE senderId = ? OR receiverId = ?', [userId, userId]],
             ['DELETE FROM PostcardModel WHERE senderId = ? OR recipientId = ?', [userId, userId]],
             ['DELETE FROM PostcardRecentMediaModel WHERE userId = ?', [userId]],
             ['DELETE FROM Challenge WHERE challengerId = ? OR challengedId = ?', [userId, userId]],

@@ -51,6 +51,7 @@ const GenderOptions = [
 ];
 
 const ProfessionOptions = [
+  { value: 'Student', label: 'Student' },
   { value: 'Education', label: 'Education' },
   { value: 'Engineering', label: 'Engineering' },
   { value: 'Retail', label: 'Retail' },
@@ -152,7 +153,7 @@ export function EditProfile() {
   const [learningGoal, setLearningGoal] = useState('');
   const [communicationStyle, setCommunicationStyle] = useState('');
   const [commitmentLevel, setCommitmentLevel] = useState(3);
-  const [age, setAge] = useState(22);
+  const [age, setAge] = useState<number | ''>(22);
   const [gender, setGender] = useState('');
   const [profession, setProfession] = useState('');
   const [mbti, setMbti] = useState('');
@@ -273,7 +274,7 @@ export function EditProfile() {
         native_language: nativeLanguage,
         target_language: targetLanguage,
         target_language_proficiency: proficiency,
-        age,
+        age: age === '' ? undefined : age,
         gender,
         profession,
         mbti,
@@ -494,11 +495,14 @@ export function EditProfile() {
               {t('Age', '나이')}
             </label>
             <input
-              type="number"
-              min={13}
-              max={120}
-              value={age}
-              onChange={(e) => setAge(Number(e.target.value))}
+              type="text"
+              inputMode="numeric"
+              maxLength={3}
+              value={age === '' ? '' : String(age)}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/[^0-9]/g, '');
+                setAge(digits === '' ? '' : Number(digits));
+              }}
               className="w-full px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>

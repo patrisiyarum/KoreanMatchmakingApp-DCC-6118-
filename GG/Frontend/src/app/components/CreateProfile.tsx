@@ -37,6 +37,7 @@ const GenderOptions = [
 ];
 
 const ProfessionOptions = [
+  { value: 'Student', label: 'Student' },
   { value: 'Education', label: 'Education' },
   { value: 'Engineering', label: 'Engineering' },
   { value: 'Retail', label: 'Retail' },
@@ -429,11 +430,15 @@ export function CreateProfile() {
               {t('Age', '나이')}{requiredAsterisk}
             </label>
             <input
-              type="number"
-              min={13}
-              max={120}
-              value={profile.age}
-              onChange={(e) => { set('age', Number(e.target.value)); clearError('age'); }}
+              type="text"
+              inputMode="numeric"
+              maxLength={3}
+              value={profile.age === '' ? '' : String(profile.age)}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/[^0-9]/g, '');
+                set('age', digits === '' ? '' : Number(digits));
+                clearError('age');
+              }}
               className={inputClass('age')}
             />
             {fieldError('age')}
